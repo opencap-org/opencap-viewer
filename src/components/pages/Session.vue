@@ -775,6 +775,9 @@
         console.log(doneTrials[0])
         this.loadTrial(doneTrials[0])
       }
+
+      // Add keyboard event listener
+      window.addEventListener('keydown', this.handleKeyboard)
     },
     beforeDestroy() {
       this.cancelPoll()
@@ -784,6 +787,9 @@
       if (this.resizeObserver) {
         this.resizeObserver.unobserve(this.$refs.mocap)
       }
+
+      // Remove keyboard event listener
+      window.removeEventListener('keydown', this.handleKeyboard)
     },
     watch: {
       trial() {
@@ -1635,6 +1641,36 @@
           }
         }
         window.alert(`Result with tag "${tag}" not found`);
+      },
+      handleKeyboard(event) {
+        // Only handle keyboard events when trial is loaded and video controls are enabled
+        if (this.videoControlsDisabled) {
+          return
+        }
+
+        // Ignore if user is typing in an input field
+        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+          return
+        }
+
+        switch (event.key) {
+          case ' ': // Space bar - toggle play/pause
+            event.preventDefault()
+            this.togglePlay(!this.playing)
+            break
+          case 'ArrowLeft': // Left arrow - previous frame
+            event.preventDefault()
+            if (this.frame > 0) {
+              this.onNavigate(this.frame - 1)
+            }
+            break
+          case 'ArrowRight': // Right arrow - next frame
+            event.preventDefault()
+            if (this.frame < this.frames.length - 1) {
+              this.onNavigate(this.frame + 1)
+            }
+            break
+        }
       }
     }
   }
