@@ -709,7 +709,17 @@
           return location.origin + "/session/" + this.session.id;
         },
         analysisFunctionsWithMenu() {
-          return this.analysisFunctions.map((func) => ({...func, isMenuOpen: false}))
+          // Filter out COM analysis as it's not working properly yet (the anlaysis dahboard is not existing yet)
+          return this.analysisFunctions
+            .filter((func) => {
+              const title = (func.title || '').toLowerCase();
+              const description = (func.description || '').toLowerCase();
+              return !title.includes('com') && 
+                     !title.includes('center of mass') && 
+                     !description.includes('com') && 
+                     !description.includes('center of mass');
+            })
+            .map((func) => ({...func, isMenuOpen: false}))
         },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
@@ -775,6 +785,9 @@
         console.log(doneTrials[0])
         this.loadTrial(doneTrials[0])
       }
+
+      // Add keyboard event listener
+      window.addEventListener('keydown', this.handleKeyboard)
     },
     beforeDestroy() {
       this.cancelPoll()
@@ -784,6 +797,9 @@
       if (this.resizeObserver) {
         this.resizeObserver.unobserve(this.$refs.mocap)
       }
+
+      // Remove keyboard event listener
+      window.removeEventListener('keydown', this.handleKeyboard)
     },
     watch: {
       trial() {
@@ -1635,6 +1651,36 @@
           }
         }
         window.alert(`Result with tag "${tag}" not found`);
+      },
+      handleKeyboard(event) {
+        // Only handle keyboard events when trial is loaded and video controls are enabled
+        if (this.videoControlsDisabled) {
+          return
+        }
+
+        // Ignore if user is typing in an input field
+        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+          return
+        }
+
+        switch (event.key) {
+          case ' ': // Space bar - toggle play/pause
+            event.preventDefault()
+            this.togglePlay(!this.playing)
+            break
+          case 'ArrowLeft': // Left arrow - previous frame
+            event.preventDefault()
+            if (this.frame > 0) {
+              this.onNavigate(this.frame - 1)
+            }
+            break
+          case 'ArrowRight': // Right arrow - next frame
+            event.preventDefault()
+            if (this.frame < this.frames.length - 1) {
+              this.onNavigate(this.frame + 1)
+            }
+            break
+        }
       }
     }
   }
