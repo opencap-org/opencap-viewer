@@ -1,6 +1,13 @@
 <template>
-  <div id="body" class="chart-page d-flex flex-column">
-    <div class="dashboard-body d-flex" v-if="show_dashboard">
+  <div class="analysis-dashboard-wrapper">
+    <!-- Mobile: overlay to close sidebar when clicking outside -->
+    <div
+      v-if="!leftMenuClosed && $vuetify.breakpoint.smAndDown"
+      class="analysis-dashboard-overlay"
+      @click="leftMenuClosed = true"
+    />
+    <div id="body" class="chart-page d-flex flex-column" :class="{ 'left-menu-closed': leftMenuClosed }">
+      <div class="dashboard-body d-flex" v-if="show_dashboard">
         <div v-for="(column, column_name, column_idx) in dashboard.layout" :key="column_idx" :class="column.classes">
           <div v-for="block in column.widgets" :key="block._id" :class="block.classes">
             <component :is="block.component"
@@ -14,16 +21,16 @@
         </div>
     </div>
 
-    <div id="button-left" class="pa-2 fixed-button fixed-button-to-left">
+    <div id="button-left" class="pa-2 fixed-button fixed-button-to-left" v-show="leftMenuClosed">
       <v-btn @click="leftMenu">
         Data
       </v-btn>
     </div>
 
     <v-card class="sidebar left-sidebar">
-      <div class="pa-4 left-menu-close-button">
-        <v-btn width="64px" @click="leftMenu">
-          ✖
+      <div class="pa-2 left-menu-close-button">
+        <v-btn icon @click="leftMenu" class="sidebar-close-btn">
+          <v-icon>mdi-close</v-icon>
         </v-btn>
       </div>
       <v-card-text height="100%" v-if="dashboard.data">
@@ -124,8 +131,8 @@
       </v-card-text>
     </v-card>
 
+    </div>
   </div>
-
 </template>
 
 <script>
@@ -174,6 +181,7 @@ export default {
     },
     data() {
       return {
+        leftMenuClosed: true,
         subject_selected: null,
         session_selected: null,
         trial_selected: null,
@@ -246,13 +254,7 @@ export default {
     methods: {
         ...mapActions('data', ['loadSession', 'loadAnalysisDashboard']),
         leftMenu() {
-          if (document.getElementById("body").classList.contains("left-menu-closed")) {
-            document.getElementById("body").classList.remove("left-menu-closed");
-            document.getElementById("button-left").style.display = "None";
-          } else {
-            document.getElementById("body").classList.add("left-menu-closed");
-            document.getElementById("button-left").style.display = "inline-block";
-          }
+          this.leftMenuClosed = !this.leftMenuClosed;
         },
         captureTimePosition(time) {
           this.time_position = time;
@@ -337,11 +339,24 @@ export default {
 <style lang="scss">
 #body {
   position: relative;
-  display: table-cell;
-  vertical-align: middle;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: 100%;
+  max-width: 100vw;
+  min-height: 100%;
+  overflow: visible;
   background-color: black;
+}
+
+.analysis-dashboard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 15;
+  cursor: pointer;
 }
 
 .sidebar {
@@ -351,6 +366,7 @@ export default {
   width: 300px;
   transition: transform 0.2s;
   overflow-y: scroll;
+  z-index: 20;
 }
 
 .left-sidebar {
@@ -361,36 +377,91 @@ export default {
   right: 0;
 }
 
-.content {
-  height: calc(100vh - 64px);
-  transition: padding-left 0.2s;
+.left-menu-closed > .left-sidebar {
+  transform: translateX(-100%);
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.left-menu-closed>.left-sidebar {
-  transform: translateX(-300px);
+.right-menu-closed > .right-sidebar {
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.right-menu-closed>.right-sidebar {
-  transform: translateX(300px);
+/* When left menu is closed, main content uses full width – no black gap */
+.left-menu-closed .dashboard-body {
+  margin-left: 0 !important;
+}
+
+/* When left menu is open, constrain main content so right side stays on screen */
+#body:not(.left-menu-closed) .dashboard-body {
+  width: calc(100% - 320px);
+  max-width: calc(100vw - 320px);
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+/* When sidebar is open, keep scalar (type/metrics) visible – fixed on the right, below sidebar */
+#body:not(.left-menu-closed) .dashboard-body > div:has(.scalar-value-wrapper) {
+  position: fixed;
+  right: 0;
+  top: 64px;
+  bottom: 0;
+  width: 240px;
+  max-width: 40vw;
+  overflow-y: auto;
+  background: black;
+  z-index: 10;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+}
+
+.dashboard-body > div {
+  min-width: 0;
 }
 
 .fixed-button {
   position: fixed;
-  bottom: 0px;
+  bottom: auto;
   top: 74px;
-  display: None;
+  display: block;
+  width: auto;
+  max-width: fit-content;
+  height: fit-content;
+  min-height: 0;
+  z-index: 120;
+}
+
+.fixed-button .v-btn {
+  width: auto;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 960px) {
+  .fixed-button {
+    top: 56px;
+  }
 }
 
 .fixed-button-to-left {
   left: 10px;
+  right: auto;
 }
 
 .fixed-button-to-right {
   right: 10px;
+  left: auto;
 }
 
 .left-menu-close-button {
   float: right;
+}
+
+.left-menu-close-button .sidebar-close-btn {
+  min-width: 40px;
+  min-height: 40px;
 }
 
 .right-menu-close-button {
@@ -427,5 +498,57 @@ export default {
 .dashboard-body {
   margin-left: 320px;
   margin-right: 10px;
+  min-width: 0;
+  flex: 1;
+  padding-left: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* Small screens only: move scalar (type/metrics) to top and smaller font */
+@media (max-width: 960px) {
+  .dashboard-body {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 1rem;
+  }
+
+  /* Move scalar value column to top and use smaller font */
+  .dashboard-body > div:has(.scalar-value-wrapper) {
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .dashboard-body .scalar-value-wrapper {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .dashboard-body .scalar-value-wrapper .info-text,
+  .dashboard-body .scalar-value-wrapper .scalar-text {
+    font-size: 1rem;
+  }
+
+  .dashboard-body .scalar-value-wrapper .info-label,
+  .dashboard-body .scalar-value-wrapper .label-text {
+    font-size: 0.8125rem;
+  }
+}
+</style>
+
+<!-- Route-scoped: zero v-main padding so content uses full width; page scrollable -->
+<style lang="scss">
+.analysis-dashboard-wrapper {
+  width: 100%;
+  min-height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.v-main:has(.analysis-dashboard-wrapper) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow: visible;
 }
 </style>

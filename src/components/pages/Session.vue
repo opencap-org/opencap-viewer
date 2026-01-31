@@ -1,6 +1,30 @@
 <template>
     <div class="step-5 d-flex">
-        <div class="left d-flex flex-column pa-2">
+        <!-- Mobile menu button -->
+        <v-btn
+            v-if="!leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+            class="mobile-menu-toggle"
+            icon
+            @click="leftMenuOpen = true">
+            <v-icon>mdi-menu</v-icon>
+        </v-btn>
+        
+        <!-- Overlay for mobile -->
+        <div 
+            v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+            class="mobile-overlay"
+            @click="leftMenuOpen = false">
+        </div>
+        
+        <div class="left d-flex flex-column pa-2" :class="{ 'mobile-open': leftMenuOpen }">
+            <!-- Mobile close button -->
+            <v-btn
+                v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+                class="mobile-close-btn"
+                icon
+                @click="leftMenuOpen = false">
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
@@ -27,161 +51,51 @@
                       :class="{ selected: isSelected(t) }">
                       <Status :value="t" :class="trialClasses(t)" @click="loadTrial(t)" />
                       <div class="">
+                        <!-- Mobile: bottom sheet for better touch UX -->
+                        <template v-if="$vuetify.breakpoint.smAndDown">
+                          <v-btn
+                            icon
+                            dark
+                            @click="openTrialMenuSheet(t)">
+                            <v-icon>mdi-menu</v-icon>
+                          </v-btn>
+                        </template>
+                        <!-- Desktop: dropdown menu -->
                         <v-menu
-                            v-model="t.isMenuOpen"
-                            offset-y
-                          >
+                          v-else
+                          v-model="t.isMenuOpen"
+                          offset-y
+                          right
+                          close-on-content-click
+                          content-class="trial-context-menu">
                           <template v-slot:activator="{ on, attrs }">
                             <v-btn
-                                icon
+                              icon
                               dark
                               v-bind="attrs"
-                              v-on="on"
-                            >
+                              v-on="on">
                               <v-icon>mdi-menu</v-icon>
                             </v-btn>
                           </template>
                           <v-list>
-                            <v-list-item link v-if="t.name !== 'neutral'" @click="renameTrialDialog(t)">
+                            <v-list-item link v-if="t.name !== 'neutral'" @click="closeMenuAndRename(t)">
                               <v-list-item-title>Rename</v-list-item-title>
                             </v-list-item>
-                            <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="analysisDialog(t)">
+                            <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="closeMenuAndAnalysis(t)">
                               <v-list-item-title>Analysis</v-list-item-title>
                             </v-list-item>
-  
-                            <v-list-item link @click="addTagTrialDialog(t)">
+                            <v-list-item link @click="closeMenuAndEditTags(t)">
                               <v-list-item-title>Edit Tags</v-list-item-title>
                             </v-list-item>
-
-                              <v-dialog
-                                      v-model="remove_dialog"
-                                      v-click-outside="clickOutsideDialogTrialHideMenu"
-                                      max-width="500">
-                                <template v-slot:activator="{ on }">
-                                  <v-list-item link v-show="!t.trashed" v-on="on">
-                                    <v-list-item-title>Trash</v-list-item-title>
-                                  </v-list-item>
-                                </template>
-                                <v-card>
-                                  <v-card-text class="pt-4">
-                                    <v-row class="m-0">
-                                      <v-col cols="2">
-                                        <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                      </v-col>
-                                      <v-col cols="10">
-                                        <p>
-                                          Do you want to trash trial {{t.name}}?
-                                          You will be able to restore it for 30 days. After that,
-                                          this trial will be permanently removed.
-                                        </p>
-                                      </v-col>
-                                    </v-row>
-                                  </v-card-text>
-                                  <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                      color="blue darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; remove_dialog = false"
-                                    >
-                                      No
-                                    </v-btn>
-                                    <v-btn
-                                      color="red darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; remove_dialog = false; trashTrial(t)"
-                                    >
-                                      Yes
-                                    </v-btn>
-                                  </v-card-actions>
-                                </v-card>
-                              </v-dialog>
-  
-                              <v-dialog
-                                      v-model="restore_dialog"
-                                      v-click-outside="clickOutsideDialogTrialHideMenu"
-                                      max-width="500">
-                                <template v-slot:activator="{ on }">
-                                  <v-list-item link v-show="t.trashed" v-on="on">
-                                    <v-list-item-title>Restore</v-list-item-title>
-                                  </v-list-item>
-                                </template>
-                                <v-card>
-                                  <v-card-text class="pt-4">
-                                    <v-row class="m-0">
-                                      <v-col cols="2">
-                                        <v-icon x-large color="green">mdi-undo-variant</v-icon>
-                                      </v-col>
-                                      <v-col cols="10">
-                                        <p>
-                                          Do you want to restore trial {{t.name}}?
-                                        </p>
-                                      </v-col>
-                                    </v-row>
-                                  </v-card-text>
-                                  <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                      color="blue darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; restore_dialog = false"
-                                    >
-                                      No
-                                    </v-btn>
-                                    <v-btn
-                                      color="green darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; restore_dialog = false; restoreTrial(t)"
-                                    >
-                                      Yes
-                                    </v-btn>
-                                  </v-card-actions>
-                                </v-card>
-                              </v-dialog>
-  
-                              <v-dialog
-                                      v-model="permanent_delete_dialog"
-                                      v-click-outside="clickOutsideDialogTrialHideMenu"
-                                      max-width="500">
-                                <template v-slot:activator="{ on }">
-                                  <v-list-item link v-show="!t.trashed" v-on="on">
-                                    <v-list-item-title >Delete</v-list-item-title>
-                                  </v-list-item>
-                                </template>
-                                <v-card>
-                                  <v-card-text class="pt-4">
-                                    <v-row class="m-0">
-                                      <v-col cols="2">
-                                        <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                      </v-col>
-                                      <v-col cols="10">
-                                        <p>
-                                          Do you want to permanently delete trial {{t.name}}?
-                                          This action cannot be undone. Use Trash to keep the ability to restore the trial.
-                                        </p>
-                                      </v-col>
-                                    </v-row>
-                                  </v-card-text>
-                                  <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                      color="blue darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; permanent_delete_dialog = false"
-                                    >
-                                      No
-                                    </v-btn>
-                                    <v-btn
-                                      color="red darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; permanent_delete_dialog = false; permanentDeleteTrial(t)"
-                                    >
-                                      Yes
-                                    </v-btn>
-                                  </v-card-actions>
-                                </v-card>
-                              </v-dialog>
-  
+                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenTrashDialog(t)">
+                              <v-list-item-title>Trash</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
+                              <v-list-item-title>Restore</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
+                              <v-list-item-title>Delete</v-list-item-title>
+                            </v-list-item>
                           </v-list>
                         </v-menu>
                       </div>
@@ -189,6 +103,34 @@
   
                   </div>
               </div>
+
+              <!-- Mobile: trial options bottom sheet -->
+              <v-bottom-sheet
+                v-model="showTrialMenuSheet"
+                @input="val => !val && (selectedTrialForMenu = null)">
+                <v-sheet class="text-center trial-menu-sheet">
+                  <v-list v-if="selectedTrialForMenu">
+                    <v-list-item link v-if="selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndRename(selectedTrialForMenu)">
+                      <v-list-item-title>Rename</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="!selectedTrialForMenu.trashed && selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndAnalysis(selectedTrialForMenu)">
+                      <v-list-item-title>Analysis</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link @click="closeSheetAndEditTags(selectedTrialForMenu)">
+                      <v-list-item-title>Edit Tags</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenTrashDialog(selectedTrialForMenu)">
+                      <v-list-item-title>Trash</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="selectedTrialForMenu.trashed" @click="closeSheetAndOpenRestoreDialog(selectedTrialForMenu)">
+                      <v-list-item-title>Restore</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
+                      <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-sheet>
+              </v-bottom-sheet>
   
               <v-btn class="mt-4 w-100" @click="toggleSessionMenuButtons()">
                   <v-icon v-if="showSessionMenuButtons">mdi-menu-down</v-icon>
@@ -207,7 +149,8 @@
                       session
                   </v-btn>
   
-                  <v-dialog v-model="dialog" width="500">
+                  <v-dialog v-model="dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
+                      :fullscreen="$vuetify.breakpoint.smAndDown">
                       <template v-slot:activator="{ on, attrs }">
                           <v-btn small class="mt-4 w-100" v-bind="attrs" v-on="on" v-show="show_controls">Share session publicly</v-btn>
                       </template>
@@ -263,14 +206,15 @@
                   </v-btn>
                   <v-dialog
                       v-model="showArchiveDialog"
-                      max-width="500">
+                      max-width="500"
+                      :fullscreen="$vuetify.breakpoint.smAndDown">
                       <v-card>
                           <v-card-text class="pt-4">
                               <v-row class="m-0">
-                              <v-col cols="2">
+                              <v-col cols="12" sm="2">
                                   <v-icon x-large color="green">mdi-download</v-icon>
                               </v-col>
-                              <v-col cols="10">
+                              <v-col cols="12" sm="10">
                                   <p v-if="isArchiveInProgress & !isArchiveDone">
                                       <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                                       Download in progress
@@ -331,17 +275,18 @@
               </div>
           </div>
   
+        <div class="main-content d-flex flex-grow-1">
         <div class="viewer flex-grow-1">
             <div v-if="trial" class="d-flex flex-column h-100">
   
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
   
   
-                  <div v-if="!videoControlsDisabled" style="display: flex; flex-wrap: wrap; align-items: center;">
+                  <div v-if="!videoControlsDisabled" class="video-controls d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                          :disabled="state !== 'ready'" dark style="flex: 0.1; margin-right: 5px;" @input="onChangeTime"/>
+                          :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"/>
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
-                          class="mb-2" style="flex: 1;" />
+                          class="mb-2 flex-grow-1" />
                   </div>
               </div>
   
@@ -351,28 +296,48 @@
         </div>
   
         <div class="right d-flex flex-column">
-            <div class="videos flex-grow-1 d-flex flex-column">
-              <video v-for="(video, index) in videos" :key="`video-${index}`" :ref="`video-${index}`" muted
-                  playsinline :src="video.media" crossorigin="anonymous" @ended="onVideoEnded(index)" />
+            <div class="videos d-flex flex-column">
+              <video 
+                  v-for="(video, index) in videos" 
+                  :key="`video-${index}`" 
+                  :ref="`video-${index}`" 
+                  muted
+                  playsinline 
+                  :src="video.media" 
+                  crossorigin="anonymous" 
+                  @ended="onVideoEnded(index)"
+                  class="video-element" />
             </div>
+
+            <div class="right-spacer" />
+
+            <div class="playback-controls">
+              <SpeedControl v-model="playSpeed" />
   
-            <SpeedControl v-model="playSpeed" />
-  
-              <VideoNavigation :playing="playing" :value="frame" :maxFrame="frames.length - 1"
-                  :disabled="videoControlsDisabled" @play="togglePlay(true)" @pause="togglePlay(false)"
-                  @input="onNavigate" class="mb-2" />
+              <VideoNavigation 
+                  :playing="playing" 
+                  :value="frame" 
+                  :maxFrame="frames.length - 1"
+                  :disabled="videoControlsDisabled" 
+                  @play="togglePlay(true)"
+                  @pause="togglePlay(false)"
+                  @input="onNavigate" 
+                  class="mb-2" />
+            </div>
           </div>
+        </div>
   
         <v-dialog
               v-model="trial_rename_dialog"
-              max-width="500">
+              max-width="500"
+              :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
             <v-card-text class="pt-4">
               <v-row class="m-0">
-                <v-col cols="2">
+                <v-col cols="12" sm="2">
                   <v-icon x-large color="orange">mdi-rename-box</v-icon>
                 </v-col>
-                <v-col cols="10">
+                <v-col cols="12" sm="10">
                   <p v-if="session.trials[trial_rename_index]?.status === 'processing' || session.trials[trial_rename_index]?.status === 'uploading'" class="text-orange">
                       You can't rename a trial while it's being uploaded or processed. Please wait before attempting to rename the trial.
                   </p>
@@ -403,14 +368,15 @@
 
               <v-dialog
             v-model="trial_modify_tags"
-            max-width="500">
+            max-width="500"
+            :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4">
             <v-row class="m-0">
-              <v-col cols="2">
+              <v-col cols="12" sm="2">
                 <v-icon x-large color="orange">mdi-rename-box</v-icon>
               </v-col>
-              <v-col cols="10">
+              <v-col cols="12" sm="10">
                 <p v-if="session.trials[trial_modify_tags_index]?.status === 'processing' || session.trials[trial_modify_tags_index]?.status === 'uploading'" class="text-orange">
                     You can't modify trial tags while it's being uploaded or processed. Please wait before attempting to modify the tags.
                 </p>
@@ -445,21 +411,139 @@
           </v-card-text>
         </v-card>
       </v-dialog>
+
+      <!-- Trash trial dialog (extracted for mobile-friendly behavior) -->
+      <v-dialog
+        v-model="remove_dialog"
+        v-click-outside="clickOutsideDialogTrialHideMenu"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        persistent>
+        <v-card>
+          <v-card-text class="pt-4" v-if="trialForTrashDialog">
+            <v-row class="m-0">
+              <v-col cols="12" sm="2">
+                <v-icon x-large color="red">mdi-close-circle</v-icon>
+              </v-col>
+              <v-col cols="12" sm="10">
+                <p>
+                  Do you want to trash trial {{ trialForTrashDialog.name }}?
+                  You will be able to restore it for 30 days. After that,
+                  this trial will be permanently removed.
+                </p>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="closeTrashDialog">
+              No
+            </v-btn>
+            <v-btn
+              color="red darken-1"
+              text
+              @click="confirmTrashTrial">
+              Yes
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Restore trial dialog -->
+      <v-dialog
+        v-model="restore_dialog"
+        v-click-outside="clickOutsideDialogTrialHideMenu"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        persistent>
+        <v-card>
+          <v-card-text class="pt-4" v-if="trialForRestoreDialog">
+            <v-row class="m-0">
+              <v-col cols="12" sm="2">
+                <v-icon x-large color="green">mdi-undo-variant</v-icon>
+              </v-col>
+              <v-col cols="12" sm="10">
+                <p>
+                  Do you want to restore trial {{ trialForRestoreDialog.name }}?
+                </p>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="closeRestoreDialog">
+              No
+            </v-btn>
+            <v-btn
+              color="green darken-1"
+              text
+              @click="confirmRestoreTrial">
+              Yes
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Permanent delete trial dialog -->
+      <v-dialog
+        v-model="permanent_delete_dialog"
+        v-click-outside="clickOutsideDialogTrialHideMenu"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        persistent>
+        <v-card>
+          <v-card-text class="pt-4" v-if="trialForPermanentDeleteDialog">
+            <v-row class="m-0">
+              <v-col cols="12" sm="2">
+                <v-icon x-large color="red">mdi-close-circle</v-icon>
+              </v-col>
+              <v-col cols="12" sm="10">
+                <p>
+                  Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
+                  This action cannot be undone. Use Trash to keep the ability to restore the trial.
+                </p>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="closePermanentDeleteDialog">
+              No
+            </v-btn>
+            <v-btn
+              color="red darken-1"
+              text
+              @click="confirmPermanentDeleteTrial">
+              Yes
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
   
     <v-dialog
         v-model="showAnalysisDialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
-        max-width="800">
+        :max-width="$vuetify.breakpoint.smAndDown ? '100%' : '800'"
+        :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
           <v-card-title>Advanced Analysis</v-card-title>
           <v-card-text v-if="analysisFunctions.length > 0">
   
-              <v-row v-for="(func, index) in analysisFunctionsWithMenu"
+                  <v-row v-for="(func, index) in analysisFunctionsWithMenu"
                       v-bind:item="func"
                       v-bind:index="index"
                       v-bind:key="func.id"
                       :ref="func.id">
-                  <v-col cols="3">
+                  <v-col cols="12" sm="3">
                     {{ func.title }}
   
                     <v-tooltip bottom v-if="func.info.length > 0">
@@ -470,8 +554,8 @@
                     </v-tooltip>
   
                   </v-col>
-                  <v-col cols="5">{{ func.description }}</v-col>
-                  <v-col cols="4">
+                  <v-col cols="12" sm="5">{{ func.description }}</v-col>
+                  <v-col cols="12" sm="4">
                     <v-btn small v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
@@ -486,16 +570,20 @@
                         >
                         Run
                     </v-btn>
-                      <v-btn small v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)">
+                      <v-btn
+                        small
+                        v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
+                        @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
+                      >
                           <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:green'">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
-                          <v-menu offset-y>
+                          <v-menu offset-y left close-on-content-click content-class="analysis-submenu">
                               <template v-slot:activator="{ on, attrs }">
-                              <v-btn icon dark v-bind="attrs" v-on="on" >
+                              <v-btn icon dark v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
                                   <v-icon>mdi-menu</v-icon>
                               </v-btn>
                               </template>
   
-                              <v-list>
+                              <v-list class="analysis-submenu-list">
                                   <v-list-item link
                                       @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                                       :disabled="trial_analysis_index in func.trials">
@@ -532,7 +620,7 @@
         <v-btn
           color="red darken-1"
           text
-          @click="session.trials[trial_analysis_index].isMenuOpen = false; showAnalysisDialog = false;"
+          @click="showTrialMenuSheet = false; selectedTrialForMenu = null; (session.trials[trial_analysis_index] || {}).isMenuOpen = false; showAnalysisDialog = false;"
         >
           Close
         </v-btn>
@@ -663,6 +751,7 @@
   
               trialsPoll: null,
               showSessionMenuButtons: true,
+              leftMenuOpen: false,
   
               n_calibrated_cameras: 0,
               n_cameras_connected: 0,
@@ -673,6 +762,14 @@
 
               trial_modify_tags: false,
               trial_modify_tags_index: 0,
+
+              // Mobile trial menu - trial whose options are shown in bottom sheet
+              showTrialMenuSheet: false,
+              selectedTrialForMenu: null,
+              // Trial context for Trash/Restore/Delete dialogs (extracted from v-for for proper mobile UX)
+              trialForTrashDialog: null,
+              trialForRestoreDialog: null,
+              trialForPermanentDeleteDialog: null,
 
               isAuditoryFeedbackEnabled: false,
           }
@@ -1163,6 +1260,57 @@
           for (let t of this.filteredTrialsWithMenu) {
             t.isMenuOpen = false;
           }
+          this.showTrialMenuSheet = false;
+          this.selectedTrialForMenu = null;
+        }
+      },
+      openTrialMenuSheet(trial) {
+        this.selectedTrialForMenu = trial;
+        this.showTrialMenuSheet = true;
+      },
+      closeMenuAndRename(t) { t.isMenuOpen = false; this.renameTrialDialog(t); },
+      closeMenuAndAnalysis(t) { t.isMenuOpen = false; this.analysisDialog(t); },
+      closeMenuAndEditTags(t) { t.isMenuOpen = false; this.addTagTrialDialog(t); },
+      closeMenuAndOpenTrashDialog(t) { t.isMenuOpen = false; this.trialForTrashDialog = t; this.remove_dialog = true; },
+      closeMenuAndOpenRestoreDialog(t) { t.isMenuOpen = false; this.trialForRestoreDialog = t; this.restore_dialog = true; },
+      closeMenuAndOpenDeleteDialog(t) { t.isMenuOpen = false; this.trialForPermanentDeleteDialog = t; this.permanent_delete_dialog = true; },
+      closeSheetAndRename(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.renameTrialDialog(t); },
+      closeSheetAndAnalysis(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.analysisDialog(t); },
+      closeSheetAndEditTags(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.addTagTrialDialog(t); },
+      closeSheetAndOpenTrashDialog(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.trialForTrashDialog = t; this.remove_dialog = true; },
+      closeSheetAndOpenRestoreDialog(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.trialForRestoreDialog = t; this.restore_dialog = true; },
+      closeSheetAndOpenDeleteDialog(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.trialForPermanentDeleteDialog = t; this.permanent_delete_dialog = true; },
+      closeTrashDialog() {
+        this.trialForTrashDialog = null;
+        this.remove_dialog = false;
+        for (let t of this.filteredTrialsWithMenu) t.isMenuOpen = false;
+      },
+      closeRestoreDialog() {
+        this.trialForRestoreDialog = null;
+        this.restore_dialog = false;
+        for (let t of this.filteredTrialsWithMenu) t.isMenuOpen = false;
+      },
+      closePermanentDeleteDialog() {
+        this.trialForPermanentDeleteDialog = null;
+        this.permanent_delete_dialog = false;
+        for (let t of this.filteredTrialsWithMenu) t.isMenuOpen = false;
+      },
+      confirmTrashTrial() {
+        if (this.trialForTrashDialog) {
+          this.trashTrial(this.trialForTrashDialog);
+          this.closeTrashDialog();
+        }
+      },
+      confirmRestoreTrial() {
+        if (this.trialForRestoreDialog) {
+          this.restoreTrial(this.trialForRestoreDialog);
+          this.closeRestoreDialog();
+        }
+      },
+      confirmPermanentDeleteTrial() {
+        if (this.trialForPermanentDeleteDialog) {
+          this.permanentDeleteTrial(this.trialForPermanentDeleteDialog);
+          this.closePermanentDeleteDialog();
         }
       },
   
@@ -1459,13 +1607,17 @@
       onResize() {
         const container = this.$refs.mocap
         if (container && this.renderer) {
-          this.renderer.setSize(container.clientWidth, container.clientHeight)
-        }
-  
-        if (this.renderer) {
-          const canvas = this.renderer.domElement;
-          this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
-          this.camera.updateProjectionMatrix();
+          const width = container.clientWidth || container.offsetWidth
+          const height = container.clientHeight || container.offsetHeight
+          
+          if (width > 0 && height > 0) {
+            this.renderer.setSize(width, height)
+            
+            if (this.camera) {
+              this.camera.aspect = width / height
+              this.camera.updateProjectionMatrix()
+            }
+          }
         }
       },
       animate() {
@@ -1690,6 +1842,29 @@
   .trashed {
     color: gray !important;
   }
+
+  /* Trial context menu - prevent overflow on small screens */
+  .trial-context-menu {
+    max-width: min(320px, calc(100vw - 24px));
+  }
+
+  /* Analysis submenu - adequate touch targets and width on mobile */
+  .analysis-submenu {
+    min-width: 180px;
+    max-width: min(260px, calc(100vw - 32px));
+  }
+  .analysis-submenu-list .v-list-item {
+    min-height: 48px;
+  }
+  .analysis-menu-btn {
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+
+  /* Trial menu bottom sheet - safe area for notched phones */
+  .trial-menu-sheet {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
   
   .text-orange {
     color: orange !important;
@@ -1697,9 +1872,96 @@
   
   .step-5 {
     height: calc(100vh - 64px);
+    min-height: 0;
+    flex-direction: row;
+    overflow: hidden;
   
+    @media (max-width: 959px) {
+      flex-direction: row;
+    }
+  
+    @media (min-width: 960px) {
+      flex-direction: row;
+    }
+    
+    .main-content {
+      min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+      position: relative;
+
+      @media (max-width: 959px) {
+        padding-bottom: 72px;
+      }
+    }
+  
+    .mobile-menu-toggle {
+      position: fixed;
+      top: 72px;
+      left: 8px;
+      z-index: 100;
+      background-color: rgba(0, 0, 0, 0.8) !important;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      
+      @media (min-width: 960px) {
+        display: none !important;
+      }
+    }
+    
+    .mobile-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 98;
+      
+      @media (min-width: 960px) {
+        display: none !important;
+      }
+    }
+    
     .left {
-      width: 250px;
+      width: 100%;
+      min-width: 0;
+      max-height: 40vh;
+      overflow-y: auto;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 99;
+      background-color: #000000; // Black background on desktop
+      
+      @media (max-width: 959px) {
+        position: fixed;
+        top: 64px;
+        left: 0;
+        width: 280px;
+        max-width: 85vw;
+        height: calc(100vh - 64px);
+        max-height: calc(100vh - 64px);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+        padding-top: 48px; // Add padding to avoid overlap with burger button
+        background-color: rgb(18, 18, 18); // Different background when mobile menu
+        
+        &.mobile-open {
+          transform: translateX(0);
+        }
+      }
+  
+      @media (min-width: 960px) {
+        width: 250px;
+        max-height: none;
+        height: 100%;
+        flex-shrink: 0;
+        position: relative;
+        transform: none;
+        background-color: #000000; // Keep black on desktop
+      }
   
       .trials {
         overflow-y: auto;
@@ -1714,28 +1976,166 @@
           }
         }
       }
+      
+      .mobile-close-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 101;
+        
+        @media (min-width: 960px) {
+          display: none !important;
+        }
+      }
     }
   
     .viewer {
-      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+  
+      @media (max-width: 959px) {
+        min-height: 250px;
+        flex: 1 1 50vh;
+      }
   
       #mocap {
         width: 100%;
+        height: 100%;
+        min-height: 0;
         overflow: hidden;
+        flex: 1 1 auto;
   
         canvas {
           width: 100% !important;
+          height: 100% !important;
         }
       }
     }
   
     .right {
-      flex: 0 0 200px;
-      height: 100%;
+      flex-shrink: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+  
+      @media (max-width: 959px) {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 120px;
+        min-width: 100px;
+        max-width: 35%;
+        height: auto;
+        z-index: 1;
+      }
+  
+      @media (min-width: 960px) {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        flex: none;
+        width: 200px;
+        max-height: none;
+        height: 100%;
+        z-index: 1;
+      }
   
       .videos {
         overflow-y: auto;
-        width: 200px;
+        overflow-x: hidden;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        min-height: 0;
+        flex: 0 0 auto;
+        
+        @media (min-width: 960px) {
+          width: 200px;
+          padding: 0;
+          margin: 0;
+        }
+      }
+
+      .right-spacer {
+        flex: 1 1 auto;
+        min-height: 0;
+        pointer-events: none;
+
+        @media (max-width: 959px) {
+          flex: 0 0 0;
+          min-height: 0;
+          overflow: hidden;
+        }
+
+        @media (min-width: 960px) {
+          background: transparent;
+        }
+      }
+      
+      .video-element {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        background-color: transparent;
+        margin: 0;
+        padding: 0;
+        display: block;
+        
+        @media (max-width: 959px) {
+          max-height: 120px;
+        }
+        
+        @media (min-width: 960px) {
+          max-height: none;
+        }
+      }
+      
+      .playback-controls {
+        flex-shrink: 0;
+        padding: 8px;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        
+        @media (max-width: 959px) {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 50;
+          background-color: rgba(18, 18, 18, 0.98);
+          border-top: 1px solid rgba(255, 255, 255, 0.15);
+          padding-bottom: env(safe-area-inset-bottom, 8px);
+        }
+      }
+    }
+
+    .video-controls {
+      width: 100%;
+
+      @media (max-width: 599px) {
+        flex-wrap: nowrap;
+      }
+      
+      .time-input {
+        min-width: 100px;
+        max-width: 150px;
+        margin-right: 8px;
+        
+        @media (max-width: 599px) {
+          min-width: 0;
+          width: 72px;
+          max-width: 72px;
+          margin-right: 8px;
+          margin-bottom: 0;
+        }
       }
     }
   }

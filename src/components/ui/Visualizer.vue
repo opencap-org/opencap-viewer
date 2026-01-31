@@ -3,14 +3,16 @@
         <div class="viewer flex-grow-1">
             <div v-if="trial" class="d-flex flex-column h-100">
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
-                <div v-if="!videoControlsDisabled" style="display: flex; flex-wrap: wrap; align-items: center;">
-                    <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                        dark style="flex: 0.1; margin-right: 5px;" @input="onChangeTime"/>
+                <div v-if="!videoControlsDisabled" class="video-controls-row">
+                    <div class="time-input-wrap">
+                        <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
+                            dark dense hide-details @input="onChangeTime"/>
+                    </div>
                     <v-slider :value="frame"
                               :min="timeToFrame(timeStart)"
                               :max="timeToFrame(timeEnd)"
                               @input="onNavigate" hide-details
-                        class="mb-2" style="flex: 1;" />
+                        class="mb-2 slider-wrap" />
                 </div>
             </div>
 
@@ -501,5 +503,23 @@ export default {
             width: 200px;
         }
     }
+}
+
+.video-controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.video-controls-row .time-input-wrap {
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.video-controls-row .slider-wrap {
+    flex: 1;
+    min-width: 120px;
 }
 </style>

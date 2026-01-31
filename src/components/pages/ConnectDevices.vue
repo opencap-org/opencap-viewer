@@ -6,20 +6,11 @@
     :rightDisabled="loading"
     @right="onNext">
 
-    <v-card class="flex-grow-1 d-flex flex-column justify-center">
+    <v-card class="d-flex flex-column">
       <v-card-text class="d-flex flex-column align-center">
 
         <div class="d-flex step-1 align-center flex-wrap">
-          <div class="d-flex flex-column flex-grow-1 justify-space-between my-1">
-            <h1 class="my-4">1. Open the OpenCap app on your phone</h1>
-            <h1 class="my-4">2. Scan the QR code</h1>
-            <h1 class="my-4">3. Mount your phone vertically or horizontally (unlock portrait orientation) on a tripod</h1>
-            <h1 class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>
-            <h1 class="my-4">5. Repeat 1-4 for all phones you want to connect</h1>
-            <h1 class="my-4">6. Have the person practice the activity and verify that they are fully in view of at least 2 cameras</h1>
-          </div>
-
-          <div class="image-container qr-container d-flex align-center justify-center my-1">
+          <div class="image-container qr-container d-flex align-center justify-center my-1 qr-code-wrapper">
             <v-progress-circular
               v-if="loading"
               indeterminate 
@@ -31,6 +22,15 @@
               v-else
               class="w-100 h-100"
               :src="session.qrcode">
+          </div>
+
+          <div class="d-flex flex-column flex-grow-1 justify-space-between my-1 instructions-wrapper">
+            <h1 class="my-4">1. Open the OpenCap app on your phone</h1>
+            <h1 class="my-4">2. Scan the QR code</h1>
+            <h1 class="my-4">3. Mount your phone vertically or horizontally (unlock portrait orientation) on a tripod</h1>
+            <h1 class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>
+            <h1 class="my-4">5. Repeat 1-4 for all phones you want to connect</h1>
+            <h1 class="my-4">6. Have the person practice the activity and verify that they are fully in view of at least 2 cameras</h1>
           </div>
         </div>
 
@@ -98,11 +98,88 @@ export default {
 <style lang="scss" scoped>
 .step-1 {
   width:100%;
+  justify-content: flex-start;
+  
+  @media (min-width: 960px) {
+    justify-content: space-between;
+  }
+  
+  @media (max-width: 959px) {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
 
-  .qr-container {
+  .qr-code-wrapper {
     width: 200px;
     height: 200px;
-    overflow: hidden;
+    flex-shrink: 0;
+    order: 2;
+    
+    @media (min-width: 960px) {
+      order: 2;
+      margin-left: 24px;
+    }
+    
+    @media (max-width: 959px) {
+      order: 1;
+      width: 180px;
+      height: 180px;
+      margin-bottom: 24px;
+      margin-left: 0;
+    }
+    
+    @media (max-width: 599px) {
+      width: 150px;
+      height: 150px;
+      margin-bottom: 16px;
+    }
+    
+    .qr-container {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+      
+      img {
+        border-radius: 8px;
+      }
+    }
+  }
+  
+  .instructions-wrapper {
+    order: 1;
+    max-width: 100%;
+    flex: 1 1 auto;
+    text-align: left;
+    
+    @media (min-width: 960px) {
+      order: 1;
+      max-width: calc(100% - 224px);
+    }
+    
+    @media (max-width: 959px) {
+      order: 2;
+      width: 100%;
+    }
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+    text-align: left;
+    
+    @media (max-width: 959px) {
+      font-size: 1.25rem;
+      margin-top: 8px !important;
+      margin-bottom: 8px !important;
+    }
+    
+    @media (max-width: 599px) {
+      font-size: 1rem;
+      line-height: 1.4;
+      margin-top: 6px !important;
+      margin-bottom: 6px !important;
+    }
   }
 }
 

@@ -1,16 +1,18 @@
 <template>
   <div class="select-session d-flex flex-column">
-    <div class="pa-2 d-flex">
+    <div class="pa-2 d-flex flex-wrap align-center toolbar-container">
       <v-btn
-        @click="$router.push({ name: 'ConnectDevices' })">
+        @click="$router.push({ name: 'ConnectDevices' })"
+        class="toolbar-button">
         New session
       </v-btn>
 
       <v-menu offset-y>
         <template v-slot:activator="{ on, attrs }">
-          <v-btn dark v-bind="attrs" v-on="on" class="ml-2">
-            <span class="mr-2">Dashboards</span>
-            <v-icon>mdi-menu</v-icon>
+          <v-btn dark v-bind="attrs" v-on="on" class="toolbar-button">
+            <span class="dashboards-text d-none d-sm-inline mr-2">Dashboards</span>
+            <span class="dashboards-text-mobile d-sm-none">Dashboards</span>
+            <v-icon class="d-none d-sm-inline">mdi-menu</v-icon>
           </v-btn>
         </template>
         <v-list>
@@ -27,34 +29,36 @@
       </v-menu>
 
       <v-btn
-        class="ml-2"
+        class="toolbar-button"
         @click="$router.push({ name: 'Subjects' })">
         Subjects
       </v-btn>
 
       <v-btn
-        class="ml-2"
+        class="toolbar-button"
         @click="$router.push({ name: 'RecycleBin' })">
         Recycle Bin
       </v-btn>
 
-      <v-checkbox v-model="show_trashed" class="ml-2 mt-0" label="Show removed sessions"></v-checkbox>
+      <div class="checkbox-wrapper toolbar-button d-flex align-center">
+        <v-checkbox v-model="show_trashed" class="mt-0 mb-0" label="Show removed sessions" hide-details></v-checkbox>
+      </div>
 
-      <div class="d-flex align-center ml-auto">
-        <div v-if="!searchSubmitted">
+      <div class="d-flex align-center flex-grow-1 flex-md-grow-0 ml-0 ml-md-auto mt-2 mt-md-0 search-section">
+        <div v-if="!searchSubmitted" class="flex-grow-1 mr-2">
           <!-- Text field and Search button -->
           <v-text-field
             v-model="searchText"
-            class="ml-2"
             label="Enter Session ID/Name"
             dense
+            hide-details
             @keyup.enter="handleSearch"
           ></v-text-field>
         </div>
 
         <div v-if="!searchSubmitted">
           <v-btn
-            class="ml-2 submit-btn"
+            class="submit-btn"
             @click="handleSearch">
             Search
           </v-btn>
@@ -63,7 +67,7 @@
         <!-- Clear Search button -->
         <div v-else>
           <v-btn
-            class="ml-2  submit-btn"
+            class="submit-btn"
             @click="onClearSearch">
             Clear Search
           </v-btn>
@@ -85,186 +89,247 @@
       }"
       fixed-header
       single-select
-      class="sessions-table mx-2 mb-4 flex-grow-1"
+      class="sessions-table flex-grow-1"
       @item-selected="onSelect"
       @click:row="onRowClick">
       <template v-slot:item.created_at="{ item }">
         <span>{{ item.created_at|date }}</span>
       </template>
       <template v-slot:item.id="{ item }">
-        <div class="float-right">
-          <v-menu
-              v-model="item.isMenuOpen"
-              offset-y
-            >
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                  icon
+        <div class="session-id-cell">
+          <div class="session-id-text">{{ item.id }}</div>
+          
+          <!-- Desktop: Direct action buttons -->
+          <div class="action-buttons-desktop d-none d-lg-flex align-center">
+            <v-btn
+                icon
+                small
                 dark
-                v-bind="attrs"
-                v-on="on"
-              >
+                @click="$router.push({ name: 'Session', params: { id: item.id }})"
+                class="action-btn"
+                title="Load session">
+              <v-icon small>mdi-play</v-icon>
+            </v-btn>
+            <v-btn
+                icon
+                small
+                dark
+                @click="$router.push({ name: 'Dashboard', params: { id: item.id } })"
+                class="action-btn"
+                title="Dashboard kinematics">
+              <v-icon small>mdi-chart-line</v-icon>
+            </v-btn>
+            <v-btn
+                icon
+                small
+                dark
+                @click="openRenameDialog(item)"
+                class="action-btn"
+                title="Rename session">
+              <v-icon small>mdi-pencil</v-icon>
+            </v-btn>
+            <v-btn
+                v-if="!item.trashed"
+                icon
+                small
+                dark
+                @click="selectedSessionForDelete = item; remove_dialog = true"
+                class="action-btn"
+                title="Trash session">
+              <v-icon small>mdi-delete</v-icon>
+            </v-btn>
+            <v-btn
+                v-if="item.trashed"
+                icon
+                small
+                dark
+                @click="selectedSessionForDelete = item; restore_dialog = true"
+                class="action-btn"
+                title="Restore session">
+              <v-icon small>mdi-restore</v-icon>
+            </v-btn>
+          </div>
+          
+          <!-- Mobile/Tablet: Bottom sheet on mobile, menu on larger screens -->
+          <div class="d-lg-none">
+            <template v-if="$vuetify.breakpoint.smAndDown">
+              <v-btn icon dark small class="menu-button" @click="openSessionMenuSheet(item)">
                 <v-icon>mdi-menu</v-icon>
               </v-btn>
             </template>
-            <v-list>
-              <v-list-item link
-                @click="$router.push({ name: 'Session', params: { id: item.id }})">
-                <v-list-item-title>Load</v-list-item-title>
-              </v-list-item>
-              <v-list-item link
-                @click="$router.push({ name: 'Dashboard', params: { id: item.id } })">
-                <v-list-item-title>Dashboard kinematics</v-list-item-title>
-              </v-list-item>
-
-
-                <v-dialog
-                        v-model="rename_dialog"
-                        v-click-outside="clickOutsideDialogSessionHideMenu"
-                        max-width="500">
-                  <template v-slot:activator="{ on }">
-                    <v-list-item link v-on="{
-                          ...on,
-                          click: (e) => { on.click(e); item.isMenuOpen = false; rename_dialog = true; }
-                        }">
-                      <v-list-item-title>Rename</v-list-item-title>
-                    </v-list-item>
-                  </template>
-                  <v-card>
-                    <v-card-text class="pt-4">
-                      <v-row class="m-0">
-                        <v-col cols="2">
-                          <v-icon x-large color="orange">mdi-rename-box</v-icon>
-                        </v-col>
-                        <v-col cols="10">
-                          <p class="mb-1">
-                            Insert a new name for session {{item.sessionName}}:
-                          </p>
-                          <small class="mt-0">
-                            Only alphanumeric characters and underscores are allowed.
-                          </small>
-                          <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
-                            <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Session name">
-
-                                <v-text-field v-model="sessionNewName" label="Session new name" class="flex-grow-0"
-                                    dark :error="errors.length > 0" :error-messages="errors[0]" >
-
-                                </v-text-field>
-                            </ValidationProvider>
-
-                            <v-spacer></v-spacer>
-
-                            <v-btn class="text-right" :disabled="invalid" @click="item.isMenuOpen = false; rename_dialog = false; renameSession(item, sessionNewName);">
-                                Rename Session
-                            </v-btn>
-                          </ValidationObserver>
-                        </v-col>
-                      </v-row>
-                    </v-card-text>
-                  </v-card>
-                </v-dialog>
-
-
-
-                <v-dialog
-                        v-model="remove_dialog"
-                        v-click-outside="clickOutsideDialogSessionHideMenu"
-                        max-width="500">
-                  <template v-slot:activator="{ on }">
-                    <v-list-item link v-show="!item.trashed" v-on="{
-                          ...on,
-                          click: (e) => { on.click(e); item.isMenuOpen = false; remove_dialog = true; }
-                        }">
-                      <v-list-item-title>Trash</v-list-item-title>
-                    </v-list-item>
-                  </template>
-                  <v-card>
-                    <v-card-text class="pt-4">
-                      <v-row class="m-0">
-                        <v-col cols="2">
-                          <v-icon x-large color="red">mdi-close-circle</v-icon>
-                        </v-col>
-                        <v-col cols="10">
-                          <p>
-                            Do you want to trash session <code>{{item.id}}</code>?
-                            You will be able to restore it for 30 days. After that,
-                            this session will be permanently removed.
-                          </p>
-                        </v-col>
-                      </v-row>
-                    </v-card-text>
-                    <v-card-actions>
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        color="blue darken-1"
-                        text
-                        @click="item.isMenuOpen = false; remove_dialog = false"
-                      >
-                        No
-                      </v-btn>
-                      <v-btn
-                        color="red darken-1"
-                        text
-                        @click="item.isMenuOpen = false; remove_dialog = false; trashSession(item.id)"
-                      >
-                        Yes
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-
-
-                <v-dialog
-                        v-model="restore_dialog"
-                        v-click-outside="clickOutsideDialogSessionHideMenu"
-                        max-width="500">
-                  <template v-slot:activator="{ on }">
-                    <v-list-item link v-show="item.trashed" v-on="{
-                          ...on,
-                          click: (e) => { on.click(e); item.isMenuOpen = false; restore_dialog = true; }
-                        }">
-                      <v-list-item-title v-on="on">Restore</v-list-item-title>
-                    </v-list-item>
-                  </template>
-                  <v-card>
-                    <v-card-text class="pt-4">
-                      <v-row class="m-0">
-                        <v-col cols="2">
-                          <v-icon x-large color="green">mdi-undo-variant</v-icon>
-                        </v-col>
-                        <v-col cols="10">
-                          <p>
-                            Do you want to restore session <code>{{item.id}}</code>?
-                          </p>
-                        </v-col>
-                      </v-row>
-                    </v-card-text>
-                    <v-card-actions>
-                      <v-spacer></v-spacer>
-                      <v-btn
-                        color="blue darken-1"
-                        text
-                        @click="item.isMenuOpen = false; restore_dialog = false"
-                      >
-                        No
-                      </v-btn>
-                      <v-btn
-                        color="green darken-1"
-                        text
-                        @click="item.isMenuOpen = false; restore_dialog = false; restoreSession(item.id)"
-                      >
-                        Yes
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-
-            </v-list>
-          </v-menu>
+            <template v-else>
+              <v-menu v-model="item.isMenuOpen" offset-y right close-on-content-click content-class="session-context-menu">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn icon dark small v-bind="attrs" v-on="on" class="menu-button">
+                    <v-icon>mdi-menu</v-icon>
+                  </v-btn>
+                </template>
+                <v-list>
+                  <v-list-item link @click="closeMenuAndLoad(item)">
+                    <v-list-item-title>Load</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item link @click="closeMenuAndDashboard(item)">
+                    <v-list-item-title>Dashboard kinematics</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item link @click="closeMenuAndRename(item)">
+                    <v-list-item-title>Rename</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item link v-show="!item.trashed" @click="closeMenuAndTrash(item)">
+                    <v-list-item-title>Trash</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item link v-show="item.trashed" @click="closeMenuAndRestore(item)">
+                    <v-list-item-title>Restore</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </template>
+          </div>
         </div>
-        <div class="mt-2">{{ item.id }}</div>
+      </template>
+      <template v-slot:item.sessionName="{ item }">
+        <div class="session-name-text">{{ item.sessionName || 'Untitled' }}</div>
+      </template>
+      <template v-slot:item.isMono="{ item }">
+        <span>{{ item.isMono ? 'Yes' : 'No' }}</span>
       </template>
     </v-data-table>
+
+    <!-- Session menu bottom sheet (mobile) -->
+    <v-bottom-sheet
+      v-model="showSessionMenuSheet"
+      @input="val => !val && (selectedSessionForMenu = null)">
+      <v-sheet class="text-center session-menu-sheet">
+        <v-list v-if="selectedSessionForMenu">
+          <v-list-item link @click="closeSheetAndLoad(selectedSessionForMenu)">
+            <v-list-item-title>Load</v-list-item-title>
+          </v-list-item>
+          <v-list-item link @click="closeSheetAndDashboard(selectedSessionForMenu)">
+            <v-list-item-title>Dashboard kinematics</v-list-item-title>
+          </v-list-item>
+          <v-list-item link @click="closeSheetAndRename(selectedSessionForMenu)">
+            <v-list-item-title>Rename</v-list-item-title>
+          </v-list-item>
+          <v-list-item link v-if="!selectedSessionForMenu.trashed" @click="closeSheetAndTrash(selectedSessionForMenu)">
+            <v-list-item-title>Trash</v-list-item-title>
+          </v-list-item>
+          <v-list-item link v-if="selectedSessionForMenu.trashed" @click="closeSheetAndRestore(selectedSessionForMenu)">
+            <v-list-item-title>Restore</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-sheet>
+    </v-bottom-sheet>
+
+    <!-- Rename Session Dialog -->
+    <v-dialog
+      v-model="rename_dialog"
+      v-click-outside="clickOutsideDialogSessionHideMenu"
+      max-width="500"
+      :fullscreen="$vuetify.breakpoint.smAndDown">
+      <v-card v-if="selectedSessionForRename">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2">
+              <v-icon x-large color="orange">mdi-rename-box</v-icon>
+            </v-col>
+            <v-col cols="12" sm="10">
+              <p class="mb-1">
+                Insert a new name for session {{ selectedSessionForRename.sessionName }}:
+              </p>
+              <small class="mt-0">
+                Only alphanumeric characters and underscores are allowed.
+              </small>
+              <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
+                <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Session name">
+                  <v-text-field v-model="sessionNewName" label="Session new name" class="flex-grow-0"
+                    dark :error="errors.length > 0" :error-messages="errors[0]">
+                  </v-text-field>
+                </ValidationProvider>
+                <v-spacer></v-spacer>
+                <v-btn class="text-right" :disabled="invalid" @click="confirmRenameSession">
+                  Rename Session
+                </v-btn>
+              </ValidationObserver>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+    
+    <!-- Trash Session Dialog -->
+    <v-dialog
+        v-model="remove_dialog"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        :retain-focus="false">
+      <v-card>
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2">
+              <v-icon x-large color="red">mdi-close-circle</v-icon>
+            </v-col>
+            <v-col cols="12" sm="10">
+              <p>
+                Do you want to trash session <code>{{selectedSessionForDelete?.id}}</code>?
+                You will be able to restore it for 30 days. After that,
+                this session will be permanently removed.
+              </p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="blue darken-1"
+            text
+            @click="remove_dialog = false; selectedSessionForDelete = null">
+            No
+          </v-btn>
+          <v-btn
+            color="red darken-1"
+            text
+            @click="remove_dialog = false; trashSession(selectedSessionForDelete?.id); selectedSessionForDelete = null">
+            Yes
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    
+    <!-- Restore Session Dialog -->
+    <v-dialog
+        v-model="restore_dialog"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        :retain-focus="false">
+      <v-card>
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2">
+              <v-icon x-large color="green">mdi-undo-variant</v-icon>
+            </v-col>
+            <v-col cols="12" sm="10">
+              <p>
+                Do you want to restore session <code>{{selectedSessionForDelete?.id}}</code>?
+              </p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="blue darken-1"
+            text
+            @click="restore_dialog = false; selectedSessionForDelete = null">
+            No
+          </v-btn>
+          <v-btn
+            color="green darken-1"
+            text
+            @click="restore_dialog = false; restoreSession(selectedSessionForDelete?.id); selectedSessionForDelete = null">
+            Yes
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
       
 <!--    <div class="d-flex table-info-footer">-->
 <!--      <v-btn-->
@@ -306,8 +371,12 @@ export default {
       remove_dialog: false,
       rename_dialog: false,
       restore_dialog: false,
+      selectedSessionForDelete: null,
+      selectedSessionForRename: null,
       sessionName: '',
       sessionNewName: '',
+      showSessionMenuSheet: false,
+      selectedSessionForMenu: null,
       show_trashed: false,
       searchText: '',
       searchSubmitted: false,
@@ -317,11 +386,32 @@ export default {
           align: 'start',
           sortable: false,
           value: 'id',
+          class: 'session-id-column'
         },
-        { text: 'Session Name', value: 'sessionName' },
-        { text: 'Subject Name', value: 'name' },
-        { text: 'Number of trials', align: 'center', value: 'trials_count' },
-        { text: 'Date', value: 'created_at' }
+        { 
+          text: 'Session Name', 
+          value: 'sessionName',
+          class: 'session-name-column'
+        },
+        {
+          text: 'Subject Name', 
+          value: 'name'
+        },
+        { 
+          text: 'Number of trials', 
+          align: 'center', 
+          value: 'trials_count'
+        },
+        { 
+          text: 'Monocular', 
+          align: 'center', 
+          value: 'isMono'
+        },
+        { 
+          text: 'Date', 
+          value: 'created_at',
+          class: 'date-column'
+        }
       ],
       selected: null,
       delay: 300,
@@ -377,7 +467,7 @@ export default {
       // If empty search text, retrieve everything as normally would do.
       if(this.searchText === "") {
         axios.post('/sessions/valid/', data).then(response => {
-          this.valid_sessions = response.data.sessions
+          this.valid_sessions = response.data.sessions.map(s => ({ ...s, isMenuOpen: false }))
           this.session_total = response.data.total
           this.loading = false
           if (this.session_total === 0) {
@@ -399,7 +489,7 @@ export default {
             return nonCalibrationTrials.length > 0;
           });
 
-          this.valid_sessions = filteredSessions;
+          this.valid_sessions = filteredSessions.map(s => ({ ...s, isMenuOpen: false }));
           this.session_total = filteredSessions.length;
           this.loading = false;
         }).catch(error => {
@@ -418,7 +508,7 @@ export default {
         sort_desc: this.session_sort_desc
       }
       axios.post('/sessions/valid/', data).then(response => {
-        this.valid_sessions = response.data.sessions
+        this.valid_sessions = response.data.sessions.map(s => ({ ...s, isMenuOpen: false }))
         this.session_total = response.data.total
         this.loading = false
         if (this.session_total === 0) {
@@ -450,11 +540,39 @@ export default {
     },
     clickOutsideDialogSessionHideMenu(e) {
       if (e.target.className === 'v-overlay__scrim') {
-          for(let t of this.valid_sessions) {
-            t.isMenuOpen = false;
-          }
+        for (let t of this.valid_sessions) {
+          t.isMenuOpen = false;
+        }
+        this.showSessionMenuSheet = false;
+        this.selectedSessionForMenu = null;
       }
     },
+    openSessionMenuSheet(item) {
+      this.selectedSessionForMenu = item;
+      this.showSessionMenuSheet = true;
+    },
+    openRenameDialog(item) {
+      this.selectedSessionForRename = item;
+      this.sessionNewName = item.sessionName;
+      this.rename_dialog = true;
+    },
+    confirmRenameSession() {
+      if (this.selectedSessionForRename) {
+        this.renameSession(this.selectedSessionForRename, this.sessionNewName);
+        this.rename_dialog = false;
+        this.selectedSessionForRename = null;
+      }
+    },
+    closeMenuAndLoad(item) { item.isMenuOpen = false; this.$router.push({ name: 'Session', params: { id: item.id } }); },
+    closeMenuAndDashboard(item) { item.isMenuOpen = false; this.$router.push({ name: 'Dashboard', params: { id: item.id } }); },
+    closeMenuAndRename(item) { item.isMenuOpen = false; this.openRenameDialog(item); },
+    closeMenuAndTrash(item) { item.isMenuOpen = false; this.selectedSessionForDelete = item; this.remove_dialog = true; },
+    closeMenuAndRestore(item) { item.isMenuOpen = false; this.selectedSessionForDelete = item; this.restore_dialog = true; },
+    closeSheetAndLoad(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.$router.push({ name: 'Session', params: { id: item.id } }); },
+    closeSheetAndDashboard(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.$router.push({ name: 'Dashboard', params: { id: item.id } }); },
+    closeSheetAndRename(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.openRenameDialog(item); },
+    closeSheetAndTrash(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForDelete = item; this.remove_dialog = true; },
+    closeSheetAndRestore(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForDelete = item; this.restore_dialog = true; },
     // async onLoadAllSessions(){
     //   try {
     //     await this.loadExistingSessions({reroute: true, quantity:-1})
@@ -490,11 +608,9 @@ export default {
       }
     },
     async updateSessionWithData(session, data) {
-      const index = this.sessions.findIndex(x => x.id === session.id);
+      const index = this.valid_sessions.findIndex(x => x.id === session.id);
       if (index >= 0) {
-        Vue.set(this.sessions, index, data);
-        const sessionIndex = this.sessions.findIndex(x => x.id === session.id);
-        Vue.set(this.sessions, sessionIndex, data);
+        Vue.set(this.valid_sessions, index, data);
         data.created_at = formatDate(data.created_at);
       }
     }
@@ -510,23 +626,199 @@ export default {
   min-width: unset; /* remove Vuetify’s fixed width */
   padding-left: 8px; /* optional tighter padding */
   padding-right: 8px;
+  
+  @media (max-width: 599px) {
+    width: 100%;
+    margin-top: 8px;
+  }
+}
+
+.toolbar-container {
+  gap: 8px;
+  justify-content: flex-start;
+  
+  @media (max-width: 599px) {
+    /* Extra top spacing on phones so toolbar is not hidden behind navbar; respect safe area */
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    gap: 6px;
+    justify-content: center;
+    flex-direction: column;
+    
+    .search-section {
+      width: 100%;
+      justify-content: center;
+      margin-top: 8px;
+    }
+  }
+}
+
+.toolbar-button {
+  margin: 0 !important;
+  flex-shrink: 0;
+}
+
+.checkbox-wrapper {
+  height: 36px; /* Match button height */
+  display: flex;
+  align-items: center;
+  
+  ::v-deep .v-input {
+    margin-top: 0;
+    padding-top: 0;
+  }
+  
+  ::v-deep .v-input__control {
+    align-items: center;
+  }
+  
+  ::v-deep .v-input__slot {
+    margin-bottom: 0;
+  }
 }
 
 .select-session {
   height: calc(98vh - 64px);
 
   .sessions-table {
+    margin: 0 8px 16px 8px;
+    
+    @media (max-width: 599px) {
+      margin: 0 4px 16px 4px;
+    }
+    
     .v-data-table__wrapper {
+      overflow-x: auto;
       overflow-y: auto;
       height: calc(94vh - 128px);
       position: relative;
+      -webkit-overflow-scrolling: touch;
+
+      @media (max-width: 959px) {
+        height: calc(94vh - 200px);
+      }
+      
+      @media (max-width: 599px) {
+        height: calc(94vh - 220px);
+        border-radius: 4px;
+      }
 
       table {
+        width: 100%;
+        
+        @media (min-width: 600px) {
+          min-width: 600px;
+        }
+        
         thead th {
           position: sticky;
           top: 0;
           z-index: 2;
           background-color: rgb(39, 39, 39);
+          white-space: nowrap;
+        }
+        
+        tbody td {
+          @media (max-width: 599px) {
+            padding: 8px 4px !important;
+          }
+        }
+      }
+      
+      .session-id-cell {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+        
+        .session-id-text {
+          font-size: 0.75rem;
+          font-family: monospace;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          flex: 1;
+          min-width: 0;
+          
+          @media (max-width: 599px) {
+            font-size: 0.7rem;
+          }
+        }
+        
+        .menu-button {
+          flex-shrink: 0;
+          background-color: rgba(255, 255, 255, 0.1) !important;
+          border-radius: 4px;
+          
+          &:hover {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+          }
+          
+          .v-icon {
+            color: rgba(255, 255, 255, 0.9) !important;
+          }
+        }
+        
+        .action-buttons-desktop {
+          gap: 4px;
+          flex-shrink: 0;
+          
+          .action-btn {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            border-radius: 4px;
+            margin: 0 2px;
+            
+            &:hover {
+              background-color: rgba(255, 255, 255, 0.2) !important;
+            }
+            
+            .v-icon {
+              color: rgba(255, 255, 255, 0.9) !important;
+            }
+          }
+        }
+      }
+      
+      .session-name-text {
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      
+      // Style mobile table rows
+      ::v-deep .v-data-table__mobile-table-row {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        
+        .v-data-table__mobile-row {
+          padding: 12px 16px;
+          
+          &:first-child {
+            font-weight: 600;
+            padding-bottom: 4px;
+          }
+          
+          &:not(:first-child) {
+            padding-top: 4px;
+            color: rgba(255, 255, 255, 0.87);
+          }
+        }
+      }
+      
+      .date-column {
+        @media (max-width: 599px) {
+          font-size: 0.75rem;
+        }
+      }
+      
+      // Make table more compact on mobile
+      @media (max-width: 599px) {
+        ::v-deep .v-data-table {
+          font-size: 0.875rem;
+        }
+        
+        ::v-deep .v-data-table__wrapper {
+          -webkit-overflow-scrolling: touch;
         }
       }
     }    
@@ -538,5 +830,13 @@ export default {
 
 .trashed {
   color: gray;
+}
+
+.session-context-menu {
+  max-width: min(320px, calc(100vw - 24px));
+}
+
+.session-menu-sheet {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 </style>

@@ -35,109 +35,30 @@
               @click:row="onRowClick">
               <template v-slot:item.id="{ item }">
                 <div class="float-right">
+                  <template v-if="$vuetify.breakpoint.smAndDown && item.trashed">
+                    <v-btn icon dark @click="openSessionMenuSheet(item)">
+                      <v-icon>mdi-menu</v-icon>
+                    </v-btn>
+                  </template>
                   <v-menu
-                      v-model="item.isMenuOpen"
-                      offset-y
-                      v-if="item.trashed"
-                    >
+                    v-else-if="item.trashed"
+                    v-model="item.isMenuOpen"
+                    offset-y
+                    right
+                    close-on-content-click
+                    content-class="recycle-session-context-menu">
                     <template v-slot:activator="{ on, attrs }">
-                      <v-btn
-                          icon
-                        dark
-                        v-bind="attrs"
-                        v-on="on"
-                      >
+                      <v-btn icon dark v-bind="attrs" v-on="on">
                         <v-icon>mdi-menu</v-icon>
                       </v-btn>
                     </template>
                     <v-list>
-
-                        <v-dialog
-                                v-model="restore_session_dialog"
-                                v-click-outside="clickOutsideDialogSessionHideMenu"
-                                max-width="500">
-                          <template v-slot:activator="{ on }">
-                            <v-list-item link v-on="on">
-                              <v-list-item-title>Restore</v-list-item-title>
-                            </v-list-item>
-                          </template>
-                          <v-card>
-                            <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                <v-col cols="2">
-                                  <v-icon x-large color="green">mdi-undo-variant</v-icon>
-                                </v-col>
-                                <v-col cols="10">
-                                  <p>
-                                    Do you want to restore session <code>{{item.id}}</code>?
-                                  </p>
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                            <v-card-actions>
-                              <v-spacer></v-spacer>
-                              <v-btn
-                                color="blue darken-1"
-                                text
-                                @click="item.isMenuOpen = false; restore_session_dialog = false"
-                              >
-                                No
-                              </v-btn>
-                              <v-btn
-                                color="green darken-1"
-                                text
-                                @click="item.isMenuOpen = false; restore_session_dialog = false; restoreSession(item.id)"
-                              >
-                                Yes
-                              </v-btn>
-                            </v-card-actions>
-                          </v-card>
-                        </v-dialog>
-
-
-                        <v-dialog
-                                v-model="remove_permanently_session_dialog"
-                                v-click-outside="clickOutsideDialogSessionHideMenu"
-                                max-width="500">
-                          <template v-slot:activator="{ on }">
-                            <v-list-item link v-on="on">
-                              <v-list-item-title>Delete permanently</v-list-item-title>
-                            </v-list-item>
-                          </template>
-                          <v-card>
-                            <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                <v-col cols="2">
-                                  <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                </v-col>
-                                <v-col cols="10">
-                                  <p>
-                                    Do you want to <strong>permanently</strong> remove session
-                                    <code>{{item.id}}</code>?
-                                  </p>
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                            <v-card-actions>
-                              <v-spacer></v-spacer>
-                              <v-btn
-                                color="blue darken-1"
-                                text
-                                @click="item.isMenuOpen = false; remove_permanently_session_dialog = false"
-                              >
-                                No
-                              </v-btn>
-                              <v-btn
-                                color="red darken-1"
-                                text
-                                @click="item.isMenuOpen = false; remove_permanently_session_dialog = false; permanentRemoveSession(item.id)"
-                              >
-                                Yes
-                              </v-btn>
-                            </v-card-actions>
-                          </v-card>
-                        </v-dialog>
-
+                      <v-list-item link @click="closeSessionMenuAndRestore(item)">
+                        <v-list-item-title>Restore</v-list-item-title>
+                      </v-list-item>
+                      <v-list-item link @click="closeSessionMenuAndPermanentDelete(item)">
+                        <v-list-item-title>Delete permanently</v-list-item-title>
+                      </v-list-item>
                     </v-list>
                   </v-menu>
                 </div>
@@ -167,112 +88,32 @@
                   v-for="trial in trialsMapped"
                   :key="trial.id"
                 >
-                  <td>
+                    <td>
                     <div class="float-right">
+                      <template v-if="$vuetify.breakpoint.smAndDown && trial.trashed">
+                        <v-btn icon dark @click="openTrialMenuSheet(trial)">
+                          <v-icon>mdi-menu</v-icon>
+                        </v-btn>
+                      </template>
                       <v-menu
-                          v-model="trial.isMenuOpen"
-                          offset-y
-                          v-if="trial.trashed"
-                        >
+                        v-else-if="trial.trashed"
+                        v-model="trial.isMenuOpen"
+                        offset-y
+                        right
+                        close-on-content-click
+                        content-class="recycle-trial-context-menu">
                         <template v-slot:activator="{ on, attrs }">
-                          <v-btn
-                              icon
-                            dark
-                            v-bind="attrs"
-                            v-on="on"
-                          >
+                          <v-btn icon dark v-bind="attrs" v-on="on">
                             <v-icon>mdi-menu</v-icon>
                           </v-btn>
                         </template>
                         <v-list>
-
-
-                            <v-dialog
-                                    v-model="restore_trial_dialog"
-                                    v-click-outside="clickOutsideDialogTrialHideMenu"
-                                    max-width="500">
-                              <template v-slot:activator="{ on }">
-                                <v-list-item link v-on="on">
-                                  <v-list-item-title>Restore</v-list-item-title>
-                                </v-list-item>
-                              </template>
-                              <v-card>
-                                <v-card-text class="pt-4">
-                                  <v-row class="m-0">
-                                    <v-col cols="2">
-                                      <v-icon x-large color="green">mdi-undo-variant</v-icon>
-                                    </v-col>
-                                    <v-col cols="10">
-                                      <p>
-                                        Do you want to restore trial {{trial.name}}?
-                                      </p>
-                                    </v-col>
-                                  </v-row>
-                                </v-card-text>
-                                <v-card-actions>
-                                  <v-spacer></v-spacer>
-                                  <v-btn
-                                    color="blue darken-1"
-                                    text
-                                    @click="trial.isMenuOpen = false; restore_trial_dialog = false"
-                                  >
-                                    No
-                                  </v-btn>
-                                  <v-btn
-                                    color="green darken-1"
-                                    text
-                                    @click="trial.isMenuOpen = false; restore_trial_dialog = false; restoreTrial(trial)"
-                                  >
-                                    Yes
-                                  </v-btn>
-                                </v-card-actions>
-                              </v-card>
-                            </v-dialog>
-
-
-                            <v-dialog
-                                    v-model="remove_permanently_trial_dialog"
-                                    v-click-outside="clickOutsideDialogTrialHideMenu"
-                                    max-width="500">
-                              <template v-slot:activator="{ on }">
-                                <v-list-item link v-on="on">
-                                  <v-list-item-title>Delete permanently</v-list-item-title>
-                                </v-list-item>
-                              </template>
-                              <v-card>
-                                <v-card-text class="pt-4">
-                                  <v-row class="m-0">
-                                    <v-col cols="2">
-                                      <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                    </v-col>
-                                    <v-col cols="10">
-                                      <p>
-                                        Do you want to <strong>permanently</strong> remove
-                                        trial {{trial.name}}?
-                                      </p>
-                                    </v-col>
-                                  </v-row>
-                                </v-card-text>
-                                <v-card-actions>
-                                  <v-spacer></v-spacer>
-                                  <v-btn
-                                    color="blue darken-1"
-                                    text
-                                    @click="trial.isMenuOpen = false; remove_permanently_trial_dialog = false"
-                                  >
-                                    No
-                                  </v-btn>
-                                  <v-btn
-                                    color="red darken-1"
-                                    text
-                                    @click="trial.isMenuOpen = false; remove_permanently_trial_dialog = false; permanentRemoveTrial(trial)"
-                                  >
-                                    Yes
-                                  </v-btn>
-                                </v-card-actions>
-                              </v-card>
-                            </v-dialog>
-
+                          <v-list-item link @click="closeTrialMenuAndRestore(trial)">
+                            <v-list-item-title>Restore</v-list-item-title>
+                          </v-list-item>
+                          <v-list-item link @click="closeTrialMenuAndPermanentDelete(trial)">
+                            <v-list-item-title>Delete permanently</v-list-item-title>
+                          </v-list-item>
                         </v-list>
                       </v-menu>
                     </div>
@@ -289,14 +130,118 @@
       </v-col>
     </v-row>
 
-    <v-dialog v-model="empty_bin_dialog" max-width="500">
+    <!-- Session menu bottom sheet (mobile) -->
+    <v-bottom-sheet v-model="showSessionMenuSheet" @input="val => !val && (selectedSessionForMenu = null)">
+      <v-sheet class="text-center recycle-menu-sheet">
+        <v-list v-if="selectedSessionForMenu">
+          <v-list-item link @click="closeSheetAndRestoreSession(selectedSessionForMenu)">
+            <v-list-item-title>Restore</v-list-item-title>
+          </v-list-item>
+          <v-list-item link @click="closeSheetAndPermanentDeleteSession(selectedSessionForMenu)">
+            <v-list-item-title>Delete permanently</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-sheet>
+    </v-bottom-sheet>
+
+    <!-- Trial menu bottom sheet (mobile) -->
+    <v-bottom-sheet v-model="showTrialMenuSheet" @input="val => !val && (selectedTrialForMenu = null)">
+      <v-sheet class="text-center recycle-menu-sheet">
+        <v-list v-if="selectedTrialForMenu">
+          <v-list-item link @click="closeSheetAndRestoreTrial(selectedTrialForMenu)">
+            <v-list-item-title>Restore</v-list-item-title>
+          </v-list-item>
+          <v-list-item link @click="closeSheetAndPermanentDeleteTrial(selectedTrialForMenu)">
+            <v-list-item-title>Delete permanently</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-sheet>
+    </v-bottom-sheet>
+
+    <!-- Restore Session Dialog -->
+    <v-dialog v-model="restore_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedSessionForRestore">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-undo-variant</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to restore session <code>{{ selectedSessionForRestore.id }}</code>?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="restore_session_dialog = false; selectedSessionForRestore = null">No</v-btn>
+          <v-btn color="green darken-1" text @click="restore_session_dialog = false; restoreSession(selectedSessionForRestore.id); selectedSessionForRestore = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Permanent Delete Session Dialog -->
+    <v-dialog v-model="remove_permanently_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedSessionForPermanentDelete">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to <strong>permanently</strong> remove session <code>{{ selectedSessionForPermanentDelete.id }}</code>?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="remove_permanently_session_dialog = false; selectedSessionForPermanentDelete = null">No</v-btn>
+          <v-btn color="red darken-1" text @click="remove_permanently_session_dialog = false; permanentRemoveSession(selectedSessionForPermanentDelete.id); selectedSessionForPermanentDelete = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Restore Trial Dialog -->
+    <v-dialog v-model="restore_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedTrialForRestore">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-undo-variant</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to restore trial {{ selectedTrialForRestore.name }}?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="restore_trial_dialog = false; selectedTrialForRestore = null">No</v-btn>
+          <v-btn color="green darken-1" text @click="restore_trial_dialog = false; restoreTrial(selectedTrialForRestore); selectedTrialForRestore = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Permanent Delete Trial Dialog -->
+    <v-dialog v-model="remove_permanently_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedTrialForPermanentDelete">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to <strong>permanently</strong> remove trial {{ selectedTrialForPermanentDelete.name }}?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="remove_permanently_trial_dialog = false; selectedTrialForPermanentDelete = null">No</v-btn>
+          <v-btn color="red darken-1" text @click="remove_permanently_trial_dialog = false; permanentRemoveTrial(selectedTrialForPermanentDelete); selectedTrialForPermanentDelete = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="empty_bin_dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
         <v-card-text class="pt-4">
           <v-row class="m-0">
-            <v-col cols="2">
+            <v-col cols="12" sm="2">
               <v-icon x-large color="red">mdi-close-circle</v-icon>
             </v-col>
-            <v-col cols="10">
+            <v-col cols="12" sm="10">
               <p>
                 Do you want to <strong>permanently</strong> empty the Recycle Bin?
               </p>
@@ -357,6 +302,14 @@ export default {
       remove_trial_dialog: false,
       remove_permanently_trial_dialog: false,
       empty_bin_dialog: false,
+      showSessionMenuSheet: false,
+      selectedSessionForMenu: null,
+      showTrialMenuSheet: false,
+      selectedTrialForMenu: null,
+      selectedSessionForRestore: null,
+      selectedSessionForPermanentDelete: null,
+      selectedTrialForRestore: null,
+      selectedTrialForPermanentDelete: null,
       headers: [
         {
           text: 'ID',
@@ -395,12 +348,12 @@ export default {
     loadTrashedSessions() {
       this.session_loading = true
       let data = {
-        start: this.subject_start,
+        start: this.session_start,
         quantity: 40,
         only_trashed: true
       }
       let res = axios.post('/sessions/valid/', data).then(response => {
-        this.trashed_sessions = response.data.sessions
+        this.trashed_sessions = response.data.sessions.map(s => ({ ...s, isMenuOpen: false }))
         this.session_total = response.data.total
         this.session_loading = false
       }).catch(error => {
@@ -423,53 +376,70 @@ export default {
     },
     clickOutsideDialogSessionHideMenu(e) {
       if (e.target.className === 'v-overlay__scrim') {
-          for(let t of this.sessionsMapped) {
-            t.isMenuOpen = false;
-          }
+        for (let t of this.trashed_sessions) {
+          t.isMenuOpen = false;
+        }
+        this.showSessionMenuSheet = false;
+        this.selectedSessionForMenu = null;
       }
     },
     clickOutsideDialogTrialHideMenu(e) {
       if (e.target.className === 'v-overlay__scrim') {
-          for(let t of this.trialsMapped) {
-            t.isMenuOpen = false;
-          }
+        for (let t of this.trialsMapped) {
+          t.isMenuOpen = false;
+        }
+        this.showTrialMenuSheet = false;
+        this.selectedTrialForMenu = null;
       }
     },
+    openSessionMenuSheet(item) {
+      this.selectedSessionForMenu = item;
+      this.showSessionMenuSheet = true;
+    },
+    openTrialMenuSheet(item) {
+      this.selectedTrialForMenu = item;
+      this.showTrialMenuSheet = true;
+    },
+    closeSessionMenuAndRestore(item) { item.isMenuOpen = false; this.selectedSessionForRestore = item; this.restore_session_dialog = true; },
+    closeSessionMenuAndPermanentDelete(item) { item.isMenuOpen = false; this.selectedSessionForPermanentDelete = item; this.remove_permanently_session_dialog = true; },
+    closeTrialMenuAndRestore(item) { item.isMenuOpen = false; this.selectedTrialForRestore = item; this.restore_trial_dialog = true; },
+    closeTrialMenuAndPermanentDelete(item) { item.isMenuOpen = false; this.selectedTrialForPermanentDelete = item; this.remove_permanently_trial_dialog = true; },
+    closeSheetAndRestoreSession(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForRestore = item; this.restore_session_dialog = true; },
+    closeSheetAndPermanentDeleteSession(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForPermanentDelete = item; this.remove_permanently_session_dialog = true; },
+    closeSheetAndRestoreTrial(item) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.selectedTrialForRestore = item; this.restore_trial_dialog = true; },
+    closeSheetAndPermanentDeleteTrial(item) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.selectedTrialForPermanentDelete = item; this.remove_permanently_trial_dialog = true; },
     async permanentRemoveSession(id) {
       try {
         await this.permanentRemoveExistingSession(id);
-        this.selected = null;
+        if (this.selected && this.selected.id === id) {
+          this.selected = null;
+        }
+        this.loadTrashedSessions();
       } catch (error) {
         apiError(error)
       }
     },
     async restoreSession(id) {
       try {
-        await this.restoreTrashedSession(id)
+        await this.restoreTrashedSession(id);
+        this.loadTrashedSessions();
       } catch (error) {
         apiError(error)
       }
     },
     async updateTrialWithData(trial, data) {
+        if (!this.selected || !this.selected.trials) return;
         const index = this.selected.trials.findIndex(x => x.id === trial.id)
         if (index >= 0) {
             Vue.set(this.selected.trials, index, data);
-            const session_index = this.sessions.findIndex(x => x.id === trial.session);
-            const idx = this.sessions[session_index].trials.findIndex(x => x.id === trial.id)
-            Vue.set(this.sessions[session_index].trials, idx, data);
         }
     },
     async permanentRemoveTrial(trial) {
       try {
-        if(this.selected) {
-          const index = this.selected.trials.findIndex(x => x.id === trial.id)
-          const res = await axios.post(`/trials/${trial.id}/permanent_remove/`);
+        if (this.selected && this.selected.trials) {
+          const index = this.selected.trials.findIndex(x => x.id === trial.id);
+          await axios.post(`/trials/${trial.id}/permanent_remove/`);
           this.selected.trials.splice(index, 1);
-        } else {
-          const session_index = this.sessions.findIndex(x => x.id === trial.session);
-          const index = this.sessions[session_index].trials.findIndex(x => x.id === trial.id)
-          const res = await axios.post(`/trials/${trial.id}/permanent_remove/`);
-          this.sessions[session_index].trials.splice(index, 1);
         }
       } catch (error) {
         apiError(error)
@@ -487,10 +457,10 @@ export default {
       let trials = [];
       let sessions_ids = [];
 
-      this.sessionsMapped.forEach(s => {
+      this.trashed_sessions.forEach(s => {
         if (s.trashed) {
           sessions_ids.push(s.id)
-        } else {
+        } else if (s.trials) {
           s.trials.forEach(t => {
             if (t.trashed) {
               trials.push(t)
@@ -510,3 +480,14 @@ export default {
   }
 }
 </script>
+
+<style lang="scss" scoped>
+.recycle-session-context-menu,
+.recycle-trial-context-menu {
+  max-width: min(320px, calc(100vw - 24px));
+}
+
+.recycle-menu-sheet {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+</style>

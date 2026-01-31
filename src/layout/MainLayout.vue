@@ -4,12 +4,12 @@
     :class="{ 'fixed-height': fixedHeight }">
 
     <div
-      class="content-wrapper flex-grow-1 d-flex"
+      class="content-wrapper d-flex"
       :class="{ 'flex-column': column }">
       <slot/>
     </div>
 
-    <div class="navigation d-flex justify-space-between align-center mt-5 w-100">
+    <div class="navigation d-flex justify-space-between align-center mt-3 w-100">
       <div class="slot">
         <v-btn
           v-if="leftButton"
@@ -117,11 +117,20 @@ export default {
 
   .content-wrapper {
     overflow-x: hidden;
+    flex: 0 1 auto;
   }
 
   .navigation {
+    flex-wrap: wrap;
+    
     .slot {
-      width: 150px;
+      width: 100%;
+      margin-bottom: 8px;
+      
+      @media (min-width: 600px) {
+        width: 150px;
+        margin-bottom: 0;
+      }
     }
   }
 }

@@ -1,5 +1,8 @@
 <template>
-    <v-dialog v-model="edit_dialog" width="500" persistent
+    <v-dialog v-model="edit_dialog"
+      :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
+      :fullscreen="$vuetify.breakpoint.smAndDown"
+      persistent
       @click:outside="closeDialog">
 
       <ValidationObserver

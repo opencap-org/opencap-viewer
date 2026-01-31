@@ -1,23 +1,28 @@
 <template>
   <div>
     <div class="d-flex flex-column">
-    <div class="pa-2 d-flex">
+    <div class="pa-2 d-flex flex-wrap align-center subjects-toolbar">
       <v-btn
         width="16em"
+        class="subjects-toolbar__btn"
         @click="$router.push({ name: 'SelectSession' })">
         Go back to sessions list
       </v-btn>
-      <v-btn class="ml-2"
+      <v-btn
+        class="ml-2 mt-1 mt-sm-0 subjects-toolbar__btn"
         @click="$refs.dialogRef.addSubject()">
         New Subject
       </v-btn>
-
-      <v-checkbox v-model="show_trashed" class="ml-2 mt-0" label="Show removed subjects"></v-checkbox>
+      <v-checkbox
+        v-model="show_trashed"
+        class="ml-2 mt-0 mb-0 subjects-toolbar__checkbox"
+        label="Show removed subjects"
+        hide-details></v-checkbox>
     </div>
     </div>
 
-    <v-row>
-      <v-col cols="8">
+    <v-row class="subjects-page-row">
+      <v-col cols="12" md="8" class="subjects-table-col">
 
             <v-data-table
               :headers="headers"
@@ -31,7 +36,7 @@
                 disableItemsPerPage: true,
                 itemsPerPageOptions: [40]
               }"
-              height="70vh"
+              :height="$vuetify.breakpoint.smAndDown ? '50vh' : '70vh'"
               fixed-header
               single-select
               class="subjects-table mx-2 mb-4 flex-grow-1"
@@ -39,264 +44,39 @@
               @click:row="onRowClick">
               <template v-slot:item.name="{ item }">
                 <div class="float-right">
+                  <template v-if="$vuetify.breakpoint.smAndDown">
+                    <v-btn icon dark @click="openSubjectMenuSheet(item)">
+                      <v-icon>mdi-menu</v-icon>
+                    </v-btn>
+                  </template>
                   <v-menu
-                      v-model="item.isMenuOpen"
-                      offset-y
-                    >
+                    v-else
+                    v-model="item.isMenuOpen"
+                    offset-y
+                    right
+                    close-on-content-click
+                    content-class="subject-context-menu">
                     <template v-slot:activator="{ on, attrs }">
-                      <v-btn
-                          icon
-                        dark
-                        v-bind="attrs"
-                        v-on="on"
-                      >
+                      <v-btn icon dark v-bind="attrs" v-on="on">
                         <v-icon>mdi-menu</v-icon>
                       </v-btn>
                     </template>
                     <v-list>
-                      <v-list-item link v-if="!item.trashed" @click="item.isMenuOpen = false; editSubject(item)">
+                      <v-list-item link v-if="!item.trashed" @click="closeMenuAndEdit(item)">
                         <v-list-item-title>Edit</v-list-item-title>
                       </v-list-item>
-
-                        <v-dialog
-                                v-model="remove_dialog"
-                                v-click-outside="clickOutsideDialogSubjectHideMenu"
-                                max-width="500">
-                          <template v-slot:activator="{ on }">
-                            <v-list-item link v-show="!item.trashed" v-on="on">
-                              <v-list-item-title>Trash</v-list-item-title>
-                            </v-list-item>
-                          </template>
-                          <v-card>
-                            <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                <v-col cols="2">
-                                  <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                </v-col>
-                                <v-col cols="10">
-                                  <p>
-                                    Do you want to trash subject <code>{{item.name}}</code>?
-                                    You will be able to restore it for 30 days. After that,
-                                    this subject will be permanently removed.
-                                  </p>
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                            <v-card-actions>
-                              <v-spacer></v-spacer>
-                              <v-btn
-                                color="blue darken-1"
-                                text
-                                @click="item.isMenuOpen = false; remove_dialog = false"
-                              >
-                                No
-                              </v-btn>
-                              <v-btn
-                                color="red darken-1"
-                                text
-                                @click="item.isMenuOpen = false; remove_dialog = false; trashSubject(item.id)"
-                              >
-                                Yes
-                              </v-btn>
-                            </v-card-actions>
-                          </v-card>
-                        </v-dialog>
-
-
-                        <v-dialog
-                                v-model="restore_dialog"
-                                v-click-outside="clickOutsideDialogSubjectHideMenu"
-                                max-width="500">
-                          <template v-slot:activator="{ on }">
-                            <v-list-item link v-show="item.trashed" v-on="on">
-                              <v-list-item-title>Restore</v-list-item-title>
-                            </v-list-item>
-                          </template>
-                          <v-card>
-                            <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                <v-col cols="2">
-                                  <v-icon x-large color="green">mdi-undo-variant</v-icon>
-                                </v-col>
-                                <v-col cols="10">
-                                  <p>
-                                    Do you want to restore subject <code>{{item.name}}</code>?
-                                  </p>
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                            <v-card-actions>
-                              <v-spacer></v-spacer>
-                              <v-btn
-                                color="blue darken-1"
-                                text
-                                @click="item.isMenuOpen = false; restore_dialog = false"
-                              >
-                                No
-                              </v-btn>
-                              <v-btn
-                                color="green darken-1"
-                                text
-                                @click="item.isMenuOpen = false; restore_dialog = false; restoreSubject(item.id)"
-                              >
-                                Yes
-                              </v-btn>
-                            </v-card-actions>
-                          </v-card>
-                        </v-dialog>
-
-
-                        <v-dialog
-                                v-model="remove_permanently_dialog"
-                                v-click-outside="clickOutsideDialogSubjectHideMenu"
-                                max-width="500">
-                          <template v-slot:activator="{ on }">
-                            <v-list-item link v-show="item.trashed" v-on="on">
-                              <v-list-item-title>Delete permanently</v-list-item-title>
-                            </v-list-item>
-                          </template>
-                          <v-card>
-                            <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                <v-col cols="2">
-                                  <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                </v-col>
-                                <v-col cols="10">
-                                  <p>
-                                    Do you want to <strong>permanently</strong>
-                                      remove subject <code>{{item.name}}</code>?
-                                  </p>
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                            <v-card-actions>
-                              <v-spacer></v-spacer>
-                              <v-btn
-                                color="blue darken-1"
-                                text
-                                @click="item.isMenuOpen = false; remove_permanently_dialog = false"
-                              >
-                                No
-                              </v-btn>
-                              <v-btn
-                                color="red darken-1"
-                                text
-                                @click="item.isMenuOpen = false; remove_permanently_dialog = false; permanentRemoveSubject(item.id)"
-                              >
-                                Yes
-                              </v-btn>
-                            </v-card-actions>
-                          </v-card>
-                        </v-dialog>
-
-
-                        <v-dialog
-                                v-model="download_dialog"
-                                v-click-outside="clickOutsideDialogSubjectHideMenu"
-                                max-width="500">
-                          <template v-slot:activator="{ on }">
-                            <v-list-item link v-show="!item.trashed & isSyncDownloadAllowed" v-on="on">
-                              <v-list-item-title>Download data (old)</v-list-item-title>
-                            </v-list-item>
-                          </template>
-                          <v-card>
-                            <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                <v-col cols="2">
-                                  <v-icon x-large color="green">mdi-download</v-icon>
-                                </v-col>
-                                <v-col cols="10">
-                                  <p>
-                                    Do you want to download all data associated to the
-                                    subject <code>{{item.name}}</code>? (This includes every session
-                                    and trial associated to it, and can take several minutes).
-                                  </p>
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                            <v-card-actions class="d-flex justify-center">
-                              <v-spacer></v-spacer>
-                              <v-btn
-                                color="blue darken-1"
-                                text
-                                @click="item.isMenuOpen = false; download_dialog = false"
-                              >
-                                Cancel
-                              </v-btn>
-                              <v-btn
-                                color="green darken-1"
-                                text
-                                :disabled="downloading"
-                                @click="item.isMenuOpen = false; download_dialog = false; downloadSubjectData(item.id)"
-                              >
-                                Download
-                              </v-btn>
-                            </v-card-actions>
-                          </v-card>
-                        </v-dialog>
-
-                      <!-- Download archive -->
-                      <!--
-                      <v-list-item link v-if="!item.trashed">
-                        <v-dialog
-                                v-model="showArchiveDialog"
-                                v-click-outside="clickOutsideDialogSubjectHideMenu"
-                                max-width="500">
-                          <template v-slot:activator="{ on }">
-                            <v-list-item-title v-on="on">Download data</v-list-item-title>
-                          </template>
-                          <v-card>
-                            <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                <v-col cols="2">
-                                  <v-icon x-large color="green">mdi-download</v-icon>
-                                </v-col>
-                                <v-col cols="10">
-                                  <p v-if="isArchiveInProgress & !isArchiveDone">
-                                    <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
-                                    Download in progress
-                                  </p>
-                                  <p v-if="!(isArchiveInProgress || isArchiveDone)">
-                                    Do you want to download all the data from subject <code>{{item.name}}</code>?
-                                    (This can take several minutes).
-                                  </p>
-                                  <p v-if="isArchiveDone">
-                                    The archive has been successfully generated. Click on data.zip to download.
-                                  </p>
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                            <v-card-actions>
-                                <v-spacer></v-spacer>
-                                <v-btn
-                                    color="blue darken-1"
-                                    text
-                                    @click="item.isMenuOpen = false;showArchiveDialog = false;"
-                                >
-                                    Cancel
-                                </v-btn>
-                                
-                                <v-btn 
-                                    v-if="isArchiveDone"
-                                    :href="archiveUrl"
-                                    download="data.zip"
-                                >
-                                    data.zip
-                                </v-btn>
-                                <v-btn
-                                    v-else
-                                    color="green darken-1"
-                                    text
-                                    :disabled="isArchiveInProgress"
-                                    @click="downloadSubjectArchive(item.id)"
-                                >
-                                    Download
-                                </v-btn>
-                            </v-card-actions>
-                          </v-card>
-                        </v-dialog>
+                      <v-list-item link v-show="!item.trashed" @click="closeMenuAndTrash(item)">
+                        <v-list-item-title>Trash</v-list-item-title>
                       </v-list-item>
-                      -->
+                      <v-list-item link v-show="item.trashed" @click="closeMenuAndRestore(item)">
+                        <v-list-item-title>Restore</v-list-item-title>
+                      </v-list-item>
+                      <v-list-item link v-show="item.trashed" @click="closeMenuAndPermanentDelete(item)">
+                        <v-list-item-title>Delete permanently</v-list-item-title>
+                      </v-list-item>
+                      <v-list-item link v-show="!item.trashed && isSyncDownloadAllowed" @click="closeMenuAndDownload(item)">
+                        <v-list-item-title>Download data (old)</v-list-item-title>
+                      </v-list-item>
                     </v-list>
                   </v-menu>
                 </div>
@@ -306,7 +86,7 @@
 
 
       </v-col>
-      <v-col cols="4">
+      <v-col cols="12" md="4" class="sessions-table-col">
 
             <v-data-table
               v-if="selected"
@@ -322,9 +102,9 @@
                 itemsPerPageOptions: [40]
               }"
               fixed-header
-              height="80vh"
+              :height="$vuetify.breakpoint.smAndDown ? '50vh' : '80vh'"
               single-select
-              class="mx-2"
+              class="sessions-table mx-2"
               @click:row="onRowSessionClick">
             <template v-slot:default>
                 <tr>
@@ -345,6 +125,110 @@
         </v-data-table>
       </v-col>
     </v-row>
+
+    <!-- Subject menu bottom sheet (mobile) -->
+    <v-bottom-sheet
+      v-model="showSubjectMenuSheet"
+      @input="val => !val && (selectedSubjectForMenu = null)">
+      <v-sheet class="text-center subject-menu-sheet">
+        <v-list v-if="selectedSubjectForMenu">
+          <v-list-item link v-if="!selectedSubjectForMenu.trashed" @click="closeSheetAndEdit(selectedSubjectForMenu)">
+            <v-list-item-title>Edit</v-list-item-title>
+          </v-list-item>
+          <v-list-item link v-show="!selectedSubjectForMenu.trashed" @click="closeSheetAndTrash(selectedSubjectForMenu)">
+            <v-list-item-title>Trash</v-list-item-title>
+          </v-list-item>
+          <v-list-item link v-show="selectedSubjectForMenu.trashed" @click="closeSheetAndRestore(selectedSubjectForMenu)">
+            <v-list-item-title>Restore</v-list-item-title>
+          </v-list-item>
+          <v-list-item link v-show="selectedSubjectForMenu.trashed" @click="closeSheetAndPermanentDelete(selectedSubjectForMenu)">
+            <v-list-item-title>Delete permanently</v-list-item-title>
+          </v-list-item>
+          <v-list-item link v-show="!selectedSubjectForMenu.trashed && isSyncDownloadAllowed" @click="closeSheetAndDownload(selectedSubjectForMenu)">
+            <v-list-item-title>Download data (old)</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-sheet>
+    </v-bottom-sheet>
+
+    <!-- Trash Subject Dialog -->
+    <v-dialog v-model="remove_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedSubjectForTrash">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to trash subject <code>{{ selectedSubjectForTrash.name }}</code>?
+                You will be able to restore it for 30 days. After that, this subject will be permanently removed.</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="remove_dialog = false; selectedSubjectForTrash = null">No</v-btn>
+          <v-btn color="red darken-1" text @click="remove_dialog = false; trashSubject(selectedSubjectForTrash.id); selectedSubjectForTrash = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Restore Subject Dialog -->
+    <v-dialog v-model="restore_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedSubjectForRestore">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-undo-variant</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to restore subject <code>{{ selectedSubjectForRestore.name }}</code>?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="restore_dialog = false; selectedSubjectForRestore = null">No</v-btn>
+          <v-btn color="green darken-1" text @click="restore_dialog = false; restoreSubject(selectedSubjectForRestore.id); selectedSubjectForRestore = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Permanent Delete Subject Dialog -->
+    <v-dialog v-model="remove_permanently_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedSubjectForPermanentDelete">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to <strong>permanently</strong> remove subject <code>{{ selectedSubjectForPermanentDelete.name }}</code>?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="remove_permanently_dialog = false; selectedSubjectForPermanentDelete = null">No</v-btn>
+          <v-btn color="red darken-1" text @click="remove_permanently_dialog = false; permanentRemoveSubject(selectedSubjectForPermanentDelete.id); selectedSubjectForPermanentDelete = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Download Subject Dialog -->
+    <v-dialog v-model="download_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+      <v-card v-if="selectedSubjectForDownload">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-download</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to download all data associated to the subject <code>{{ selectedSubjectForDownload.name }}</code>?
+                (This includes every session and trial associated to it, and can take several minutes).</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="download_dialog = false; selectedSubjectForDownload = null">Cancel</v-btn>
+          <v-btn color="green darken-1" text :disabled="downloading"
+            @click="download_dialog = false; downloadSubjectData(selectedSubjectForDownload.id); selectedSubjectForDownload = null">Download</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <DialogComponent
       ref="dialogRef"
@@ -383,6 +267,12 @@ export default {
       remove_permanently_dialog: false,
       restore_dialog: false,
       download_dialog: false,
+      showSubjectMenuSheet: false,
+      selectedSubjectForMenu: null,
+      selectedSubjectForTrash: null,
+      selectedSubjectForRestore: null,
+      selectedSubjectForPermanentDelete: null,
+      selectedSubjectForDownload: null,
       show_trashed: false,
       downloading: false,
       isArchiveInProgress: false,
@@ -482,7 +372,7 @@ export default {
       let res = axios.get('/subjects/', {
         params: data
       }).then(response => {
-        this.valid_subjects = response.data.subjects
+        this.valid_subjects = response.data.subjects.map(s => ({ ...s, isMenuOpen: false }))
         this.subject_total = response.data.total
         this.loading = false
       }).catch(error => {
@@ -518,11 +408,27 @@ export default {
     },
     clickOutsideDialogSubjectHideMenu(e) {
       if (e.target.className === 'v-overlay__scrim') {
-          for(let t of this.valid_subjects) {
-            t.isMenuOpen = false;
-          }
+        for (let t of this.valid_subjects) {
+          t.isMenuOpen = false;
+        }
+        this.showSubjectMenuSheet = false;
+        this.selectedSubjectForMenu = null;
       }
     },
+    openSubjectMenuSheet(item) {
+      this.selectedSubjectForMenu = item;
+      this.showSubjectMenuSheet = true;
+    },
+    closeMenuAndEdit(item) { item.isMenuOpen = false; this.editSubject(item); },
+    closeMenuAndTrash(item) { item.isMenuOpen = false; this.selectedSubjectForTrash = item; this.remove_dialog = true; },
+    closeMenuAndRestore(item) { item.isMenuOpen = false; this.selectedSubjectForRestore = item; this.restore_dialog = true; },
+    closeMenuAndPermanentDelete(item) { item.isMenuOpen = false; this.selectedSubjectForPermanentDelete = item; this.remove_permanently_dialog = true; },
+    closeMenuAndDownload(item) { item.isMenuOpen = false; this.selectedSubjectForDownload = item; this.download_dialog = true; },
+    closeSheetAndEdit(item) { this.showSubjectMenuSheet = false; this.selectedSubjectForMenu = null; this.editSubject(item); },
+    closeSheetAndTrash(item) { this.showSubjectMenuSheet = false; this.selectedSubjectForMenu = null; this.selectedSubjectForTrash = item; this.remove_dialog = true; },
+    closeSheetAndRestore(item) { this.showSubjectMenuSheet = false; this.selectedSubjectForMenu = null; this.selectedSubjectForRestore = item; this.restore_dialog = true; },
+    closeSheetAndPermanentDelete(item) { this.showSubjectMenuSheet = false; this.selectedSubjectForMenu = null; this.selectedSubjectForPermanentDelete = item; this.remove_permanently_dialog = true; },
+    closeSheetAndDownload(item) { this.showSubjectMenuSheet = false; this.selectedSubjectForMenu = null; this.selectedSubjectForDownload = item; this.download_dialog = true; },
     async editSubject(subject) {
       this.$refs.dialogRef.edit_dialog = true;
       this.$refs.dialogRef.edited_subject = JSON.parse(JSON.stringify(subject));  // A trick to deep copy
@@ -598,7 +504,7 @@ export default {
     async permanentRemoveSubject (id) {
       try {
         await axios.post('/subjects/' + id + '/permanent_remove/')
-        this.loadSubjects()
+        this.loadValidSubjects()
       } catch (error) {
         apiError(error)
       }
@@ -607,8 +513,89 @@ export default {
 }
 </script>
 
+<style lang="scss" scoped>
+.subjects-toolbar {
+  min-width: 0;
+
+  @media (max-width: 959px) {
+    justify-content: center;
+  }
+}
+.subjects-toolbar__checkbox {
+  flex-shrink: 0;
+}
+.subjects-toolbar__checkbox ::v-deep .v-input {
+  margin-top: 0;
+  padding-top: 0;
+}
+.subjects-toolbar__checkbox ::v-deep .v-input__control {
+  align-items: center;
+}
+.subjects-toolbar__checkbox ::v-deep .v-input__slot {
+  margin-bottom: 0;
+}
+
+.subjects-page-row {
+  min-width: 0;
+}
+.subjects-table-col,
+.sessions-table-col {
+  min-width: 0;
+}
+
+.subjects-table,
+.sessions-table {
+  max-width: 100%;
+  min-width: 0;
+
+  ::v-deep .v-data-table__wrapper {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  // Style mobile table rows
+  ::v-deep .v-data-table__mobile-table-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+
+    .v-data-table__mobile-row {
+      padding: 12px 16px;
+
+      &:first-child {
+        font-weight: 600;
+        padding-bottom: 4px;
+      }
+
+      &:not(:first-child) {
+        padding-top: 4px;
+        color: rgba(255, 255, 255, 0.87);
+      }
+    }
+  }
+
+  // Make table more compact on mobile
+  @media (max-width: 599px) {
+    ::v-deep .v-data-table {
+      font-size: 0.875rem;
+    }
+
+    ::v-deep .v-data-table__wrapper {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+}
+</style>
+
 <style lang="scss">
 .trashed {
   color: gray;
+}
+
+.subject-context-menu {
+  max-width: min(320px, calc(100vw - 24px));
+}
+
+.subject-menu-sheet {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 </style>

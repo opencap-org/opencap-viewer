@@ -19,8 +19,8 @@
         Place a checkerboard in the scene
       </v-card-title>
 
-      <v-card-text class="d-flex align-center">
-        <ul class="flex-grow-1">
+      <v-card-text class="d-flex align-center flex-wrap">
+        <ul class="flex-grow-1 instructions-list">
           <li>It should be visible by all cameras (nothing in the way of cameras' view when hitting Calibrate)</li>          
           <li>It can be either perpendicular to the floor (default) or lying on the floor (beta feature; select Lying placement below)</li>
           <li>If perpendicular to the floor, then:
@@ -30,7 +30,7 @@
           </li>
         </ul>
 
-        <div class="image-container pa-3">
+        <div class="image-container pa-3 checkerboard-image">
           <img src="/images/checkerboard-placement.png"/>
         </div>
       </v-card-text>
@@ -41,32 +41,34 @@
         Provide the checkerboard details
       </v-card-title>
 
-      <v-card-text class="d-flex">
-        <div class="d-flex flex-grow-1 align-center inputs">
+      <v-card-text class="d-flex flex-wrap">
+        <div class="d-flex inputs inputs-wrapper">
           <v-text-field
             v-model="rows"
             label="Rows"
-            class="mr-3"/>
+            class="input-field"/>
 
           <v-text-field
             v-model="cols"
             label="Columns"
-            class="mr-3"/>
+            class="input-field"/>
 
           <v-text-field
             v-model="squareSize"
             label="Square size (mm)"
-            class="mr-3"/>
+            class="input-field"/>
 
           <v-select
             v-model="placement"
             :items="['Perpendicular', 'Lying']"
             label="Placement on the floor"
-            class="mr-0"/>
+            class="input-field"/>
 
           <v-tooltip bottom="" max-width="500px">
-            <template v-slot:activator="{ on }">
-              <v-icon v-on="on" class="ml-0">mdi-help-circle-outline</v-icon>
+            <template v-slot:activator="{ on, attrs }">
+              <span v-on="on" v-bind="attrs" class="help-icon-wrapper">
+                <v-icon class="ml-0 help-icon">mdi-help-circle-outline</v-icon>
+              </span>
             </template>
             <div>
               The origin of the world frame is the top-left black-to-black corner of the board (red dot with a blue outline in the picture on the right).
@@ -89,7 +91,7 @@
           </v-tooltip>
         </div>
 
-        <div class="image-container pa-3">
+        <div class="image-container pa-3 checkerboard-image">
           <img src="/images/checkerboard_45.png"/>
         </div>
       </v-card-text>
@@ -245,6 +247,10 @@ export default {
 
 <style lang="scss">
 .step-2-1 {
+  .v-card-text {
+    padding: 16px !important;
+  }
+  
   li {
     font-size: 24px;
 
@@ -255,9 +261,281 @@ export default {
 }
 
 .step-2-2 {
+  .v-card-text {
+    gap: 16px;
+    padding: 16px !important;
+    min-width: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    
+    @media (max-width: 959px) {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      width: 100% !important;
+      max-width: 100% !important;
+      justify-content: flex-start;
+    }
+    
+    @media (max-width: 599px) {
+      gap: 8px;
+      padding: 12px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: hidden;
+    }
+  }
+  
+  .v-card-title {
+    padding: 16px 16px 0 16px !important;
+    text-align: center;
+    font-size: 1.25rem;
+    
+    @media (max-width: 959px) {
+      font-size: 1.1rem;
+      padding: 12px 12px 0 12px !important;
+    }
+    
+    @media (max-width: 599px) {
+      font-size: 1rem;
+      padding: 8px 8px 0 8px !important;
+    }
+  }
+  
+  .instructions-list {
+    min-width: 0;
+    flex: 1 1 auto;
+    
+    @media (max-width: 959px) {
+      width: 100%;
+      margin-bottom: 16px;
+      flex: 1 1 100%;
+    }
+    
+    li {
+      font-size: 1rem;
+      
+      @media (max-width: 599px) {
+        font-size: 0.9rem;
+      }
+    }
+  }
+  
+  .inputs-wrapper {
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    align-items: flex-start;
+    width: auto;
+    max-width: fit-content;
+    
+    @media (min-width: 960px) {
+      max-width: calc(100% - 332px);
+      width: auto;
+    }
+    
+    @media (max-width: 959px) {
+      justify-content: flex-start;
+      align-items: flex-start;
+      gap: 8px;
+      width: 100% !important;
+      max-width: 100% !important;
+      flex-wrap: wrap;
+    }
+    
+    @media (max-width: 599px) {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      width: 100% !important;
+      max-width: 100% !important;
+      flex-wrap: nowrap;
+      align-items: stretch;
+    }
+  }
+  
   .inputs {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    flex: 0 1 auto;
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    
+    @media (max-width: 959px) and (min-width: 600px) {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
     > * {
       flex: 0 0 150px;
+      min-width: 150px;
+      max-width: 150px;
+      box-sizing: border-box;
+      align-self: flex-start;
+      
+      @media (max-width: 959px) and (min-width: 600px) {
+        flex: 0 0 calc(50% - 4px) !important;
+        min-width: 0 !important;
+        max-width: calc(50% - 4px) !important;
+        width: calc(50% - 4px) !important;
+        align-self: flex-start;
+      }
+      
+      @media (max-width: 599px) {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        align-self: stretch;
+      }
+    }
+    
+    .input-field {
+      width: 150px;
+      max-width: 150px;
+      min-width: 150px;
+      box-sizing: border-box;
+      flex: 0 0 150px;
+      align-self: flex-start;
+      
+      ::v-deep .v-input__control {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        height: auto !important;
+        min-height: 0 !important;
+      }
+      
+      ::v-deep .v-input__slot {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        height: auto !important;
+        min-height: 0 !important;
+      }
+      
+      ::v-deep .v-text-field__slot {
+        width: 100%;
+        max-width: 100%;
+        height: auto !important;
+      }
+      
+      @media (max-width: 959px) and (min-width: 600px) {
+        width: calc(50% - 4px) !important;
+        max-width: calc(50% - 4px) !important;
+        min-width: 0 !important;
+        flex: 0 0 calc(50% - 4px) !important;
+      }
+      
+      @media (max-width: 599px) {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+        margin-bottom: 8px;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        flex: 0 0 auto;
+        
+        ::v-deep .v-input__control {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          min-height: 0 !important;
+        }
+        
+        ::v-deep .v-input__slot {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          min-height: 0 !important;
+        }
+        
+        ::v-deep .v-text-field__slot {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+        }
+        
+        ::v-deep .v-select__slot {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+        }
+      }
+    }
+    
+    .help-icon-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 8px;
+      flex-shrink: 0;
+      flex: 0 0 auto;
+      
+      @media (max-width: 959px) {
+        margin-left: 4px;
+        flex: 0 0 auto;
+      }
+      
+      @media (max-width: 599px) {
+        align-self: center;
+        margin-left: 0;
+        margin-top: 8px;
+        margin-bottom: 4px;
+        width: auto;
+        flex: 0 0 auto;
+      }
+    }
+    
+    .help-icon {
+      display: inline-block;
+    }
+  }
+  
+  .checkerboard-image {
+    flex-shrink: 0;
+    flex: 0 0 auto;
+    max-width: 300px;
+    max-height: 300px;
+    width: 300px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    
+    @media (max-width: 959px) {
+      max-width: 250px;
+      max-height: 250px;
+      width: 100%;
+      margin-left: 0;
+      margin-top: 16px;
+    }
+    
+    @media (max-width: 599px) {
+      max-width: 200px;
+      max-height: 200px;
+      margin-top: 12px;
+    }
+    
+    img {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
     }
   }
 }

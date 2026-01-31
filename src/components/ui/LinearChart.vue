@@ -1,35 +1,31 @@
 <template>
   <div class="linear-chart">
       <div class="linear-chart-toolbar">
-        <div style="margin-right: 1rem; margin-top: -15px;">
-        <v-btn class="w-100 mt-4" @click="onResetZoom">
-                  Reset Zoom
-                </v-btn>
-        </div><div style="margin-right: 1rem;">
-                <icon-tooltip
-                  tooltip-text="
-                      Zoom instructions:</br>
-                      - <b>Zoom</b>: Click and Drag over a zone.</br>
-                      - <b>Move</b>: CTRL + Click and move mouse.</br>
-                      - <b>Zoom on X</b>: Mouse wheel on X axis.</br>
-                      - <b>Zoom on Y</b>: Mouse wheel on Y axis.</br>
-                  "
-                  iconClass="fas fa-question-circle"
-                  >
-                </icon-tooltip>
+        <v-btn class="toolbar-btn" @click="onResetZoom">Reset Zoom</v-btn>
+        <icon-tooltip
+          class="toolbar-item"
+          tooltip-text="
+              Zoom instructions:</br>
+              - <b>Zoom</b>: Click and Drag over a zone.</br>
+              - <b>Move</b>: CTRL + Click and move mouse.</br>
+              - <b>Zoom on X</b>: Mouse wheel on X axis.</br>
+              - <b>Zoom on Y</b>: Mouse wheel on Y axis.</br>
+          "
+          iconClass="fas fa-question-circle"
+        />
+        <div class="toolbar-y-select">
+          <v-select
+            v-model="y_selected"
+            @change="drawChart"
+            :items="result.y_axis"
+            label="Y Quantities"
+            multiple outlined dense
+          >
+            <template v-slot:selection="{ item, index }">
+              <span v-if="index === 0">{{ y_selected.length }} items selected</span>
+            </template>
+          </v-select>
         </div>
-        <div style="width: 320px;">
-        <v-select
-          v-model="y_selected"
-          @change="drawChart"
-          :items="result.y_axis"
-          label="Y Quantities"
-          multiple outlined dense
-        >
-          <template v-slot:selection="{ item, index }">
-            <span v-if="index === 0">{{ y_selected.length }} items selected</span>
-          </template>
-        </v-select></div>
       </div>
 
     <div class="content-chart" style="width: 100%;background-color: black;position: relative;top: 0px;">
@@ -313,14 +309,50 @@ export default {
 }
 
 .linear-chart-toolbar {
-  width: 500px;
-  height: 10px;
-  position: relative;
-  left: 100%;
-  top: -30px;
-  margin-left: -520px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  margin-bottom: 4px;
   z-index: 1;
   background: black;
-  display: flex;
+}
+
+.linear-chart-toolbar .toolbar-btn {
+  flex-shrink: 0;
+}
+
+.linear-chart-toolbar .toolbar-item {
+  flex-shrink: 0;
+}
+
+.linear-chart-toolbar .toolbar-y-select {
+  min-width: 0;
+  flex: 1;
+  max-width: 320px;
+}
+
+@media (max-width: 600px) {
+  .linear-chart-toolbar {
+    align-items: stretch;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .linear-chart-toolbar .toolbar-btn {
+    width: auto;
+    min-width: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Y Quantities on its own row below when not enough space */
+  .linear-chart-toolbar .toolbar-y-select {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
+    order: 10;
+  }
 }
 </style>

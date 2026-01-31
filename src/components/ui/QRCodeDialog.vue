@@ -1,11 +1,11 @@
 <template>
     <div v-if="showSessionQR">
         <v-btn
-            class="text-center"
+            class="text-center qr-button"
             @click="loadQRCode"
             text
         >
-            <span class="mr-2">Reconnect phone</span>
+            <span class="qr-button-text d-none d-sm-inline mr-2">Reconnect phone</span>
             <v-icon>mdi-qrcode</v-icon>
         </v-btn>
         <v-dialog
@@ -14,7 +14,7 @@
             width="auto"
         >
             <v-card>
-                <v-card-text>
+                <v-card-text class="qr-code-content">
                     <v-progress-circular
                         v-if="loading"
                         indeterminate
@@ -23,7 +23,7 @@
                         width="5"/>
                     <img
                         v-else
-                        class="w-100 h-100"
+                        class="qr-code-image"
                         :src="session.qrcode">
                 </v-card-text>
                 <v-card-actions>
@@ -78,3 +78,31 @@ export default {
 
 }
 </script>
+
+<style scoped>
+.qr-button {
+  min-width: auto;
+  
+  @media (max-width: 599px) {
+    padding: 0 4px !important;
+    min-width: 36px !important;
+    width: auto !important;
+  }
+}
+
+.qr-code-content {
+  padding: 24px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  
+  .qr-code-image {
+    width: 100%;
+    height: auto;
+    max-width: 400px;
+    max-height: 400px;
+    object-fit: contain;
+  }
+}
+</style>

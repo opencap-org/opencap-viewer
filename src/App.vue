@@ -6,20 +6,23 @@
 
       <router-link
         v-if="showLink"
-        :to="{ name: 'SelectSession' }">
+        :to="{ name: 'SelectSession' }"
+        class="logo-link">
           <img height="59px" class="logo" src="/images/opencap-logo-dark.png"/>
         </router-link>
 
-      <router-link
+      <div
       v-else
-      :to="{ name: '#' }">
+      class="logo-link">
         <img height="59px" class="logo" src="/images/opencap-logo-dark.png"/>
-      </router-link>
-      <v-spacer></v-spacer>
+      </div>
+      
+      <v-spacer class="navbar-spacer"></v-spacer>
 
-      <QRCodeDialog/>
-
-    <profile-dropdown v-if="verified" class="ml-8"></profile-dropdown>
+      <div class="navbar-actions d-flex align-center">
+        <QRCodeDialog class="navbar-qr"/>
+        <profile-dropdown v-if="verified" class="navbar-profile"></profile-dropdown>
+      </div>
 
     </v-app-bar>
 
@@ -85,8 +88,98 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.logo-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 50%;
+  
+  @media (max-width: 599px) {
+    max-width: 40%;
+  }
+}
+
 .logo {
   user-select: none;
   margin-top: 10px;
+  margin-bottom: 10px;
+  height: 59px;
+  max-width: 100%;
+  width: auto;
+  
+  @media (max-width: 599px) {
+    height: 35px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+  
+  @media (min-width: 600px) and (max-width: 959px) {
+    height: 45px;
+    margin-top: 7px;
+    margin-bottom: 7px;
+    max-width: 200px;
+  }
+}
+
+.navbar-spacer {
+  flex: 1 1 auto;
+  min-width: 16px;
+}
+
+.navbar-actions {
+  flex-shrink: 0;
+  gap: 8px;
+  position: relative;
+  z-index: 1001;
+  min-width: 0;
+  
+  @media (max-width: 599px) {
+    gap: 4px;
+  }
+}
+
+.navbar-qr {
+  flex-shrink: 0;
+  
+  @media (max-width: 599px) {
+    min-width: auto;
+  }
+}
+
+.navbar-profile {
+  margin-left: 0;
+  
+  @media (min-width: 600px) {
+    margin-left: 16px;
+  }
+}
+
+::v-deep .v-app-bar {
+  z-index: 5;
+  
+  .v-toolbar__content {
+    flex-wrap: nowrap;
+    overflow: visible;
+    min-width: 0;
+    
+    @media (max-width: 599px) {
+      padding: 4px 8px;
+    }
+  }
+}
+
+// Ensure QR button is visible on mobile
+::v-deep .navbar-qr {
+  .v-btn {
+    min-width: auto !important;
+    padding: 0 8px !important;
+    
+    @media (max-width: 599px) {
+      padding: 0 4px !important;
+      min-width: 36px !important;
+      width: auto !important;
+    }
+  }
 }
 </style>
