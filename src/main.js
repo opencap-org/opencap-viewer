@@ -63,7 +63,7 @@ Vue.component("ValidationObserver", ValidationObserver);
 
 import Toasted from 'vue-toasted'
 Vue.use(Toasted, { 
-  position: 'bottom-center', 
+  position: 'top-center', 
   duration: 10000,
   className: 'vue-toasted',
   // Show all toasts with Close button

@@ -88,9 +88,13 @@ body,
   min-height: 100dvh;
 }
 
-// Ensure content is never hidden under app bar on first paint (Vuetify 2 timing issue)
+// Ensure content is never hidden under app bar on first paint (Vuetify 2 timing issue).
+// Vuetify sets padding-top via inline style from $vuetify.application, which can be 0 on first
+// render before the app bar registers; !important lets this rule win until layout is ready.
+// padding-bottom keeps content (and buttons) above Safari's bottom bar / home indicator on mobile.
 .v-application .v-main {
-  padding-top: var(--v-layout-top, 64px);
+  padding-top: var(--v-layout-top, 64px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #000;

@@ -122,14 +122,24 @@ export default {
 
   .navigation {
     flex-wrap: wrap;
+    gap: 8px;
     
     .slot {
-      width: 100%;
-      margin-bottom: 8px;
+      flex: 1 1 calc(50% - 4px);
+      margin-bottom: 0;
       
       @media (min-width: 600px) {
-        width: 150px;
-        margin-bottom: 0;
+        flex: 0 0 150px;
+      }
+
+      button {
+        width: 100%;
+        height: 48px;
+
+        @media (min-width: 600px) {
+          width: auto;
+          height: auto;
+        }
       }
     }
   }
