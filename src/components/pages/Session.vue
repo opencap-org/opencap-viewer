@@ -805,19 +805,6 @@
         sessionUrl() {
           return location.origin + "/session/" + this.session.id;
         },
-        analysisFunctionsWithMenu() {
-          // Filter out COM analysis as it's not working properly yet (the anlaysis dahboard is not existing yet)
-          return this.analysisFunctions
-            .filter((func) => {
-              const title = (func.title || '').toLowerCase();
-              const description = (func.description || '').toLowerCase();
-              return !title.includes('com') && 
-                     !title.includes('center of mass') && 
-                     !description.includes('com') && 
-                     !description.includes('center of mass');
-            })
-            .map((func) => ({...func, isMenuOpen: false}))
-        },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
         },
