@@ -65,12 +65,27 @@
 html {
   overflow-y: hidden;
   cursor: default;
+  background-color: #000;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  background-color: #000;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 body,
 #app,
 .v-application {
   cursor: default;
+}
+
+#app {
+  background-color: #000;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 // Disabled buttons: show default cursor, not pointer
