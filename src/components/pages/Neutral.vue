@@ -40,7 +40,7 @@
                 </v-card-title>
                   <v-card-text>
                     <v-row align="center">
-                      <v-col cols="11">
+                      <v-col cols="10">
                         <v-autocomplete
                           ref="selectSubjectsRef"
                           required
@@ -354,31 +354,17 @@
       </div>
 
       <!-- Custom navigation bar for Neutral page -->
-      <div class="custom-navigation d-flex align-center">
-        <div class="custom-nav-slot custom-nav-left">
-          <v-btn @click="navigateBack">
-            Back
-          </v-btn>
-        </div>
-        <div class="custom-nav-slot custom-nav-right">
-          <v-btn
-            v-if="isMonocularMode"
-            class="mr-2"
-            color="warning"
-            :disabled="busy || disabledNextButton"
-            min-width="280"
-            @click="skipProcessingToMonocular">
-            Next to OpenCap Monocular
-          </v-btn>
-          <v-btn
-            v-if="!isMonocularMode" 
-            :disabled="busy || disabledNextButton"
-            :loading="busy && !imgs"
-            @click="onNext">
-            {{ rightButtonCaption }}
-          </v-btn>
-        </div>
-      </div>
+      <div class="custom-navigation d-flex justify-space-between align-center mt-3 w-100 flex-nowrap">
+            <v-btn class="same-width" @click="navigateBack">
+              Back
+            </v-btn>
+            <v-btn class="same-width"
+              :disabled="busy || disabledNextButton"
+              :loading="busy && !imgs"
+              @click="isMonocularMode ? skipProcessingToMonocular() : onNext()">
+              Next
+            </v-btn>
+          </div>
     </div>
   
     <DialogComponent
@@ -579,7 +565,11 @@ export default {
     ...mapActions("data", ["loadSubjects", "loadSession"]),
     navigateBack() {
       if (this.isMonocularMode) {
-        this.$router.push('/connect-devices');
+        if (this.$route.query.fromDevice === 'true') {
+          this.$router.push({ name: 'DeviceCheck' });
+        } else {
+          this.$router.push(`/${this.session.id}/calibration`);
+        }
       } else {
         this.$router.push(`/${this.session.id}/calibration`);
       }
@@ -946,11 +936,20 @@ export default {
   padding-bottom: 8px;
   background-color: transparent; 
   z-index: 10;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 8px;
   justify-content: space-between;
-  
-  @media (max-width: 599px) {
+
+  ::v-deep .v-btn {
+    min-width: 120px;
+  }
+
+  /* Ensure Back and Next are identical width */
+  .same-width {
+    width: 140px;
+  }
+
+  @media (max-width: 359px) {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
@@ -1296,8 +1295,66 @@ export default {
     overflow: visible !important;
     display: flex;
     flex-direction: column;
-    padding-bottom: 36px;
+    padding-bottom: 48px;
+    padding-top: 48px;
     min-height: auto;
+    background-color: #1e1e1e !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    border-radius: 8px;
+    
+    * {
+      background-color: transparent;
+    }
+    
+    &::before,
+    &::after {
+      background-color: #1e1e1e !important;
+    }
+    
+    ::v-deep .v-card__title,
+    ::v-deep .v-card__text,
+    ::v-deep .v-card__actions,
+    ::v-deep .data-title,
+    ::v-deep .checkbox-wrapper {
+      background-color: #1e1e1e !important;
+      color: #ffffff !important;
+    }
+    
+    ::v-deep .v-card__title span,
+    ::v-deep .data-title span {
+      color: #ffffff !important;
+      background-color: transparent !important;
+    }
+    
+    ::v-deep .v-input {
+      background-color: #1e1e1e !important;
+    }
+    
+    ::v-deep .v-input__slot {
+      background-color: rgba(255,255,255,0.08) !important;
+      color: #ffffff !important;
+    }
+    
+    ::v-deep .v-select__selection,
+    ::v-deep .v-select__selections {
+      color: #ffffff !important;
+    }
+    
+    ::v-deep .v-label {
+      color: rgba(255,255,255,0.7) !important;
+    }
+    
+    ::v-deep .v-input__append-inner .v-icon {
+      color: rgba(255,255,255,0.7) !important;
+    }
+    
+    ::v-deep .v-icon {
+      color: rgba(255,255,255,0.7) !important;
+    }
+    
+    ::v-deep .v-tooltip span {
+      background-color: transparent !important;
+    }
   }
   
   .v-card__title.data-title {
@@ -1409,17 +1466,29 @@ export default {
   .v-card__actions {
     padding: 12px 16px 8px 16px;
     flex-shrink: 0;
-    z-index: 10;
+    z-index: 30;
     margin-top: 0;
     margin-bottom: 0;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
     
     @media (max-width: 599px) {
       padding: 10px 12px 6px 12px;
     }
     
     .v-btn {
-      min-width: auto;
-      padding: 8px;
+      min-width: 40px;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.08);
+      color: #ffffff;
     }
   }
   
