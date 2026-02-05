@@ -733,7 +733,6 @@ export default {
         
         .session-id-text {
           font-size: 0.75rem;
-          font-family: monospace;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
