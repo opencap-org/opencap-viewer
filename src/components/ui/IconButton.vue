@@ -51,6 +51,7 @@ $size: 24px;
   height: $size;
   color: white;
   border-radius: 3px;
+  cursor: pointer;
 
   &.inline {
     display: inline-block;

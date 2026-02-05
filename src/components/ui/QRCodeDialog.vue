@@ -26,8 +26,15 @@
                         class="qr-code-image"
                         :src="session.qrcode">
                 </v-card-text>
-                <v-card-actions>
-                    <v-btn block @click="dialog = false">Close</v-btn>
+                <v-card-actions class="qr-dialog-actions">
+                    <v-btn
+                        v-if="showOpenInAppButton"
+                        block
+                        class="qr-dialog-btn"
+                        @click="openInApp">
+                        Open in app
+                    </v-btn>
+                    <v-btn block class="qr-dialog-btn" @click="dialog = false">Close</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -37,6 +44,7 @@
 <script>
 import axios from 'axios'
 import { mapState } from 'vuex'
+import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
 
 export default {
     name: 'QRCodeDialog',
@@ -44,6 +52,17 @@ export default {
         ...mapState({
             session: state => state.data.session
         }),
+        isMobileOrTablet() {
+            return this.$vuetify.breakpoint.smAndDown
+        },
+        sessionDeepLinkUrl() {
+            if (!this.session?.id) return null
+            const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
+            return getSessionDeepLink(this.session.id, token)
+        },
+        showOpenInAppButton() {
+            return this.isMobileOrTablet && this.session?.id && this.sessionDeepLinkUrl
+        }
     },
     methods: {
         setShowSessionQR(){
@@ -58,6 +77,13 @@ export default {
             const res = await axios.get(`/sessions/${this.session.id}/get_qr/`)
             this.session.qrcode = res.data['qr']
             this.loading = false
+        },
+
+        openInApp() {
+            if (!this.session?.id) return
+            const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
+            const url = getSessionDeepLink(this.session.id, token)
+            if (url) window.location.href = url
         }
     },
     watch:{
@@ -103,6 +129,20 @@ export default {
     max-width: 400px;
     max-height: 400px;
     object-fit: contain;
+  }
+}
+
+.qr-dialog-actions {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 16px 24px 24px;
+
+  .qr-dialog-btn {
+    flex: none;
+    margin-bottom: 8px;
+  }
+  .qr-dialog-btn:last-child {
+    margin-bottom: 0;
   }
 }
 </style>

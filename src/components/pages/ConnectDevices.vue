@@ -27,6 +27,10 @@
           <div class="d-flex flex-column flex-grow-1 justify-space-between my-1 instructions-wrapper">
             <h1 class="my-4">1. Open the OpenCap app on your phone</h1>
             <h1 class="my-4">2. Scan the QR code</h1>
+            <div v-if="showOpenInAppButton" class="open-in-app-block my-2">
+              <p class="mb-2">On this device?</p>
+              <v-btn block @click="openInApp">Open app with this session</v-btn>
+            </div>
             <h1 class="my-4">3. Mount your phone vertically or horizontally (unlock portrait orientation) on a tripod</h1>
             <h1 class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>
             <h1 class="my-4">5. Repeat 1-4 for all phones you want to connect</h1>
@@ -48,6 +52,7 @@
 <script>
 import { mapMutations, mapActions, mapState } from 'vuex'
 import { apiInfo, clearToastMessages} from "@/util/ErrorMessage.js";
+import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
 import MainLayout from '@/layout/MainLayout'
 
 export default {
@@ -77,7 +82,18 @@ export default {
   computed: {
     ...mapState({ 
       session: state => state.data.session
-    })
+    }),
+    isMobileOrTablet() {
+      return this.$vuetify.breakpoint.smAndDown
+    },
+    sessionDeepLinkUrl() {
+      if (!this.session?.id) return null
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
+      return getSessionDeepLink(this.session.id, token)
+    },
+    showOpenInAppButton() {
+      return this.isMobileOrTablet && this.session?.id && this.sessionDeepLinkUrl
+    }
   },
   methods: {
     ...mapMutations('data', ['clearAll', 'setConnectDevices']),
@@ -90,6 +106,12 @@ export default {
       })
       
       this.$router.push(`/${this.session.id}/calibration`)
+    },
+    openInApp() {
+      if (!this.session?.id) return
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
+      const url = getSessionDeepLink(this.session.id, token)
+      if (url) window.location.href = url
     }
   }
 }

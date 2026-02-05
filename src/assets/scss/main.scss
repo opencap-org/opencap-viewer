@@ -64,6 +64,18 @@
 
 html {
   overflow-y: hidden;
+  cursor: default;
+}
+
+body,
+#app,
+.v-application {
+  cursor: default;
+}
+
+// Disabled buttons: show default cursor, not pointer
+.v-btn.v-btn--disabled {
+  cursor: default;
 }
 
 .warning-toast {
