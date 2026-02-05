@@ -1,14 +1,9 @@
 <template>
   <MainLayout
     column
-    leftButton="Back"
-    rightButton="Calibrate"
-    :step="2"
-    :rightDisabled="busy"
-    @left="$router.push(`/${session.id}/connect-devices`)"
-    @right="onNext">
+    :step="2">
 
-    <v-card class="step-2-1">
+    <v-card v-if="!$vuetify.breakpoint.smAndDown" class="step-2-1">
       <v-card-text class="d-flex align-center">
         <p style="margin-bottom: 0">{{ n_videos_uploaded }} of {{ n_cameras_connected }} videos uploaded.</p>
       </v-card-text>
@@ -97,6 +92,17 @@
       </v-card-text>
     </v-card>
 
+    <v-card v-if="$vuetify.breakpoint.smAndDown" class="step-2-1 mt-4">
+      <v-card-text class="d-flex align-center">
+        <p style="margin-bottom: 0">{{ n_videos_uploaded }} of {{ n_cameras_connected }} videos uploaded.</p>
+      </v-card-text>
+    </v-card>
+
+    <div class="navigation d-flex justify-space-between align-center mt-3 w-100 flex-nowrap">
+      <v-btn style="width: 120px;" @click="$router.push(`/${session.id}/connect-devices`)">Back</v-btn>
+      <v-btn style="width: 120px;" :disabled="busy" @click="onNext">Calibrate</v-btn>
+    </div>
+
   </MainLayout>
 </template>
 
@@ -145,7 +151,8 @@ export default {
     ...mapActions('data', ['loadSession']),
     async onNext () {
       if (this.imgs) {
-        this.$router.push(`/${this.session.id}/neutral`)
+        const query = this.$route.query.isMono === 'true' ? { isMono: 'true' } : {}
+        this.$router.push({ path: `/${this.session.id}/neutral`, query })
       } else {
         this.lastPolledStatus = "";
         // Record press
@@ -198,7 +205,8 @@ export default {
                 playCalibrationFinishedSound();
 
               apiSuccess(this.n_calibrated_cameras + " devices calibrated successfully.", 5000);
-              this.$router.push(`/${this.session.id}/neutral`)
+              const query = this.$route.query.isMono === 'true' ? { isMono: 'true' } : {}
+              this.$router.push({ path: `/${this.session.id}/neutral`, query })
             }
             break;
           }
