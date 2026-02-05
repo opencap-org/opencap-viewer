@@ -25,6 +25,17 @@
                 @click="leftMenuOpen = false">
                 <v-icon>mdi-close</v-icon>
             </v-btn>
+
+            <!-- Open in app button for monocular sessions on mobile -->
+            <v-btn
+                v-if="showOpenInAppButton"
+                color="primary-dark"
+                class="mb-4 w-100"
+                large
+                @click="openInApp">
+                <v-icon left>mdi-cellphone-arrow-down</v-icon>
+                Open in App
+            </v-btn>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
@@ -276,7 +287,22 @@
           </div>
   
         <div class="main-content d-flex flex-grow-1">
-        <div class="viewer flex-grow-1">
+        <!-- Centered Open in App prompt for monocular mobile sessions -->
+        <div v-if="showOpenInAppButton && !trial" class="open-in-app-center d-flex flex-column align-center justify-center">
+            <v-icon size="80" color="primary-dark" class="mb-4">mdi-cellphone-arrow-down</v-icon>
+            <h2 class="white--text mb-4 text-center">Ready to Record</h2>
+            <p class="white--text text-center mb-6 px-4">Open the OpenCap app on this device to start recording motion capture trials.</p>
+            <v-btn
+                color="primary-dark"
+                x-large
+                @click="openInApp"
+                class="open-in-app-btn">
+                <v-icon left>mdi-launch</v-icon>
+                Open in App
+            </v-btn>
+        </div>
+
+        <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
             <div v-if="trial" class="d-flex flex-column h-100">
   
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
@@ -638,6 +664,7 @@
   import { mapState, mapMutations, mapActions } from 'vuex'
   import { apiError, apiErrorRes, apiSuccess } from '@/util/ErrorMessage.js'
   import { playRecordingSound, playRecordingFinishedSound } from "@/util/SoundMessage.js";
+  import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
   import Status from '@/components/ui/Status'
   import * as THREE from 'three'
   import * as THREE_OC from '@/orbitControls'
@@ -829,6 +856,24 @@
         },
         tagsOptions () {
             return Object.entries(this.trialTagsList).map((s) => ({ text: s[1], value: s[0] }))
+        },
+        isMobileOrTablet() {
+          return this.$vuetify.breakpoint.smAndDown
+        },
+        isMonocularSession() {
+          return !!this.session?.isMono
+        },
+        sessionDeepLinkUrl() {
+          if (!this.session?.id) return null
+          const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
+          const subjectName = this.session?.subject_name || null
+          return getSessionDeepLink(this.session.id, token, subjectName)
+        },
+        isSameDevice() {
+          return this.$route.query.sameDevice === 'true'
+        },
+        showOpenInAppButton() {
+          return this.isMobileOrTablet && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
         },
       },
     async mounted() {
@@ -1173,7 +1218,12 @@
       },
       newSession() {
         this.clearAll()
-        this.$router.push({name: 'ConnectDevices'})
+        this.$router.push({name: 'RecordingMode'})
+      },
+      openInApp() {
+        if (this.sessionDeepLinkUrl) {
+          window.location.href = this.sessionDeepLinkUrl
+        }
       },
       setPublic(p) {
         console.log(p)
@@ -1181,7 +1231,8 @@
       },
       async newSessionSameSetup() {
         await this.initSessionSameSetup()
-        this.$router.push({name: 'Neutral', params: {id: this.session.id}})
+        const query = this.isMonocularSession ? { isMono: 'true', fromDevice: 'true' } : {}
+        this.$router.push({name: 'Neutral', params: {id: this.session.id}, query})
       },
       startPoll() {
         this.statusPoll = window.setTimeout(async () => {
@@ -1988,6 +2039,10 @@
         min-height: 250px;
         flex: 1 1 50vh;
       }
+
+      @media (max-width: 599px) {
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 8px));
+      }
   
       #mocap {
         width: 100%;
@@ -2011,14 +2066,15 @@
       flex-direction: column;
   
       @media (max-width: 959px) {
-        position: absolute;
+        position: fixed;
         right: 0;
-        top: 0;
+        top: calc(64px + env(safe-area-inset-top, 0px));
         width: 120px;
         min-width: 100px;
         max-width: 35%;
         height: auto;
-        z-index: 1;
+        z-index: 101;
+        padding-right: env(safe-area-inset-right, 0);
       }
   
       @media (min-width: 960px) {
@@ -2108,6 +2164,10 @@
       width: 100%;
 
       @media (max-width: 599px) {
+        padding-bottom: calc(56px + env(safe-area-inset-bottom, 8px));
+      }
+
+      @media (max-width: 599px) {
         flex-wrap: nowrap;
       }
       
@@ -2123,6 +2183,34 @@
           margin-right: 8px;
           margin-bottom: 0;
         }
+      }
+    }
+
+    .open-in-app-center {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10;
+      padding: 24px;
+
+      h2 {
+        font-size: 1.75rem;
+        font-weight: 500;
+      }
+
+      p {
+        font-size: 1rem;
+        opacity: 0.9;
+        max-width: 400px;
+      }
+
+      .open-in-app-btn {
+        font-size: 1.1rem;
+        padding: 16px 32px;
+        height: auto;
       }
     }
   }

@@ -663,6 +663,7 @@ export default {
           params: {
             id: this.session.id,
           },
+          query: this.$route.query.fromDevice === 'true' ? { sameDevice: 'true' } : {},
         });
       } else {
         if (this.n_calibrated_cameras < 2) {
@@ -748,6 +749,7 @@ export default {
               params: {
                 id: this.session.id,
               },
+              query: this.$route.query.fromDevice === 'true' ? { sameDevice: 'true' } : {},
             });
             break;
           }
@@ -884,6 +886,7 @@ export default {
             params: {
               id: this.session.id,
             },
+            query: this.$route.query.fromDevice === 'true' ? { sameDevice: 'true' } : {},
           });
         } catch (error) {
           apiError(error);

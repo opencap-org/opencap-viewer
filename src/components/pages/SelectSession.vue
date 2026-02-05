@@ -2,7 +2,7 @@
   <div class="select-session d-flex flex-column">
     <div class="pa-2 d-flex flex-wrap align-center toolbar-container">
       <v-btn
-        @click="$router.push({ name: 'ConnectDevices' })"
+        @click="$router.push({ name: 'RecordingMode' })"
         class="toolbar-button">
         New session
       </v-btn>
@@ -678,27 +678,38 @@ export default {
 
 .select-session {
   height: calc(98vh - 64px);
+  height: calc(98dvh - 64px);
+  overflow: hidden;
+
+  @media (max-width: 599px) {
+    height: calc(100vh - 64px - 24px - env(safe-area-inset-bottom, 0px));
+    height: calc(100dvh - 64px - 24px - env(safe-area-inset-bottom, 0px));
+  }
 
   .sessions-table {
     margin: 0 8px 16px 8px;
+    overflow: hidden;
     
     @media (max-width: 599px) {
-      margin: 0 4px 16px 4px;
+      margin: 0 4px 8px 4px;
     }
     
     .v-data-table__wrapper {
       overflow-x: auto;
       overflow-y: auto;
       height: calc(94vh - 128px);
+      height: calc(94dvh - 128px);
       position: relative;
       -webkit-overflow-scrolling: touch;
 
       @media (max-width: 959px) {
         height: calc(94vh - 200px);
+        height: calc(94dvh - 200px);
       }
       
       @media (max-width: 599px) {
-        height: calc(94vh - 220px);
+        height: calc(100vh - 64px - 220px - env(safe-area-inset-bottom, 0px));
+        height: calc(100dvh - 64px - 220px - env(safe-area-inset-bottom, 0px));
         border-radius: 4px;
       }
 

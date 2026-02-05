@@ -9,7 +9,7 @@
       <slot/>
     </div>
 
-    <div class="navigation d-flex justify-space-between align-center mt-3 w-100">
+    <div class="navigation d-flex justify-space-between align-center mt-3 w-100" v-show="showNavigation">
       <div class="slot">
         <v-btn
           v-if="leftButton"
@@ -22,7 +22,7 @@
           name="left"/>
       </div>
 
-      <div class="slot d-flex justify-end">
+      <div class="slot">
         <v-btn
           v-if="rightButton"
           :disabled="rightDisabled || rightSpinner"
@@ -84,6 +84,10 @@ export default {
     fixedHeight: {
       type: Boolean,
       default: true
+    },
+    showNavigation: {
+      type: Boolean,
+      default: true
     }
   },
   computed: {
@@ -129,7 +133,7 @@ export default {
       margin-bottom: 0;
       
       @media (min-width: 600px) {
-        flex: 0 0 150px;
+        flex: none;
       }
 
       button {
@@ -138,7 +142,8 @@ export default {
 
         @media (min-width: 600px) {
           width: auto;
-          height: auto;
+          height: 48px;
+          min-width: 120px;
         }
       }
     }

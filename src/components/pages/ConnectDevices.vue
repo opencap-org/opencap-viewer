@@ -98,7 +98,7 @@ export default {
       return this.$route.query.isMono === 'true'
     },
     showOpenInAppButton() {
-      return this.isMobileOrTablet && this.isMonocularMode && this.session?.id && this.sessionDeepLinkUrl
+      return this.isMobileOrTablet && this.isMonocularMode && this.$route.query.fromDevice === 'true' && this.session?.id && this.sessionDeepLinkUrl
     }
   },
   methods: {
@@ -113,7 +113,7 @@ export default {
       
       let path = `/${this.session.id}/calibration`
       if (this.isMonocularMode) {
-        path += '?isMono=true'
+        path = `/${this.session.id}/neutral?isMono=true`
       }
       this.$router.push(path)
     },

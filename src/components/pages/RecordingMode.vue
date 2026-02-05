@@ -61,11 +61,28 @@ export default {
     MainLayout
   },
   methods: {
+    isMobileOrTablet() {
+      // Use user agent to detect iPhone, iPad, Android, or touch device
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      // iPadOS 13+ identifies as Mac, so check for touch support
+      const isIpad = (/iPad/.test(ua)) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isIphone = /iPhone/.test(ua);
+      const isAndroid = /Android/.test(ua);
+      return isIpad || isIphone || isAndroid;
+    },
     selectMonocular() {
-      this.$router.push({ name: 'DeviceCheck' })
+      if (this.isMobileOrTablet()) {
+        this.$router.push({ name: 'DeviceCheck' })
+      } else {
+        this.$router.push({ name: 'ConnectDevices', query: { isMono: 'true' } })
+      }
     },
     selectMultiPhone() {
-      this.$router.push({ name: 'ConnectDevices' })
+      if (this.isMobileOrTablet()) {
+        this.$router.push({ name: 'DeviceCheck', query: { isMono: 'false' } })
+      } else {
+        this.$router.push({ name: 'ConnectDevices', query: { isMono: 'false' } })
+      }
     }
   }
 }
@@ -104,6 +121,10 @@ export default {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
   &:hover {
     transform: translateY(-4px);
   }
@@ -119,6 +140,7 @@ export default {
 .option-card .option-title {
   color: #ffffff; /* ensure text in cards is white */
   font-size: 1.25rem;
+  text-align: center;
 }
 
 .option-card .v-icon {
