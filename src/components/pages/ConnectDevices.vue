@@ -67,7 +67,10 @@ export default {
     }
   },
   async mounted () {
-    apiInfo("The iOS app is now available on the App Store.", 20000, {text : "Go to App Store", onClick : () => {window.open("https://apps.apple.com/us/app/opencap/id1630513242", "_blank");}, position: 'top-center'});
+    if (!localStorage.getItem('iosAppNotificationShown')) {
+      apiInfo("The iOS app is now available on the App Store.", 20000, {text : "Go to App Store", onClick : () => {window.open("https://apps.apple.com/us/app/opencap/id1630513242", "_blank");}, position: 'top-center'});
+      localStorage.setItem('iosAppNotificationShown', 'true');
+    }
     if (this.$router.params != undefined) {
         await this.loadSession(this.$route.params.id)
     } else {
@@ -91,8 +94,11 @@ export default {
       const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
       return getSessionDeepLink(this.session.id, token)
     },
+    isMonocularMode() {
+      return this.$route.query.isMono === 'true'
+    },
     showOpenInAppButton() {
-      return this.isMobileOrTablet && this.session?.id && this.sessionDeepLinkUrl
+      return this.isMobileOrTablet && this.isMonocularMode && this.session?.id && this.sessionDeepLinkUrl
     }
   },
   methods: {
@@ -105,7 +111,11 @@ export default {
         cameras: this.cameras
       })
       
-      this.$router.push(`/${this.session.id}/calibration`)
+      let path = `/${this.session.id}/calibration`
+      if (this.isMonocularMode) {
+        path += '?isMono=true'
+      }
+      this.$router.push(path)
     },
     openInApp() {
       if (!this.session?.id) return
