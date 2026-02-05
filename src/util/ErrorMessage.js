@@ -97,9 +97,16 @@ function apiSuccess (text) {
 /**
  * Shorthand for info toast message
  * @param {String} text - message text
+ * @param {Number} time - duration in ms (null = default)
+ * @param {Object} opts - options: { text, onClick } for action, or { position } for toast placement, etc.
  */
- function apiInfo (text, time=null, action={text : 'Close', onClick : (e, toastObject) => {toastObject.goAway(0);}}) {
-  Vue.toasted.info(text, {duration: time, action:action}, )
+function apiInfo (text, time=null, opts={}) {
+  const defaultAction = { text: 'Close', onClick: (e, t) => t.goAway(0) };
+  const { text: actionText, onClick, ...rest } = opts;
+  const action = (actionText !== undefined && onClick !== undefined)
+    ? { text: actionText, onClick }
+    : defaultAction;
+  Vue.toasted.info(text, { duration: time, action, ...rest });
 }
 /**
  * Shorthand for info toast message
