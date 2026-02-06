@@ -2066,15 +2066,14 @@
       flex-direction: column;
   
       @media (max-width: 959px) {
-        position: fixed;
+        position: absolute;
         right: 0;
-        top: calc(64px + env(safe-area-inset-top, 0px));
+        top: 0;
         width: 120px;
         min-width: 100px;
         max-width: 35%;
         height: auto;
-        z-index: 101;
-        padding-right: env(safe-area-inset-right, 0);
+        z-index: 1;
       }
   
       @media (min-width: 960px) {
@@ -2195,6 +2194,8 @@
       background: rgba(0, 0, 0, 0.7);
       z-index: 10;
       padding: 24px;
+      /* Let clicks pass through the overlay except for the explicit button */
+      pointer-events: none;
 
       h2 {
         font-size: 1.75rem;
@@ -2211,6 +2212,8 @@
         font-size: 1.1rem;
         padding: 16px 32px;
         height: auto;
+        /* Make only the button clickable */
+        pointer-events: auto;
       }
     }
   }
