@@ -7,9 +7,7 @@
 
     <div class="recording-mode-wrapper d-flex flex-column align-center justify-center">
       <h1 class="mb-6 text-center">How will you record?</h1>
-      <p class="mb-8 text-center subtitle-text">
-        Choose how many phones you will use for this session.
-      </p>
+      
 
       <div class="options-container d-flex justify-center">
         <v-card
@@ -78,11 +76,8 @@ export default {
       }
     },
     selectMultiPhone() {
-      if (this.isMobileOrTablet()) {
-        this.$router.push({ name: 'DeviceCheck', query: { isMono: 'false' } })
-      } else {
-        this.$router.push({ name: 'ConnectDevices', query: { isMono: 'false' } })
-      }
+      // For multi-phone recordings always go straight to ConnectDevices (QR flow).
+      this.$router.push({ name: 'ConnectDevices', query: { isMono: 'false' } })
     }
   }
 }
