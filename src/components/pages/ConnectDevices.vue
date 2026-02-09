@@ -92,7 +92,8 @@ export default {
     sessionDeepLinkUrl() {
       if (!this.session?.id) return null
       const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
-      return getSessionDeepLink(this.session.id, token)
+      const subjectName = this.session?.subject_name || null
+      return getSessionDeepLink(this.session.id, token, subjectName)
     },
     isMonocularMode() {
       return this.$route.query.isMono === 'true'
@@ -120,7 +121,8 @@ export default {
     openInApp() {
       if (!this.session?.id) return
       const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
-      const url = getSessionDeepLink(this.session.id, token)
+      const subjectName = this.session?.subject_name || null
+      const url = getSessionDeepLink(this.session.id, token, subjectName)
       if (url) window.location.href = url
     }
   }

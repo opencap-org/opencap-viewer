@@ -58,7 +58,8 @@ export default {
         sessionDeepLinkUrl() {
             if (!this.session?.id) return null
             const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
-            return getSessionDeepLink(this.session.id, token)
+            const subjectName = this.session?.subject_name || null
+            return getSessionDeepLink(this.session.id, token, subjectName)
         },
         showOpenInAppButton() {
             return this.isMobileOrTablet && this.session?.id && this.sessionDeepLinkUrl
@@ -82,7 +83,8 @@ export default {
         openInApp() {
             if (!this.session?.id) return
             const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
-            const url = getSessionDeepLink(this.session.id, token)
+            const subjectName = this.session?.subject_name || null
+            const url = getSessionDeepLink(this.session.id, token, subjectName)
             if (url) window.location.href = url
         }
     },
