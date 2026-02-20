@@ -4,14 +4,14 @@
       <v-btn
         @click="$router.push({ name: 'RecordingMode' })"
         class="toolbar-button">
-        <v-icon left class="d-sm-none">mdi-plus-circle-outline</v-icon>
+        <v-icon left>mdi-plus-circle-outline</v-icon>
         New session
       </v-btn>
 
       <v-menu offset-y>
         <template v-slot:activator="{ on, attrs }">
           <v-btn dark v-bind="attrs" v-on="on" class="toolbar-button">
-            <v-icon left class="d-sm-none">mdi-view-dashboard-outline</v-icon>
+            <v-icon left>mdi-view-dashboard-outline</v-icon>
             <span class="dashboards-text d-none d-sm-inline mr-2">Dashboards</span>
             <span class="dashboards-text-mobile d-sm-none">Dashboards</span>
             <v-icon class="d-none d-sm-inline">mdi-menu</v-icon>
@@ -33,14 +33,14 @@
       <v-btn
         class="toolbar-button"
         @click="$router.push({ name: 'Subjects' })">
-        <v-icon left class="d-sm-none">mdi-account-group-outline</v-icon>
+        <v-icon left>mdi-account-group-outline</v-icon>
         Subjects
       </v-btn>
 
       <v-btn
         class="toolbar-button"
         @click="$router.push({ name: 'RecycleBin' })">
-        <v-icon left class="d-sm-none">mdi-delete-outline</v-icon>
+        <v-icon left>mdi-delete-outline</v-icon>
         Recycle Bin
       </v-btn>
 
@@ -667,7 +667,7 @@ export default {
   justify-content: flex-start;
   
   @media (max-width: 599px) {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+    padding-top: 8px;
     gap: 6px;
     justify-content: flex-start;
     align-items: stretch;
@@ -724,7 +724,7 @@ export default {
   @media (max-width: 599px) {
     height: calc(100vh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
     height: calc(100dvh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
-    padding-top: env(safe-area-inset-top, 0px);
+    padding-top: 0;
   }
 
   .sessions-table {
@@ -933,9 +933,24 @@ export default {
     flex: 1 1 100% !important;
     max-width: 100%;
     margin-left: 0 !important;
-    flex-direction: column;
-    align-items: stretch !important;
+    flex-direction: row;
+    align-items: center !important;
     gap: 6px;
+
+    > div:first-child {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin-right: 0 !important;
+    }
+
+    > div:last-child {
+      flex: 0 0 auto;
+
+      .submit-btn {
+        width: auto;
+        margin-top: 0;
+      }
+    }
   }
 }
 </style>

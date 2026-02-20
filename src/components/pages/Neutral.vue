@@ -356,7 +356,7 @@
       <!-- Custom navigation bar for Neutral page -->
       <div class="custom-navigation d-flex justify-space-between align-center mt-3 w-100 flex-nowrap">
             <v-btn class="same-width" @click="navigateBack">
-              Back
+              {{ backButtonLabel }}
             </v-btn>
             <v-btn class="same-width"
               :disabled="busy || disabledNextButton"
@@ -523,6 +523,15 @@ export default {
     errorsConsole() {
       return this.errors;
     },
+    backButtonLabel() {
+      if (this.isMonocularMode && this.$route.query.fromDevice === 'true') {
+        return 'Back to device check';
+      }
+      if (this.isMonocularMode) {
+        return 'Back to connect devices';
+      }
+      return 'Back to calibration';
+    },
     subject_search: {
       get() {
         return this.subject_query
@@ -568,7 +577,7 @@ export default {
         if (this.$route.query.fromDevice === 'true') {
           this.$router.push({ name: 'DeviceCheck' });
         } else {
-          this.$router.push(`/${this.session.id}/calibration`);
+          this.$router.push({ path: `/${this.session.id}/connect-devices`, query: { isMono: 'true' } });
         }
       } else {
         this.$router.push(`/${this.session.id}/calibration`);

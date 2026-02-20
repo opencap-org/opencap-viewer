@@ -126,6 +126,12 @@ body,
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
   }
 
+  // Ensure each route page starts below the dynamic iOS top safe area on real devices.
+  .v-application .v-main__wrap > * {
+    padding-top: env(safe-area-inset-top, 0px);
+    box-sizing: border-box;
+  }
+
   .v-application .v-main > .container,
   .v-application .v-main > .container-fluid {
     padding-left: 8px;

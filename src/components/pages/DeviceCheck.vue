@@ -99,7 +99,7 @@ export default {
       // Go to ConnectDevices with isMono flag — user will scan QR from phone
       this.$router.push({
         name: 'ConnectDevices',
-        query: { isMono: 'true' }
+        query: { isMono: 'true', fromDeviceCheck: 'true' }
       })
     }
   }

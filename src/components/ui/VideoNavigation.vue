@@ -1,6 +1,14 @@
 <template>
   <div class="d-flex justify-space-around">
     <v-btn
+      v-if="showLoopToggle"
+      icon
+      :title="loop ? 'Loop on' : 'Loop off'"
+      @click="$emit('toggle-loop')">
+      <v-icon>{{ loop ? 'mdi-repeat' : 'mdi-repeat-off' }}</v-icon>
+    </v-btn>
+
+    <v-btn
       icon
       :disabled="frame === 0 || disabled || playing"
       @click="frame = 0">
@@ -43,6 +51,14 @@ export default {
     // Current frame
     value: Number,
     maxFrame: Number,
+    loop: {
+      type: Boolean,
+      default: false
+    },
+    showLoopToggle: {
+      type: Boolean,
+      default: false
+    },
     disabled: {
       type: Boolean,
       default: false

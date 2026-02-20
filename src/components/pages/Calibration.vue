@@ -99,7 +99,7 @@
     </v-card>
 
     <div class="navigation d-flex justify-space-between align-center mt-3 w-100 flex-nowrap">
-      <v-btn style="width: 120px;" @click="$router.push(`/${session.id}/connect-devices`)">Back</v-btn>
+      <v-btn style="width: 120px;" @click="$router.push(`/${session.id}/connect-devices`)">Back to connect devices</v-btn>
       <v-btn style="width: 120px;" :disabled="busy" @click="onNext">Calibrate</v-btn>
     </div>
 

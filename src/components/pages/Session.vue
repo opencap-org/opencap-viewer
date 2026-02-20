@@ -3,7 +3,7 @@
         <!-- Mobile menu button -->
         <v-btn
             v-if="!leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
-            class="mobile-menu-toggle"
+            class="mobile-menu-toggle ui-no-zoom"
             icon
             @click="leftMenuOpen = true">
             <v-icon>mdi-menu</v-icon>
@@ -16,16 +16,17 @@
             @click="leftMenuOpen = false">
         </div>
         
-        <div class="left d-flex flex-column pa-2" :class="{ 'mobile-open': leftMenuOpen }">
+        <div class="left ui-no-zoom d-flex flex-column pa-2" :class="{ 'mobile-open': leftMenuOpen }">
             <!-- Mobile close button -->
             <v-btn
                 v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
-                class="mobile-close-btn"
+                class="mobile-close-btn ui-no-zoom"
                 icon
                 @click="leftMenuOpen = false">
                 <v-icon>mdi-close</v-icon>
             </v-btn>
 
+            <div class="left-scroll d-flex flex-column">
             <!-- Open in app button for monocular sessions on mobile -->
             <v-btn
                 v-if="showOpenInAppButton"
@@ -51,7 +52,7 @@
                   <p v-if="state === 'recording'">{{ n_cameras_connected }} devices are recording, do not refresh</p>
                   <p v-if="state === 'processing'">{{ n_videos_uploaded  }} of {{ n_cameras_connected }} videos uploaded, do not refresh.</p>
               </ValidationObserver>
-  
+
               <div class="trials flex-grow-1">
                   <div v-for="(t, index) in filteredTrialsWithMenu"
                       v-bind:item="t"
@@ -142,28 +143,35 @@
                   </v-list>
                 </v-sheet>
               </v-bottom-sheet>
-  
-              <v-btn class="mt-4 w-100" @click="toggleSessionMenuButtons()">
+
+              <v-btn class="session-actions-toggle w-100" @click="toggleSessionMenuButtons()">
                   <v-icon v-if="showSessionMenuButtons">mdi-menu-down</v-icon>
                   <v-icon v-else>mdi-menu-up</v-icon>
               </v-btn>
+
               <div v-if="showSessionMenuButtons">
                   <div>
                       <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
                   </div>
   
                   <v-btn small class="w-100" v-show="show_controls" :disabled="busy || state !== 'ready'"
-                      @click="newSessionSameSetup">New session, same setup
+                      @click="newSessionSameSetup">
+                      <v-icon left small>mdi-plus-box-multiple-outline</v-icon>
+                      New session, same setup
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">New
-                      session
+                  <v-btn small class="mt-4 w-100" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">
+                      <v-icon left small>mdi-plus-circle-outline</v-icon>
+                      New session
                   </v-btn>
   
                   <v-dialog v-model="dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
                       :fullscreen="$vuetify.breakpoint.smAndDown">
                       <template v-slot:activator="{ on, attrs }">
-                          <v-btn small class="mt-4 w-100" v-bind="attrs" v-on="on" v-show="show_controls">Share session publicly</v-btn>
+                          <v-btn small class="mt-4 w-100" v-bind="attrs" v-on="on" v-show="show_controls">
+                              <v-icon left small>mdi-share-variant-outline</v-icon>
+                              Share session publicly
+                          </v-btn>
                       </template>
   
                       <v-card>
@@ -213,6 +221,7 @@
   
                   <!-- Archive session -->
                   <v-btn small class="mt-4 w-100" @click="showArchiveDialog = true">
+                      <v-icon left small>mdi-download-outline</v-icon>
                       Download data
                   </v-btn>
                   <v-dialog
@@ -271,19 +280,23 @@
                   <!-- End archive session -->
   
                   <v-btn small v-if="isSyncDownloadAllowed" class="mt-4 w-100" :disabled="downloading" @click="onDownloadData">
+                      <v-icon v-if="!downloading" left small>mdi-download</v-icon>
                       <v-progress-circular v-if="downloading" indeterminate class="mr-2" color="grey" size="14" width="2" />
                       Download data (old)
                   </v-btn>
   
                   <v-btn small class="mt-4 w-100" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
+                      <v-icon left small>mdi-view-dashboard-outline</v-icon>
                       Dashboard kinematics
                   </v-btn>
   
                   <v-btn small class="mt-4 w-100" v-show="show_controls" @click="$router.push({ name: 'SelectSession'})"
                       :disabled="busy || state !== 'ready'">
+                      <v-icon left small>mdi-arrow-left</v-icon>
                       Back to session list
                   </v-btn>
               </div>
+            </div>
           </div>
   
         <div class="main-content d-flex flex-grow-1">
@@ -308,7 +321,7 @@
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
   
   
-                  <div v-if="!videoControlsDisabled" class="video-controls d-flex flex-wrap align-center pa-2">
+                  <div v-if="!videoControlsDisabled" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
                           :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"/>
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
@@ -321,7 +334,7 @@
             </div>
         </div>
   
-        <div class="right d-flex flex-column">
+        <div class="right d-flex flex-column" :style="mobileVideoPanelStyle">
             <div class="videos d-flex flex-column">
               <video 
                   v-for="(video, index) in videos" 
@@ -335,20 +348,34 @@
                   class="video-element" />
             </div>
 
+            <div v-if="isMobileOrTablet" class="mobile-video-toolbar ui-no-zoom d-flex justify-end">
+              <v-btn
+                  small
+                  class="playback-video-size speed-control-button"
+                  @click="cycleMobileVideoSize">
+                Cam {{ mobileVideoSizeLabel }}
+              </v-btn>
+            </div>
+
             <div class="right-spacer" />
 
-            <div class="playback-controls">
-              <SpeedControl v-model="playSpeed" />
-  
-              <VideoNavigation 
-                  :playing="playing" 
-                  :value="frame" 
-                  :maxFrame="frames.length - 1"
-                  :disabled="videoControlsDisabled" 
-                  @play="togglePlay(true)"
-                  @pause="togglePlay(false)"
-                  @input="onNavigate" 
-                  class="mb-2" />
+            <div class="playback-controls ui-no-zoom">
+              <div class="playback-controls-row">
+                <VideoNavigation
+                    :playing="playing"
+                    :value="frame"
+                    :maxFrame="frames.length - 1"
+                    :loop="loopPlayback"
+                    :show-loop-toggle="true"
+                    :disabled="videoControlsDisabled"
+                    @play="togglePlay(true)"
+                    @pause="togglePlay(false)"
+                    @toggle-loop="toggleLoopPlayback"
+                    @input="onNavigate"
+                    class="playback-navigation" />
+
+                <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+              </div>
             </div>
           </div>
         </div>
@@ -766,7 +793,9 @@
               frame: 0,
               time: 0,
               playing: false,
+              loopPlayback: true,
               playSpeed: 1,
+              mobileVideoSizeIndex: 0,
   
               show_controls: 1,
   
@@ -799,6 +828,7 @@
               trialForPermanentDeleteDialog: null,
 
               isAuditoryFeedbackEnabled: false,
+              controlGestureGuard: null,
           }
       },
       filters: {
@@ -875,6 +905,27 @@
         showOpenInAppButton() {
           return this.isMobileOrTablet && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
         },
+        mobileVideoSizeLabel() {
+          return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
+        },
+        mobileVideoPanelStyle() {
+          if (!this.isMobileOrTablet) {
+            return {}
+          }
+
+          const widths = [120, 150, 180]
+          const minWidths = [100, 120, 140]
+          const maxWidths = ['35%', '45%', '55%']
+          const maxHeight = [120, 150, 180]
+          const idx = this.mobileVideoSizeIndex
+
+          return {
+            width: `${widths[idx]}px`,
+            minWidth: `${minWidths[idx]}px`,
+            maxWidth: maxWidths[idx],
+            '--mobile-video-max-height': `${maxHeight[idx]}px`
+          }
+        }
       },
     async mounted() {
       await this.loadSession(this.$route.params.id)
@@ -917,6 +968,7 @@
 
       // Add keyboard event listener
       window.addEventListener('keydown', this.handleKeyboard)
+      this.bindControlGestureGuards()
     },
     beforeDestroy() {
       this.cancelPoll()
@@ -929,6 +981,7 @@
 
       // Remove keyboard event listener
       window.removeEventListener('keydown', this.handleKeyboard)
+      this.unbindControlGestureGuards()
     },
     watch: {
       trial() {
@@ -987,6 +1040,37 @@
         'loadSession',
         'initSessionSameSetup',
         'loadAnalysisFunctions', 'loadAnalysisFunctionsPending', 'loadAnalysisFunctionsStates', 'loadTrialTags']),
+      bindControlGestureGuards() {
+        this.controlGestureGuard = (event) => {
+          const target = event.target
+          if (!target || !target.closest || !target.closest('.ui-no-zoom')) {
+            return
+          }
+
+          if (event.type === 'touchmove') {
+            if (event.touches && event.touches.length > 1) {
+              event.preventDefault()
+            }
+            return
+          }
+
+          event.preventDefault()
+        }
+
+        document.addEventListener('gesturestart', this.controlGestureGuard, { passive: false })
+        document.addEventListener('gesturechange', this.controlGestureGuard, { passive: false })
+        document.addEventListener('touchmove', this.controlGestureGuard, { passive: false })
+      },
+      unbindControlGestureGuards() {
+        if (!this.controlGestureGuard) {
+          return
+        }
+
+        document.removeEventListener('gesturestart', this.controlGestureGuard)
+        document.removeEventListener('gesturechange', this.controlGestureGuard)
+        document.removeEventListener('touchmove', this.controlGestureGuard)
+        this.controlGestureGuard = null
+      },
       async changeState() {
         switch (this.state) {
           case 'ready': {
@@ -1731,11 +1815,15 @@
       },
       onVideoEnded(index) {
         if (index === 0) {
-          this.videos.forEach((video, index) => {
-            const vid_element = this.videoElement(index)
-            vid_element.currentTime = 0
-            vid_element.play()
-          })
+          if (this.loopPlayback) {
+            this.videos.forEach((video, index) => {
+              const vid_element = this.videoElement(index)
+              vid_element.currentTime = 0
+              vid_element.play()
+            })
+          } else {
+            this.togglePlay(false)
+          }
         }
       },
       videoElement(index) {
@@ -1773,6 +1861,12 @@
             vid_element.pause()
           })
         }
+      },
+      toggleLoopPlayback() {
+        this.loopPlayback = !this.loopPlayback
+      },
+      cycleMobileVideoSize() {
+        this.mobileVideoSizeIndex = (this.mobileVideoSizeIndex + 1) % 3
       },
       onNavigate(frame) {
         const step = this.vid0().duration / this.frames.length
@@ -1907,6 +2001,12 @@
   .text-orange {
     color: orange !important;
   }
+
+  .ui-no-zoom {
+    touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
   
   .step-5 {
     height: calc(100vh - var(--app-bar-height, 64px));
@@ -1966,7 +2066,7 @@
       width: 100%;
       min-width: 0;
       max-height: 40vh;
-      overflow-y: auto;
+      overflow: hidden;
       flex-shrink: 0;
       position: relative;
       z-index: 99;
@@ -2000,9 +2100,46 @@
         transform: none;
         background-color: #000000; // Keep black on desktop
       }
+
+      .left-scroll {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 12px;
+      }
+
+      .session-actions-toggle {
+        margin-top: 16px;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        background-color: inherit !important;
+      }
+
+      @media (max-width: 959px) {
+        .left-scroll {
+          padding-bottom: 64px;
+        }
+
+        .session-actions-toggle {
+          margin-top: 0;
+          position: fixed;
+          left: 0;
+          bottom: max(8px, env(safe-area-inset-bottom, 0));
+          width: 280px !important;
+          max-width: 85vw;
+          z-index: 102;
+        }
+
+        &:not(.mobile-open) .session-actions-toggle {
+          display: none;
+        }
+      }
   
       .trials {
-        overflow-y: auto;
+        overflow-y: visible;
+        flex-grow: 0;
   
         .trial {
           border-radius: 4px;
@@ -2050,6 +2187,7 @@
         min-height: 0;
         overflow: hidden;
         flex: 1 1 auto;
+        touch-action: none;
   
         canvas {
           width: 100% !important;
@@ -2064,6 +2202,11 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+
+      .mobile-video-toolbar {
+        padding: 0;
+        margin-top: 8px;
+      }
   
       @media (max-width: 959px) {
         position: absolute;
@@ -2104,6 +2247,10 @@
           padding: 0;
           margin: 0;
         }
+
+        @media (max-width: 959px) {
+          align-items: flex-end;
+        }
       }
 
       .right-spacer {
@@ -2132,7 +2279,9 @@
         display: block;
         
         @media (max-width: 959px) {
-          max-height: 120px;
+          width: 100%;
+          object-position: right center;
+          max-height: var(--mobile-video-max-height, 120px);
         }
         
         @media (min-width: 960px) {
@@ -2145,6 +2294,27 @@
         padding: 8px;
         background-color: rgba(0, 0, 0, 0.3);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+        .playback-controls-row {
+          display: flex;
+          align-items: center;
+        }
+
+        .playback-navigation {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+
+        .playback-speed {
+          flex: 0 0 auto;
+        }
+
+        .playback-video-size {
+          flex: 0 0 auto;
+          text-transform: none;
+          min-width: 70px;
+          margin-right: 4px;
+        }
         
         @media (max-width: 959px) {
           position: fixed;
@@ -2154,7 +2324,7 @@
           z-index: 50;
           background-color: rgba(18, 18, 18, 0.98);
           border-top: 1px solid rgba(255, 255, 255, 0.15);
-          padding-bottom: env(safe-area-inset-bottom, 8px);
+          padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 12px);
         }
       }
     }
@@ -2162,8 +2332,8 @@
     .video-controls {
       width: 100%;
 
-      @media (max-width: 599px) {
-        padding-bottom: calc(56px + env(safe-area-inset-bottom, 8px));
+      @media (max-width: 959px) {
+        padding-bottom: calc(90px + env(safe-area-inset-bottom, 8px));
       }
 
       @media (max-width: 599px) {

@@ -5,6 +5,12 @@
     :step="1"
     :rightDisabled="loading"
     @right="onNext">
+    <template v-slot:left>
+      <v-btn text @click="navigateBack">
+        <v-icon left>mdi-arrow-left</v-icon>
+        {{ backLabel }}
+      </v-btn>
+    </template>
 
     <v-card class="d-flex flex-column">
       <v-card-text class="d-flex flex-column align-center">
@@ -98,6 +104,12 @@ export default {
     isMonocularMode() {
       return this.$route.query.isMono === 'true'
     },
+    cameFromDeviceCheck() {
+      return this.$route.query.fromDeviceCheck === 'true'
+    },
+    backLabel() {
+      return this.cameFromDeviceCheck ? 'Back to device check' : 'Back to recording mode'
+    },
     showOpenInAppButton() {
       return this.isMobileOrTablet && this.isMonocularMode && this.$route.query.fromDevice === 'true' && this.session?.id && this.sessionDeepLinkUrl
     }
@@ -105,6 +117,13 @@ export default {
   methods: {
     ...mapMutations('data', ['clearAll', 'setConnectDevices']),
     ...mapActions('data', ['initSession']),
+    navigateBack() {
+      if (this.cameFromDeviceCheck) {
+        this.$router.push({ name: 'DeviceCheck' })
+        return
+      }
+      this.$router.push({ name: 'RecordingMode' })
+    },
     onNext () {
 
       clearToastMessages();
