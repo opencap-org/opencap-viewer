@@ -355,7 +355,8 @@
 
       <!-- Custom navigation bar for Neutral page -->
       <div class="custom-navigation d-flex justify-space-between align-center mt-3 w-100 flex-nowrap">
-            <v-btn class="same-width" @click="navigateBack">
+            <v-btn text @click="navigateBack">
+              <v-icon left>mdi-arrow-left</v-icon>
               {{ backButtonLabel }}
             </v-btn>
             <v-btn class="same-width"
@@ -525,7 +526,7 @@ export default {
     },
     backButtonLabel() {
       if (this.isMonocularMode && this.$route.query.fromDevice === 'true') {
-        return 'Back to device check';
+        return 'Back';
       }
       if (this.isMonocularMode) {
         return 'Back to connect devices';
