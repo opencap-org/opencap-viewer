@@ -1937,7 +1937,7 @@
   
     .mobile-menu-toggle {
       position: fixed;
-      top: 72px;
+      top: calc(var(--app-bar-height, 64px) + 8px);
       left: 8px;
       z-index: 100;
       background-color: rgba(0, 0, 0, 0.8) !important;

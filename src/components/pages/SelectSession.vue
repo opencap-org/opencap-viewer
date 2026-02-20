@@ -86,6 +86,7 @@
       :item-class="itemClasses"
       :loading="loading"
       :server-items-length="session_total"
+      :mobile-breakpoint="0"
       :dense="$vuetify.breakpoint.smAndDown"
       :footer-props="{
         showFirstLastPage: false,
@@ -101,9 +102,10 @@
         <span>{{ item.created_at|date }}</span>
       </template>
       <template v-slot:item.id="{ item }">
-        <div class="session-id-cell">
-          <div class="session-id-text">{{ item.id }}</div>
-          
+        <div class="session-id-text">{{ item.id }}</div>
+      </template>
+      <template v-slot:item.controls="{ item }">
+        <div class="session-controls-cell">
           <!-- Desktop: Direct action buttons -->
           <div class="action-buttons-desktop d-none d-lg-flex align-center">
             <v-btn
@@ -154,7 +156,7 @@
               <v-icon small>mdi-restore</v-icon>
             </v-btn>
           </div>
-          
+
           <!-- Mobile/Tablet: Bottom sheet on mobile, menu on larger screens -->
           <div class="d-lg-none">
             <template v-if="$vuetify.breakpoint.smAndDown">
@@ -386,6 +388,24 @@ export default {
       searchText: '',
       searchSubmitted: false,
       headers: [
+        { 
+          text: 'Session Name', 
+          value: 'sessionName',
+          class: 'session-name-column',
+          width: '180px'
+        },
+        { 
+          text: 'Date', 
+          value: 'created_at',
+          class: 'date-column',
+          width: '130px'
+        },
+        {
+          text: 'Actions',
+          value: 'controls',
+          sortable: false,
+          class: 'controls-column'
+        },
         {
           text: 'Session ID',
           align: 'start',
@@ -393,30 +413,18 @@ export default {
           value: 'id',
           class: 'session-id-column'
         },
-        { 
-          text: 'Session Name', 
-          value: 'sessionName',
-          class: 'session-name-column'
-        },
         {
           text: 'Subject Name', 
           value: 'name'
         },
         { 
           text: 'Number of trials', 
-          align: 'center', 
           value: 'trials_count'
         },
         { 
           text: 'Monocular', 
-          align: 'center', 
           value: 'isMono'
         },
-        { 
-          text: 'Date', 
-          value: 'created_at',
-          class: 'date-column'
-        }
       ],
       selected: null,
       delay: 300,
@@ -454,7 +462,7 @@ export default {
       }
 
       return this.headers
-        .filter(({ value }) => ['id', 'sessionName', 'created_at'].includes(value))
+        .filter(({ value }) => ['sessionName', 'created_at', 'controls'].includes(value))
         .map(header => ({
           ...header,
           align: 'start',
@@ -659,7 +667,7 @@ export default {
   justify-content: flex-start;
   
   @media (max-width: 599px) {
-    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
     gap: 6px;
     justify-content: flex-start;
     align-items: stretch;
@@ -716,6 +724,7 @@ export default {
   @media (max-width: 599px) {
     height: calc(100vh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
     height: calc(100dvh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .sessions-table {
@@ -727,7 +736,7 @@ export default {
     }
     
     .v-data-table__wrapper {
-      overflow-x: auto;
+      overflow-x: hidden;
       overflow-y: auto;
       height: calc(94vh - 128px);
       height: calc(94dvh - 128px);
@@ -748,10 +757,7 @@ export default {
 
       table {
         width: 100%;
-        
-        @media (min-width: 600px) {
-          min-width: 600px;
-        }
+        min-width: 0;
         
         thead th {
           position: sticky;
@@ -759,65 +765,73 @@ export default {
           z-index: 2;
           background-color: rgb(39, 39, 39);
           white-space: nowrap;
+          padding-left: 6px !important;
+          padding-right: 6px !important;
+        }
+
+        ::v-deep thead th .v-data-table-header__content {
+          justify-content: flex-start;
         }
         
         tbody td {
+          padding-left: 6px !important;
+          padding-right: 6px !important;
+
           @media (max-width: 599px) {
             padding: 8px 4px !important;
           }
         }
       }
       
-      .session-id-cell {
+      .session-controls-cell {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 8px;
         min-width: 0;
-        
-        .session-id-text {
-          font-size: 0.75rem;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          flex: 1;
-          min-width: 0;
-          
-          @media (max-width: 599px) {
-            font-size: 0.7rem;
-          }
+      }
+
+      .session-id-text {
+        font-size: 0.75rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+
+        @media (max-width: 599px) {
+          font-size: 0.7rem;
         }
-        
-        .menu-button {
-          flex-shrink: 0;
+      }
+
+      .menu-button {
+        flex-shrink: 0;
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 4px;
+
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .v-icon {
+          color: rgba(255, 255, 255, 0.9) !important;
+        }
+      }
+
+      .action-buttons-desktop {
+        gap: 4px;
+        flex-shrink: 0;
+
+        .action-btn {
           background-color: rgba(255, 255, 255, 0.1) !important;
           border-radius: 4px;
-          
+          margin: 0 2px;
+
           &:hover {
             background-color: rgba(255, 255, 255, 0.2) !important;
           }
-          
+
           .v-icon {
             color: rgba(255, 255, 255, 0.9) !important;
-          }
-        }
-        
-        .action-buttons-desktop {
-          gap: 4px;
-          flex-shrink: 0;
-          
-          .action-btn {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            border-radius: 4px;
-            margin: 0 2px;
-            
-            &:hover {
-              background-color: rgba(255, 255, 255, 0.2) !important;
-            }
-            
-            .v-icon {
-              color: rgba(255, 255, 255, 0.9) !important;
-            }
           }
         }
       }
@@ -849,7 +863,7 @@ export default {
         ::v-deep .v-data-table__wrapper table {
           min-width: 0 !important;
           width: 100% !important;
-          table-layout: auto;
+          table-layout: fixed;
         }
 
         ::v-deep .v-data-table__wrapper thead th {
@@ -872,6 +886,21 @@ export default {
           text-overflow: ellipsis;
           white-space: nowrap;
           text-align: left !important;
+        }
+
+        ::v-deep .v-data-table__wrapper th:nth-child(1),
+        ::v-deep .v-data-table__wrapper td:nth-child(1) {
+          width: 36%;
+        }
+
+        ::v-deep .v-data-table__wrapper th:nth-child(2),
+        ::v-deep .v-data-table__wrapper td:nth-child(2) {
+          width: 28%;
+        }
+
+        ::v-deep .v-data-table__wrapper th:nth-child(3),
+        ::v-deep .v-data-table__wrapper td:nth-child(3) {
+          width: 36%;
         }
 
         ::v-deep .v-data-footer {

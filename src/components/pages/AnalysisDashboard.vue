@@ -423,7 +423,7 @@ export default {
 .fixed-button {
   position: fixed;
   bottom: auto;
-  top: 74px;
+  top: calc(var(--app-bar-height, 64px) + 10px);
   display: block;
   width: auto;
   max-width: fit-content;
@@ -441,7 +441,7 @@ export default {
 
 @media (max-width: 960px) {
   .fixed-button {
-    top: 56px;
+    top: calc(var(--app-bar-height, 64px) + 8px);
   }
 }
 
