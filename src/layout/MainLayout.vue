@@ -1,6 +1,6 @@
 <template>
   <div
-    class="main-layout d-flex flex-column pa-4"
+    class="main-layout d-flex flex-column pa-2 pa-sm-4"
     :class="{ 'fixed-height': fixedHeight }">
 
     <div
@@ -112,11 +112,14 @@ export default {
 
 <style lang="scss" scoped>
 .main-layout {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--app-bar-height, 64px));
+  min-height: calc(100dvh - var(--app-bar-height, 64px));
 
   &.fixed-height {
-    height: calc(100vh - 64px);
-    max-height: calc(100vh - 64px);
+    height: calc(100vh - var(--app-bar-height, 64px));
+    height: calc(100dvh - var(--app-bar-height, 64px));
+    max-height: calc(100vh - var(--app-bar-height, 64px));
+    max-height: calc(100dvh - var(--app-bar-height, 64px));
   }
 
   .content-wrapper {

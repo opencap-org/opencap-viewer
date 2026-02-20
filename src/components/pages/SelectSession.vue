@@ -4,12 +4,14 @@
       <v-btn
         @click="$router.push({ name: 'RecordingMode' })"
         class="toolbar-button">
+        <v-icon left class="d-sm-none">mdi-plus-circle-outline</v-icon>
         New session
       </v-btn>
 
       <v-menu offset-y>
         <template v-slot:activator="{ on, attrs }">
           <v-btn dark v-bind="attrs" v-on="on" class="toolbar-button">
+            <v-icon left class="d-sm-none">mdi-view-dashboard-outline</v-icon>
             <span class="dashboards-text d-none d-sm-inline mr-2">Dashboards</span>
             <span class="dashboards-text-mobile d-sm-none">Dashboards</span>
             <v-icon class="d-none d-sm-inline">mdi-menu</v-icon>
@@ -31,12 +33,14 @@
       <v-btn
         class="toolbar-button"
         @click="$router.push({ name: 'Subjects' })">
+        <v-icon left class="d-sm-none">mdi-account-group-outline</v-icon>
         Subjects
       </v-btn>
 
       <v-btn
         class="toolbar-button"
         @click="$router.push({ name: 'RecycleBin' })">
+        <v-icon left class="d-sm-none">mdi-delete-outline</v-icon>
         Recycle Bin
       </v-btn>
 
@@ -76,12 +80,13 @@
     </div>
 
     <v-data-table        
-      :headers="headers"
+      :headers="displayHeaders"
       :items="valid_sessions"
       :options.sync="options"
       :item-class="itemClasses"
       :loading="loading"
       :server-items-length="session_total"
+      :dense="$vuetify.breakpoint.smAndDown"
       :footer-props="{
         showFirstLastPage: false,
         disableItemsPerPage: true,
@@ -440,6 +445,22 @@ export default {
     ...mapState({
       analysis_dashboards: state => state.data.analysis_dashboards
     }),
+    isPhone () {
+      return this.$vuetify.breakpoint.xsOnly
+    },
+    displayHeaders () {
+      if (!this.isPhone) {
+        return this.headers
+      }
+
+      return this.headers
+        .filter(({ value }) => ['id', 'sessionName', 'created_at'].includes(value))
+        .map(header => ({
+          ...header,
+          align: 'start',
+          sortable: false
+        }))
+    }
   },
   methods: {
     ...mapActions('data', [
@@ -638,16 +659,14 @@ export default {
   justify-content: flex-start;
   
   @media (max-width: 599px) {
-    /* Extra top spacing on phones so toolbar is not hidden behind navbar; respect safe area */
     padding-top: calc(8px + env(safe-area-inset-top, 0px));
     gap: 6px;
-    justify-content: center;
-    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
     
     .search-section {
       width: 100%;
-      justify-content: center;
-      margin-top: 8px;
+      margin-top: 4px;
     }
   }
 }
@@ -655,6 +674,12 @@ export default {
 .toolbar-button {
   margin: 0 !important;
   flex-shrink: 0;
+
+  @media (max-width: 599px) {
+    flex: 1 1 calc(50% - 3px);
+    width: calc(50% - 3px);
+    min-height: 44px;
+  }
 }
 
 .checkbox-wrapper {
@@ -674,16 +699,23 @@ export default {
   ::v-deep .v-input__slot {
     margin-bottom: 0;
   }
+
+  @media (max-width: 599px) {
+    flex: 1 1 100%;
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+  }
 }
 
 .select-session {
-  height: calc(98vh - 64px);
-  height: calc(98dvh - 64px);
+  height: calc(98vh - var(--app-bar-height, 64px));
+  height: calc(98dvh - var(--app-bar-height, 64px));
   overflow: hidden;
 
   @media (max-width: 599px) {
-    height: calc(100vh - 64px - 24px - env(safe-area-inset-bottom, 0px));
-    height: calc(100dvh - 64px - 24px - env(safe-area-inset-bottom, 0px));
+    height: calc(100vh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
+    height: calc(100dvh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
   }
 
   .sessions-table {
@@ -708,9 +740,10 @@ export default {
       }
       
       @media (max-width: 599px) {
-        height: calc(100vh - 64px - 220px - env(safe-area-inset-bottom, 0px));
-        height: calc(100dvh - 64px - 220px - env(safe-area-inset-bottom, 0px));
+        height: calc(100vh - var(--app-bar-height, 64px) - 220px - env(safe-area-inset-bottom, 0px));
+        height: calc(100dvh - var(--app-bar-height, 64px) - 220px - env(safe-area-inset-bottom, 0px));
         border-radius: 4px;
+        background: rgba(255, 255, 255, 0.02);
       }
 
       table {
@@ -796,39 +829,55 @@ export default {
         white-space: nowrap;
       }
       
-      // Style mobile table rows
-      ::v-deep .v-data-table__mobile-table-row {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-        
-        .v-data-table__mobile-row {
-          padding: 12px 16px;
-          
-          &:first-child {
-            font-weight: 600;
-            padding-bottom: 4px;
-          }
-          
-          &:not(:first-child) {
-            padding-top: 4px;
-            color: rgba(255, 255, 255, 0.87);
-          }
-        }
-      }
-      
       .date-column {
         @media (max-width: 599px) {
           font-size: 0.75rem;
         }
       }
       
-      // Make table more compact on mobile
+      // Compact phone table with consistent desktop-style columns.
       @media (max-width: 599px) {
         ::v-deep .v-data-table {
           font-size: 0.875rem;
+          width: 100%;
         }
-        
+
         ::v-deep .v-data-table__wrapper {
-          -webkit-overflow-scrolling: touch;
+          overflow-x: hidden !important;
+        }
+
+        ::v-deep .v-data-table__wrapper table {
+          min-width: 0 !important;
+          width: 100% !important;
+          table-layout: auto;
+        }
+
+        ::v-deep .v-data-table__wrapper thead th {
+          padding: 6px 6px !important;
+          font-size: 0.72rem !important;
+        }
+
+        ::v-deep .v-data-table__wrapper tbody td {
+          padding: 7px 6px !important;
+          vertical-align: middle;
+        }
+
+        ::v-deep .v-data-table__wrapper tbody tr {
+          height: 44px;
+        }
+
+        ::v-deep .v-data-table__wrapper th,
+        ::v-deep .v-data-table__wrapper td {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          text-align: left !important;
+        }
+
+        ::v-deep .v-data-footer {
+          justify-content: center;
+          padding-top: 8px;
+          font-size: 0.78rem;
         }
       }
     }    
@@ -848,5 +897,16 @@ export default {
 
 .session-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.search-section {
+  @media (max-width: 599px) {
+    flex: 1 1 100% !important;
+    max-width: 100%;
+    margin-left: 0 !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 6px;
+  }
 }
 </style>

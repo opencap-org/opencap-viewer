@@ -461,7 +461,7 @@ export default {
 <style lang="scss">
 
 .video-player {
-    height: calc(100% - 64px);
+    height: calc(100% - var(--app-bar-height, 64px));
 
     .left {
         width: 250px;

@@ -484,8 +484,8 @@ export default {
 <style lang="scss">
 .chart-page-wrapper {
   width: 100%;
-  min-height: calc(100vh - 64px);
-  max-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--app-bar-height, 64px));
+  max-height: calc(100vh - var(--app-bar-height, 64px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }

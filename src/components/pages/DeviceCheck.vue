@@ -9,9 +9,9 @@
       <h1 class="mb-6 text-center">Are you on the device you'll use to record?</h1>
       
 
-      <div class="options-container d-flex flex-wrap justify-center">
+      <div class="options-container">
         <v-card
-          class="option-card pa-4 d-flex flex-column align-center"
+          class="option-card pa-6 d-flex flex-column align-center"
           outlined
           hover
           @click="onThisDevice">
@@ -32,7 +32,7 @@
         </v-card>
 
         <v-card
-          class="option-card pa-4 d-flex flex-column align-center"
+          class="option-card pa-6 d-flex flex-column align-center"
           outlined
           hover
           @click="onDifferentDevice">
@@ -45,7 +45,7 @@
         </v-card>
       </div>
 
-      <div class="mt-8">
+      <div class="mt-6">
         <v-btn text @click="$router.push({ name: 'RecordingMode' })">
           <v-icon left>mdi-arrow-left</v-icon>
           Back to recording mode
@@ -109,8 +109,10 @@ export default {
 <style lang="scss" scoped>
 .device-check-wrapper {
   width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
   min-height: 60vh;
-  padding: 12px 24px 24px 24px;
+  padding: 12px 16px 24px 16px;
 }
 
 .subtitle-text {
@@ -121,21 +123,16 @@ export default {
 
 .options-container {
   width: 100%;
-  max-width: 900px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 8px;
-  justify-content: center;
+  max-width: 920px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
   align-items: stretch;
 }
 
 .option-card {
-  /* force two cards side-by-side even on small screens */
-  flex: 0 0 calc(50% - 8px);
-  width: calc(50% - 8px);
-  box-sizing: border-box;
-  padding: 16px;
+  width: 100%;
+  min-height: 280px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
 
@@ -149,9 +146,9 @@ export default {
 }
 
 .option-description {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.85);
-  max-width: none;
+  max-width: 320px;
   width: 100%;
 }
 
@@ -167,6 +164,32 @@ export default {
 }
 
 .select-button {
-  width: fit-content;
+  min-width: 120px;
+}
+
+@media (max-width: 959px) {
+  .device-check-wrapper {
+    padding: 8px 12px 20px 12px;
+  }
+
+  .options-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 100%;
+    gap: 10px;
+  }
+
+  .option-card {
+    min-height: 220px;
+    min-width: 0;
+    padding: 14px !important;
+  }
+
+  .option-card .option-title {
+    font-size: 1.05rem;
+  }
+
+  .option-description {
+    font-size: 0.85rem;
+  }
 }
 </style>

@@ -906,7 +906,7 @@ export default {
   min-height: 0;
   overflow-x: hidden;
   /* Use min-height like MainLayout when fixedHeight=false - allows natural growth */
-  min-height: calc(100vh - 64px - 32px);
+  min-height: calc(100vh - var(--app-bar-height, 64px) - 32px);
   /* Counteract half of MainLayout's pa-4 padding (16px) to get 8px total */
   margin-left: -8px;
   margin-right: -8px;
@@ -919,7 +919,7 @@ export default {
 .neutral-content {
   flex: 0 1 auto;
   min-height: 0;
-  max-height: calc(100vh - 64px - 32px - 68px);
+  max-height: calc(100vh - var(--app-bar-height, 64px) - 32px - 68px);
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

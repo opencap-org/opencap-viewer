@@ -1,6 +1,7 @@
 <template>
-  <v-app :style="{background: $vuetify.theme.themes.dark.background}">
+  <v-app :style="appStyle">
     <v-app-bar
+      ref="appBar"
       app      
       dark>
 
@@ -42,32 +43,22 @@ export default {
   components: {
     QRCodeDialog,
     'profile-dropdown': ProfileDropdown},
-  computed: {
-    ...mapState({
-      loggedIn: state => state.auth.loggedIn,
-      verified: state => state.auth.verified,
-      sessionTime: state => state.auth.sessionTime
-    }),
-    showLink () {
-      return this.loggedIn && this.verified && this.$route.name !== 'SelectSession'
-    }
-  },
-  watch: {
-    $route () {
-      this.cancelTimer()
-      this.startTimer()
-    }
-  },
   data () {
     return {
-      logoutTimer: null
+      logoutTimer: null,
+      appBarHeight: 64
     }
   },
   created () {
     this.startTimer()
   },
+  mounted () {
+    this.updateAppBarHeight()
+    window.addEventListener('resize', this.updateAppBarHeight)
+  },
   beforeDestroy () {
     this.cancelTimer()
+    window.removeEventListener('resize', this.updateAppBarHeight)
   },
   methods: {
     ...mapActions('auth', ['logout']),
@@ -82,6 +73,45 @@ export default {
     logoutTimerHandler () {
       // redirect to login and remove all info
       this.logout()
+    },
+    updateAppBarHeight () {
+      this.$nextTick(() => {
+        const appBarElement = this.$refs.appBar && this.$refs.appBar.$el
+        if (!appBarElement) return
+        const measuredHeight = Math.ceil(appBarElement.getBoundingClientRect().height)
+        if (measuredHeight > 0 && measuredHeight !== this.appBarHeight) {
+          this.appBarHeight = measuredHeight
+        }
+      })
+    }
+  },
+  computed: {
+    ...mapState({
+      loggedIn: state => state.auth.loggedIn,
+      verified: state => state.auth.verified,
+      sessionTime: state => state.auth.sessionTime
+    }),
+    showLink () {
+      return this.loggedIn && this.verified && this.$route.name !== 'SelectSession'
+    },
+    appStyle () {
+      return {
+        background: this.$vuetify.theme.themes.dark.background,
+        '--app-bar-height': `${this.appBarHeight}px`
+      }
+    }
+  },
+  watch: {
+    $route () {
+      this.cancelTimer()
+      this.startTimer()
+      this.updateAppBarHeight()
+    },
+    verified () {
+      this.updateAppBarHeight()
+    },
+    showLink () {
+      this.updateAppBarHeight()
     }
   }
 }

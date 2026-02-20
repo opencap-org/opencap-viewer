@@ -1909,7 +1909,7 @@
   }
   
   .step-5 {
-    height: calc(100vh - 64px);
+    height: calc(100vh - var(--app-bar-height, 64px));
     min-height: 0;
     flex-direction: row;
     overflow: hidden;
@@ -1974,12 +1974,12 @@
       
       @media (max-width: 959px) {
         position: fixed;
-        top: 64px;
+        top: var(--app-bar-height, 64px);
         left: 0;
         width: 280px;
         max-width: 85vw;
-        height: calc(100vh - 64px);
-        max-height: calc(100vh - 64px);
+        height: calc(100vh - var(--app-bar-height, 64px));
+        max-height: calc(100vh - var(--app-bar-height, 64px));
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);

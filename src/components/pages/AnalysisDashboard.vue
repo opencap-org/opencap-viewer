@@ -406,7 +406,7 @@ export default {
 #body:not(.left-menu-closed) .dashboard-body > div:has(.scalar-value-wrapper) {
   position: fixed;
   right: 0;
-  top: 64px;
+  top: var(--app-bar-height, 64px);
   bottom: 0;
   width: 240px;
   max-width: 40vw;
@@ -540,8 +540,8 @@ export default {
 <style lang="scss">
 .analysis-dashboard-wrapper {
   width: 100%;
-  min-height: calc(100vh - 64px);
-  max-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--app-bar-height, 64px));
+  max-height: calc(100vh - var(--app-bar-height, 64px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
