@@ -62,6 +62,14 @@
   cursor: pointer;
 }
 
+:root {
+  --page-navigation-gap: 12px;
+}
+
+.page-navigation {
+  margin-top: var(--page-navigation-gap) !important;
+}
+
 html {
   overflow-y: hidden;
   overflow-x: hidden;

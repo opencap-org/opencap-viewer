@@ -98,9 +98,12 @@
       </v-card-text>
     </v-card>
 
-    <div class="navigation d-flex justify-space-between align-center mt-3 w-100 flex-nowrap">
-      <v-btn style="width: 120px;" @click="$router.push(`/${session.id}/connect-devices`)">Back to connect devices</v-btn>
-      <v-btn style="width: 120px;" :disabled="busy" @click="onNext">Calibrate</v-btn>
+    <div class="navigation page-navigation d-flex justify-space-between align-center w-100 flex-nowrap">
+      <v-btn text @click="$router.push(`/${session.id}/connect-devices`)">
+        <v-icon left>mdi-arrow-left</v-icon>
+        Back to connect devices
+      </v-btn>
+      <v-btn class="calibration-nav-btn" :disabled="busy" @click="onNext">Calibrate</v-btn>
     </div>
 
   </MainLayout>
@@ -254,6 +257,14 @@ export default {
 </script>
 
 <style lang="scss">
+.calibration-nav-btn {
+  width: 140px;
+  min-width: 140px;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+}
+
 .step-2-1 {
   .v-card-text {
     padding: 16px !important;

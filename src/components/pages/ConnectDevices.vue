@@ -253,4 +253,12 @@ export default {
   width: auto;
   white-space: nowrap;
 }
+
+.monocular-navigation ::v-deep .navigation .slot:last-child button {
+  width: 140px;
+  min-width: 140px;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+}
 </style>

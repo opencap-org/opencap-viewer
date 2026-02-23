@@ -16,10 +16,27 @@
           hover
           @click="selectMonocular">
           <v-icon size="64" color="primary" class="mb-4">mdi-cellphone</v-icon>
-          <h2 class="mb-2 option-title">Monocular</h2>
+          <div class="title-row mb-2">
+            <h2 class="option-title mb-0">Monocular</h2>
+            <v-chip
+              x-small
+              color="warning"
+              text-color="black"
+              class="beta-chip ml-2">
+              Beta
+            </v-chip>
+          </div>
           <p class="text-center option-description">
             Record with a single phone. Simplified setup, no calibration needed.
           </p>
+          <a
+            class="best-practices-link mt-2"
+            href="https://www.opencap.ai/best-practices?variant=monocular"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click.stop>
+            Read monocular best practices
+          </a>
           <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
         </v-card>
 
@@ -36,6 +53,14 @@
           <p class="text-center option-description">
             Record with multiple phones for higher accuracy. Requires calibration.
           </p>
+          <a
+            class="best-practices-link mt-2"
+            href="https://www.opencap.ai/best-practices"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click.stop>
+            Read 2+ phones best practices
+          </a>
           <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
         </v-card>
       </div>
@@ -129,6 +154,12 @@ export default {
   width: 100%;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .option-card,
 .option-card .option-title {
   color: #ffffff; /* ensure text in cards is white */
@@ -136,8 +167,21 @@ export default {
   text-align: center;
 }
 
+.beta-chip {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .option-card .v-icon {
   color: #ffffff !important;
+}
+
+.best-practices-link {
+  color: #ffcc80;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .select-button {

@@ -90,7 +90,7 @@ var router = new Router({
       component: Session
     },
     {
-      path: '/dashboard/:id',
+      path: '/dashboard/:id?',
       name: 'Dashboard',
       component: Dashboard
     },

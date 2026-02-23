@@ -25,14 +25,13 @@
     </div>
 
     <v-card class="sidebar left-sidebar">
-      <div class="pa-2 left-menu-close-button d-flex justify-end">
+      <div class="menu-header">
+        <span>Data</span>
         <v-btn icon @click="leftMenu" class="sidebar-close-btn" title="Close menu">
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </div>
       <v-card-text height="100%">
-        <v-toolbar-title class="text-center">Data Menu</v-toolbar-title>
-        <v-subheader class="subheader-bold"></v-subheader>
         <div class="left d-flex flex-column pa-2">
           <v-card>
             <v-card-text>
@@ -615,11 +614,25 @@ export default {
   left: auto;
 }
 
-.left-menu-close-button {
-  width: 100%;
+.menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+  color: white;
+  flex: 0 0 auto;
 }
 
-.left-menu-close-button .sidebar-close-btn {
+.sidebar .v-card__text {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sidebar-close-btn {
   min-width: 40px;
   min-height: 40px;
 }
@@ -635,10 +648,6 @@ export default {
 
 .right-menu-close-button {
   float: left;
-}
-
-.subheader-bold {
-  font-weight: bold;
 }
 
 .content-chart {

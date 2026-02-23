@@ -332,6 +332,12 @@
             <div v-else-if="trialLoading" class="flex-grow-1 d-flex align-center justify-center">
                 <v-progress-circular indeterminate color="grey" size="30" width="4" />
             </div>
+            <div v-else class="session-empty-state d-flex flex-column align-center justify-center text-center">
+                <v-icon size="56" color="grey lighten-1" class="mb-3">mdi-chart-box-outline</v-icon>
+                <h3 class="mb-2">No data selected</h3>
+                <p v-if="show_controls" class="mb-0 px-4">Type a trial name on the left and click Start recording.</p>
+                <p v-else class="mb-0 px-4">Select a trial from the list to view motion data.</p>
+            </div>
         </div>
   
         <div class="right d-flex flex-column" :style="mobileVideoPanelStyle">
@@ -2197,6 +2203,22 @@
         canvas {
           width: 100% !important;
           height: 100% !important;
+        }
+      }
+
+      .session-empty-state {
+        flex: 1 1 auto;
+        min-height: 0;
+        color: rgba(255, 255, 255, 0.86);
+
+        h3 {
+          font-size: 1.4rem;
+          font-weight: 500;
+        }
+
+        p {
+          max-width: 420px;
+          color: rgba(255, 255, 255, 0.72);
         }
       }
     }

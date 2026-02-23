@@ -635,12 +635,7 @@ export default {
     closeSheetAndTrash(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForDelete = item; this.remove_dialog = true; },
     closeSheetAndRestore(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForDelete = item; this.restore_dialog = true; },
     openKinematicsDashboardFromMenu () {
-      const defaultSessionId = this.selected?.id || this.valid_sessions?.[0]?.id
-      if (!defaultSessionId) {
-        apiInfo('No sessions are available yet.')
-        return
-      }
-      this.$router.push({ name: 'Dashboard', params: { id: defaultSessionId } })
+      this.$router.push({ name: 'Dashboard' })
     },
     openAnalysisDashboardFromMenu (dashboard) {
       const title = String(dashboard?.title || '').trim().toLowerCase()
@@ -753,12 +748,12 @@ export default {
 }
 
 .toolbar-container {
-  padding: 0 8px 8px;
+  padding: 10px 8px 14px;
   gap: 8px;
   justify-content: flex-start;
   
   @media (max-width: 599px) {
-    padding: 0 6px 6px;
+    padding: 8px 6px 10px;
     gap: 6px;
     justify-content: flex-start;
     align-items: stretch;

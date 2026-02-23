@@ -83,7 +83,7 @@
                   </v-card-text>
               </v-card>
 
-              <v-card class="mb-4 data-sharing-card">
+              <v-card class="data-sharing-card">
                 <div class="d-flex justify-center">
                   <v-card-title class="justify-center data-title">
                     Data sharing agreement
@@ -356,7 +356,7 @@
       </div>
 
       <!-- Custom navigation bar for Neutral page -->
-      <div class="custom-navigation d-flex justify-space-between align-center mt-3 w-100 flex-nowrap">
+      <div class="custom-navigation page-navigation d-flex justify-space-between align-center w-100 flex-nowrap">
             <v-btn text @click="navigateBack">
               <v-icon left>mdi-arrow-left</v-icon>
               {{ backButtonLabel }}
@@ -978,8 +978,8 @@ export default {
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0;
-  margin-top: auto;
-  padding-top: 8px;
+  margin-top: 0;
+  padding-top: 0;
   padding-bottom: 8px;
   background-color: transparent; 
   z-index: 10;
@@ -991,9 +991,13 @@ export default {
     min-width: 120px;
   }
 
-  /* Ensure Back and Next are identical width */
-  .same-width {
+  /* Ensure Back and Next are identical width/height */
+  .v-btn.same-width {
     width: 140px;
+    min-width: 140px;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
   }
 
   @media (max-width: 359px) {

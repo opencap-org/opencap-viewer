@@ -9,7 +9,7 @@
       <slot/>
     </div>
 
-    <div class="navigation d-flex justify-space-between align-center mt-3 w-100" v-show="showNavigation">
+    <div class="navigation page-navigation d-flex justify-space-between align-center w-100" v-show="showNavigation">
       <div class="slot">
         <v-btn
           v-if="leftButton"
