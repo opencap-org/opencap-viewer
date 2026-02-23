@@ -325,7 +325,24 @@
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
                           :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"/>
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
-                          class="mb-2 flex-grow-1" />
+                          class="mb-2 flex-grow-1 timeline-slider" />
+
+                      <div v-if="!isMobileOrTablet" class="playback-controls-inline d-flex align-center">
+                        <VideoNavigation
+                            :playing="playing"
+                            :value="frame"
+                            :maxFrame="frames.length - 1"
+                            :loop="loopPlayback"
+                            :show-loop-toggle="true"
+                            :disabled="videoControlsDisabled"
+                            @play="togglePlay(true)"
+                            @pause="togglePlay(false)"
+                            @toggle-loop="toggleLoopPlayback"
+                            @input="onNavigate"
+                            class="playback-navigation" />
+
+                        <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+                      </div>
                   </div>
               </div>
   
@@ -363,9 +380,9 @@
               </v-btn>
             </div>
 
-            <div class="right-spacer" />
+            <div v-if="isMobileOrTablet" class="right-spacer" />
 
-            <div class="playback-controls ui-no-zoom">
+            <div v-if="isMobileOrTablet" class="playback-controls ui-no-zoom">
               <div class="playback-controls-row">
                 <VideoNavigation
                     :playing="playing"
@@ -2358,13 +2375,24 @@
 
     .video-controls {
       width: 100%;
+      gap: 8px;
+      position: relative;
+      z-index: 2;
 
       @media (max-width: 959px) {
         padding-bottom: calc(90px + env(safe-area-inset-bottom, 8px));
       }
 
+      @media (min-width: 960px) {
+        gap: 12px;
+      }
+
       @media (max-width: 599px) {
         flex-wrap: nowrap;
+      }
+
+      .timeline-slider {
+        min-width: 140px;
       }
       
       .time-input {
@@ -2378,6 +2406,23 @@
           max-width: 72px;
           margin-right: 8px;
           margin-bottom: 0;
+        }
+      }
+
+      .playback-controls-inline {
+        flex: 0 0 auto;
+        min-width: max-content;
+      }
+
+      @media (min-width: 960px) {
+        .timeline-slider {
+          margin-bottom: 0 !important;
+        }
+
+        .time-input {
+          margin-right: 0;
+          min-width: 108px;
+          max-width: 130px;
         }
       }
     }
