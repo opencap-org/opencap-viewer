@@ -6,17 +6,10 @@
       dark>
 
       <router-link
-        v-if="showLink"
-        :to="{ name: 'SelectSession' }"
+        :to="{ path: '/sessions' }"
         class="logo-link">
-          <img height="59px" class="logo" src="/images/opencap-logo-dark.png"/>
-        </router-link>
-
-      <div
-      v-else
-      class="logo-link">
         <img height="59px" class="logo" src="/images/opencap-logo-dark.png"/>
-      </div>
+      </router-link>
       
       <v-spacer class="navbar-spacer"></v-spacer>
 
@@ -87,13 +80,9 @@ export default {
   },
   computed: {
     ...mapState({
-      loggedIn: state => state.auth.loggedIn,
       verified: state => state.auth.verified,
       sessionTime: state => state.auth.sessionTime
     }),
-    showLink () {
-      return this.loggedIn && this.verified && this.$route.name !== 'SelectSession'
-    },
     appStyle () {
       return {
         background: this.$vuetify.theme.themes.dark.background,
@@ -108,9 +97,6 @@ export default {
       this.updateAppBarHeight()
     },
     verified () {
-      this.updateAppBarHeight()
-    },
-    showLink () {
       this.updateAppBarHeight()
     }
   }

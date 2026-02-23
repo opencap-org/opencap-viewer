@@ -71,9 +71,11 @@
                     </v-row>
                     <v-text-field
                       v-model="sessionName"
-                      label="Session Name (optional)"
+                      label="Session Name"
                       type="text"
                       required
+                      @input="isAllInputsValid"
+                      @blur="validateSessionName"
                       :error="formErrors.name != null"
                       :error-messages="formErrors.name"
                       dense
@@ -568,6 +570,16 @@ export default {
       if (newVal === null) {
         this.clearSubjectSearch()
       }
+      this.isAllInputsValid()
+    },
+    sessionName() {
+      this.isAllInputsValid()
+    },
+    data_sharing() {
+      this.isAllInputsValid()
+    },
+    data_sharing_0() {
+      this.isAllInputsValid()
     },
   },
   methods: {
@@ -634,6 +646,18 @@ export default {
     openNewSubjectPopup() {
         this.$refs.dialogRef.edit_dialog = true
     },
+    validateSessionName() {
+      const trimmedSessionName = (this.sessionName || '').trim();
+
+      if (!trimmedSessionName) {
+        this.formErrors.name = "Session name is required.";
+        return false;
+      }
+
+      this.sessionName = trimmedSessionName;
+      this.formErrors.name = null;
+      return true;
+    },
     isAllInputsValidSelectSubject() {
         this.formErrors = {
             name: null,
@@ -644,7 +668,7 @@ export default {
         }
 
         let inputsInvalidSecond;
-        if(!this.subject || !this.data_sharing || !this.data_sharing_0 ) {
+        if(!this.subject || !this.data_sharing || !this.data_sharing_0 || !this.validateSessionName()) {
             inputsInvalidSecond = true
         }
 
@@ -660,7 +684,7 @@ export default {
         }
 
         let inputsInvalidSecond;
-        if(this.subject === null || this.subject.id === 'new' || !this.subject || !this.data_sharing || !this.data_sharing_0 ) {
+        if(this.subject === null || this.subject.id === 'new' || !this.subject || !this.data_sharing || !this.data_sharing_0 || !this.validateSessionName()) {
             inputsInvalidSecond = true
         }
 
@@ -682,6 +706,11 @@ export default {
           else if (this.n_calibrated_cameras == 1)
               apiError("There is only 1 calibrated camera, but at least 2 cameras are necessary. Please go back and calibrate your cameras.");
         } else {
+          if (!this.validateSessionName()) {
+            this.isAllInputsValid();
+            return;
+          }
+
           if (await this.$refs.observer.validate()) {
             apiInfo("Recording...")
             this.lastPolledStatus = "";
@@ -862,6 +891,11 @@ export default {
       this.componentKey += 1;
     },
     async skipProcessingToMonocular() {
+      if (!this.validateSessionName()) {
+        this.isAllInputsValid();
+        return;
+      }
+
       if (await this.$refs.observer.validate()) {
         this.busy = true;
         try {

@@ -5,7 +5,7 @@
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
                 <div v-if="!videoControlsDisabled" class="video-controls-row">
                     <div class="time-input-wrap">
-                        <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
+                        <v-text-field label="Time (s)" type="number" :step="0.01" :value="formattedTime"
                             dark dense hide-details @input="onChangeTime"/>
                     </div>
                     <v-slider :value="frame"
@@ -80,11 +80,16 @@ export default {
             trialLoading: false,
             timeStart: 0,
             timeEnd: 0,
+            resizeObserver: null,
         }
     },
     computed: {
         videoControlsDisabled() {
             return !this.trial || this.frames.length === 0
+        },
+        formattedTime() {
+            const t = Number(this.time)
+            return Number.isFinite(t) ? t.toFixed(2) : '0.00'
         },
     },
     watch: {
@@ -97,9 +102,33 @@ export default {
     async mounted(){
         this.timeStart = this.result.indices.start
         this.timeEnd = this.result.indices.end
+        window.addEventListener('resize', this.onResize)
+        window.addEventListener('keydown', this.onKeydown)
+        this.initResizeObserver()
         await this.loadTrial(this.trialID);
     },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.onResize)
+        window.removeEventListener('keydown', this.onKeydown)
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect()
+            this.resizeObserver = null
+        }
+    },
     methods: {
+        initResizeObserver() {
+            if (typeof ResizeObserver === 'undefined' || !this.$refs.mocap) {
+                return
+            }
+            if (this.resizeObserver) {
+                this.resizeObserver.disconnect()
+                this.resizeObserver = null
+            }
+            this.resizeObserver = new ResizeObserver(() => {
+                this.onResize()
+            })
+            this.resizeObserver.observe(this.$refs.mocap)
+        },
         async loadTrial(trialID) {
             console.log('loadTrial')
             this.time = this.timeStart
@@ -156,6 +185,7 @@ export default {
                     if (this.frames.length > 0) {
                         this.$nextTick(() => {
                             try {
+                                this.initResizeObserver()
                                 while (this.$refs.mocap.lastChild) {
                                     this.$refs.mocap.removeChild(this.$refs.mocap.lastChild)
                                 }
@@ -172,6 +202,7 @@ export default {
                                 this.scene = new THREE.Scene()
                                 this.renderer = new THREE.WebGLRenderer({ antialias: true })
                                 this.renderer.shadowMap.enabled = true;
+                                this.renderer.setPixelRatio(window.devicePixelRatio || 1)
                                 this.onResize()
                                 container.appendChild(this.renderer.domElement)
                                 this.controls = new THREE_OC.OrbitControls(this.camera, this.renderer.domElement)
@@ -281,12 +312,14 @@ export default {
         onResize() {
             const container = this.$refs.mocap
             if (container && this.renderer) {
-                this.renderer.setSize(container.clientWidth, container.clientHeight)
-            }
-
-            if (this.renderer) {
-                const canvas = this.renderer.domElement;
-                this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                const width = container.clientWidth
+                const height = container.clientHeight
+                if (!width || !height) {
+                    return
+                }
+                // Keep drawing buffer in sync with the visible canvas size.
+                this.renderer.setSize(width, height, true)
+                this.camera.aspect = width / height;
                 this.camera.updateProjectionMatrix();
             }
         },
@@ -451,6 +484,34 @@ export default {
 
             this.animateOneFrame()
         },
+        onKeydown(event) {
+            const activeTag = document.activeElement?.tagName?.toLowerCase()
+            const isTypingTarget = ['input', 'textarea', 'select'].includes(activeTag) || document.activeElement?.isContentEditable
+            if (isTypingTarget || this.videoControlsDisabled) {
+                return
+            }
+
+            if (event.code === 'Space') {
+                event.preventDefault()
+                this.togglePlay(!this.playing)
+                return
+            }
+
+            if (event.code === 'ArrowRight') {
+                event.preventDefault()
+                this.togglePlay(false)
+                const nextFrame = Math.min(this.frame + 1, this.frames.length - 1)
+                this.onNavigate(nextFrame)
+                return
+            }
+
+            if (event.code === 'ArrowLeft') {
+                event.preventDefault()
+                this.togglePlay(false)
+                const prevFrame = Math.max(this.frame - 1, 0)
+                this.onNavigate(prevFrame)
+            }
+        },
         maxVideoDuration() {
             return this.vid0() ? (this.vid0().duration - 1) : 0
         },
@@ -461,7 +522,7 @@ export default {
 <style lang="scss">
 
 .video-player {
-    height: calc(100% - var(--app-bar-height, 64px));
+    height: 100%;
 
     .left {
         width: 250px;
@@ -489,7 +550,9 @@ export default {
             overflow: hidden;
 
             canvas {
+                display: block;
                 width: 100% !important;
+                height: 100% !important;
             }
         }
     }
@@ -499,7 +562,7 @@ export default {
         height: 100%;
 
         .videos {
-            overflow-y: auto;
+            overflow: hidden;
             width: 200px;
         }
     }
@@ -509,13 +572,15 @@ export default {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
-    padding: 8px 0;
+    gap: 8px;
+    padding: 2px 0 4px;
 }
 
 .video-controls-row .time-input-wrap {
-    min-width: 100px;
-    flex-shrink: 0;
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    flex: 0 0 72px;
 }
 
 .video-controls-row .slider-wrap {

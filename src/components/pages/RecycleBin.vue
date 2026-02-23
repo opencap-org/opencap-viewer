@@ -5,7 +5,8 @@
         <v-btn
           width="16em"
           @click="$router.push({ name: 'SelectSession' })">
-          Go back to sessions list
+          <v-icon left>mdi-arrow-left</v-icon>
+          Back to Sessions
         </v-btn>
         <v-btn
           @click="empty_bin_dialog = true">

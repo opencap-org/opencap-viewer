@@ -1,5 +1,6 @@
 <template>
   <MainLayout
+    :class="{ 'monocular-navigation': isMonocularMode }"
     rightButton="Next"
     column
     :step="1"
@@ -238,5 +239,18 @@ export default {
 
 .cameras {
   width: 120px;
+}
+
+.monocular-navigation ::v-deep .navigation {
+  flex-wrap: nowrap;
+}
+
+.monocular-navigation ::v-deep .navigation .slot {
+  flex: 0 1 auto;
+}
+
+.monocular-navigation ::v-deep .navigation .slot button {
+  width: auto;
+  white-space: nowrap;
 }
 </style>

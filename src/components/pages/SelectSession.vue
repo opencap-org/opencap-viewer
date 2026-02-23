@@ -1,6 +1,6 @@
 <template>
   <div class="select-session d-flex flex-column">
-    <div class="pa-2 d-flex flex-wrap align-center toolbar-container">
+    <div class="d-flex flex-wrap align-center toolbar-container">
       <v-btn
         @click="$router.push({ name: 'RecordingMode' })"
         class="toolbar-button">
@@ -11,7 +11,6 @@
       <v-menu offset-y>
         <template v-slot:activator="{ on, attrs }">
           <v-btn dark v-bind="attrs" v-on="on" class="toolbar-button">
-            <v-icon left>mdi-view-dashboard-outline</v-icon>
             <span class="dashboards-text d-none d-sm-inline mr-2">Dashboards</span>
             <span class="dashboards-text-mobile d-sm-none">Dashboards</span>
             <v-icon class="d-none d-sm-inline">mdi-menu</v-icon>
@@ -19,13 +18,13 @@
         </template>
         <v-list>
             <v-list-item link
-                @click="$router.push({ name: 'Dashboard', params: { id: '' } })">
+                @click="openKinematicsDashboardFromMenu">
                 Kinematics
             </v-list-item>
             <v-list-item
                 v-for="dashboard in analysis_dashboards"
                 :key="dashboard.id"
-                @click="$router.push({ name: 'AnalysisDashboard', params: { id: dashboard.id } })">
+                @click="openAnalysisDashboardFromMenu(dashboard)">
               {{ dashboard.title }}</v-list-item>
         </v-list>
       </v-menu>
@@ -49,8 +48,7 @@
       </div>
 
       <div class="d-flex align-center flex-grow-1 flex-md-grow-0 ml-0 ml-md-auto mt-2 mt-md-0 search-section">
-        <div v-if="!searchSubmitted" class="flex-grow-1 mr-2">
-          <!-- Text field and Search button -->
+        <div class="flex-grow-1 mr-2">
           <v-text-field
             v-model="searchText"
             label="Enter Session ID/Name"
@@ -60,20 +58,11 @@
           ></v-text-field>
         </div>
 
-        <div v-if="!searchSubmitted">
+        <div>
           <v-btn
             class="submit-btn"
-            @click="handleSearch">
-            Search
-          </v-btn>
-        </div>
-
-        <!-- Clear Search button -->
-        <div v-else>
-          <v-btn
-            class="submit-btn"
-            @click="onClearSearch">
-            Clear Search
+            @click="searchText ? onClearSearch() : handleSearch()">
+            {{ searchText ? 'Clear' : 'Search' }}
           </v-btn>
         </div>
       </div>
@@ -102,12 +91,23 @@
         <span>{{ item.created_at|date }}</span>
       </template>
       <template v-slot:item.id="{ item }">
-        <div class="session-id-text">{{ item.id }}</div>
+        <div class="session-id-cell" :title="item.id">
+          <span class="session-id-preview">{{ getSessionIdPreview(item.id) }}</span>
+          <v-btn
+            icon
+            small
+            dark
+            class="copy-session-id-btn"
+            title="Copy session ID"
+            @click.stop="copySessionId(item.id)">
+            <v-icon small>mdi-content-copy</v-icon>
+          </v-btn>
+        </div>
       </template>
       <template v-slot:item.controls="{ item }">
         <div class="session-controls-cell">
           <!-- Desktop: Direct action buttons -->
-          <div class="action-buttons-desktop d-none d-lg-flex align-center">
+          <div class="action-buttons-desktop d-none d-md-flex align-center">
             <v-btn
                 icon
                 small
@@ -158,7 +158,7 @@
           </div>
 
           <!-- Mobile/Tablet: Bottom sheet on mobile, menu on larger screens -->
-          <div class="d-lg-none">
+          <div class="d-md-none">
             <template v-if="$vuetify.breakpoint.smAndDown">
               <v-btn icon dark small class="menu-button" @click="openSessionMenuSheet(item)">
                 <v-icon>mdi-menu</v-icon>
@@ -365,6 +365,11 @@ export default {
   mounted() {
       this.$toasted.clear()
   },
+  beforeDestroy () {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer)
+    }
+  },
   data () {
     return {
       loading: true,
@@ -386,7 +391,7 @@ export default {
       selectedSessionForMenu: null,
       show_trashed: false,
       searchText: '',
-      searchSubmitted: false,
+      searchDebounceTimer: null,
       headers: [
         { 
           text: 'Session Name', 
@@ -404,26 +409,31 @@ export default {
           text: 'Actions',
           value: 'controls',
           sortable: false,
-          class: 'controls-column'
+          class: 'controls-column',
+          width: '150px'
         },
         {
           text: 'Session ID',
           align: 'start',
           sortable: false,
           value: 'id',
-          class: 'session-id-column'
+          class: 'session-id-column',
+          width: '90px'
         },
         {
           text: 'Subject Name', 
-          value: 'name'
+          value: 'name',
+          width: '140px'
         },
         { 
           text: 'Number of trials', 
-          value: 'trials_count'
+          value: 'trials_count',
+          width: '110px'
         },
         { 
           text: 'Monocular', 
-          value: 'isMono'
+          value: 'isMono',
+          width: '100px'
         },
       ],
       selected: null,
@@ -439,13 +449,27 @@ export default {
         this.session_sort = this.options.sortBy
         this.session_sort_desc = this.options.sortDesc
         console.log('options changed', this.options)
-        this.loadValidSessions()
+        this.refreshSessions()
       },
       deep: true
     },
     show_trashed: {
       handler () {
-        this.loadValidSessions()
+        this.refreshSessions()
+      }
+    },
+    searchText: {
+      handler () {
+        if (this.searchDebounceTimer) {
+          clearTimeout(this.searchDebounceTimer)
+        }
+        if (!this.searchText.trim()) {
+          this.handleSearch()
+          return
+        }
+        this.searchDebounceTimer = setTimeout(() => {
+          this.handleSearch()
+        }, 300)
       }
     }
   },
@@ -476,15 +500,23 @@ export default {
         'restoreTrashedSession',
         'loadAnalysisDashboardList',
     ]),
+    refreshSessions () {
+      if (this.searchText.trim()) {
+        this.handleSearch()
+        return
+      }
+      this.loadValidSessions()
+    },
     onClearSearch() {
       this.searchText = ""
-      this.handleSearch();
-      this.searchSubmitted = false;
     },
     handleSearch() {
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+      }
       this.loading = true;
-      this.searchSubmitted = true;
-      const params = new URLSearchParams({ text: this.searchText }).toString();
+      const query = this.searchText.trim()
+      const params = new URLSearchParams({ text: query }).toString();
 
       let data = {
         start: this.session_start,
@@ -494,7 +526,7 @@ export default {
         sort_desc: this.session_sort_desc
       }
       // If empty search text, retrieve everything as normally would do.
-      if(this.searchText === "") {
+      if(query === "") {
         axios.post('/sessions/valid/', data).then(response => {
           this.valid_sessions = response.data.sessions.map(s => ({ ...s, isMenuOpen: false }))
           this.session_total = response.data.total
@@ -602,6 +634,30 @@ export default {
     closeSheetAndRename(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.openRenameDialog(item); },
     closeSheetAndTrash(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForDelete = item; this.remove_dialog = true; },
     closeSheetAndRestore(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForDelete = item; this.restore_dialog = true; },
+    openKinematicsDashboardFromMenu () {
+      const defaultSessionId = this.selected?.id || this.valid_sessions?.[0]?.id
+      if (!defaultSessionId) {
+        apiInfo('No sessions are available yet.')
+        return
+      }
+      this.$router.push({ name: 'Dashboard', params: { id: defaultSessionId } })
+    },
+    openAnalysisDashboardFromMenu (dashboard) {
+      const title = String(dashboard?.title || '').trim().toLowerCase()
+      if (title.includes('overground')) {
+        this.$router.push({ name: 'AnalysisDashboard', params: { id: '42' } })
+        return
+      }
+      if (title.includes('squat')) {
+        this.$router.push({ name: 'AnalysisDashboard', params: { id: '36' } })
+        return
+      }
+      if (title === 'ad' || title.startsWith('ad ')) {
+        this.$router.push({ name: 'AnalysisDashboard', params: { id: '43' } })
+        return
+      }
+      this.$router.push({ name: 'AnalysisDashboard', params: { id: dashboard.id } })
+    },
     // async onLoadAllSessions(){
     //   try {
     //     await this.loadExistingSessions({reroute: true, quantity:-1})
@@ -642,6 +698,39 @@ export default {
         Vue.set(this.valid_sessions, index, data);
         data.created_at = formatDate(data.created_at);
       }
+    },
+    async copySessionId(sessionId) {
+      const id = String(sessionId || '');
+      if (!id) {
+        return
+      }
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(id)
+        } else {
+          const textArea = document.createElement('textarea')
+          textArea.value = id
+          textArea.style.position = 'fixed'
+          textArea.style.left = '-9999px'
+          textArea.style.top = '-9999px'
+          document.body.appendChild(textArea)
+          textArea.focus()
+          textArea.select()
+          document.execCommand('copy')
+          document.body.removeChild(textArea)
+        }
+        apiInfo('Session ID copied to clipboard.', 2500)
+      } catch (error) {
+        apiError(error)
+      }
+    },
+    getSessionIdPreview(sessionId) {
+      const id = String(sessionId || '')
+      if (!id) {
+        return ''
+      }
+      return id.length > 8 ? `${id.slice(0, 8)}...` : id
     }
 
   }
@@ -652,9 +741,10 @@ export default {
 
 .submit-btn {
   width: 120px;
-  min-width: unset; /* remove Vuetify’s fixed width */
-  padding-left: 8px; /* optional tighter padding */
-  padding-right: 8px;
+  min-width: 120px;
+  padding-left: 14px;
+  padding-right: 14px;
+  white-space: nowrap;
   
   @media (max-width: 599px) {
     width: 100%;
@@ -663,11 +753,12 @@ export default {
 }
 
 .toolbar-container {
+  padding: 0 8px 8px;
   gap: 8px;
   justify-content: flex-start;
   
   @media (max-width: 599px) {
-    padding-top: 8px;
+    padding: 0 6px 6px;
     gap: 6px;
     justify-content: flex-start;
     align-items: stretch;
@@ -717,40 +808,48 @@ export default {
 }
 
 .select-session {
+  --sessions-top-gap: clamp(10px, calc(var(--app-bar-height, 64px) * 0.2), 18px);
+  padding-top: var(--sessions-top-gap);
   height: calc(98vh - var(--app-bar-height, 64px));
   height: calc(98dvh - var(--app-bar-height, 64px));
   overflow: hidden;
+  box-sizing: border-box;
 
   @media (max-width: 599px) {
     height: calc(100vh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
     height: calc(100dvh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
-    padding-top: 0;
+    --sessions-top-gap: clamp(8px, 2vh, 12px);
   }
 
   .sessions-table {
     margin: 0 8px 16px 8px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    ::v-deep .v-data-footer {
+      padding-bottom: clamp(8px, 1.8vh, 14px);
+      flex: 0 0 auto;
+    }
     
     @media (max-width: 599px) {
       margin: 0 4px 8px 4px;
+      
+      ::v-deep .v-data-footer {
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      }
     }
     
     .v-data-table__wrapper {
       overflow-x: hidden;
       overflow-y: auto;
-      height: calc(94vh - 128px);
-      height: calc(94dvh - 128px);
+      flex: 1 1 auto;
+      min-height: 0;
       position: relative;
       -webkit-overflow-scrolling: touch;
-
-      @media (max-width: 959px) {
-        height: calc(94vh - 200px);
-        height: calc(94dvh - 200px);
-      }
       
       @media (max-width: 599px) {
-        height: calc(100vh - var(--app-bar-height, 64px) - 220px - env(safe-area-inset-bottom, 0px));
-        height: calc(100dvh - var(--app-bar-height, 64px) - 220px - env(safe-area-inset-bottom, 0px));
         border-radius: 4px;
         background: rgba(255, 255, 255, 0.02);
       }
@@ -791,16 +890,33 @@ export default {
         min-width: 0;
       }
 
-      .session-id-text {
-        font-size: 0.75rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        min-width: 0;
+      .copy-session-id-btn {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 4px;
+        margin: 0 2px;
+        width: 32px !important;
+        height: 32px !important;
 
-        @media (max-width: 599px) {
-          font-size: 0.7rem;
+        &:hover {
+          background-color: rgba(255, 255, 255, 0.2) !important;
         }
+
+        .v-icon {
+          color: rgba(255, 255, 255, 0.9) !important;
+        }
+      }
+
+      .session-id-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .session-id-preview {
+        font-family: inherit;
+        font-size: 0.8rem;
+        white-space: nowrap;
       }
 
       .menu-button {
@@ -948,6 +1064,7 @@ export default {
 
       .submit-btn {
         width: auto;
+        min-width: 132px;
         margin-top: 0;
       }
     }

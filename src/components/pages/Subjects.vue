@@ -1,36 +1,57 @@
 <template>
-  <div>
+  <div class="subjects-page d-flex flex-column">
     <div class="d-flex flex-column">
     <div class="pa-2 d-flex flex-wrap align-center subjects-toolbar">
       <v-btn
-        width="16em"
         class="subjects-toolbar__btn"
         @click="$router.push({ name: 'SelectSession' })">
-        Go back to sessions list
+        <v-icon left>mdi-arrow-left</v-icon>
+        Back to Sessions
       </v-btn>
       <v-btn
-        class="ml-2 mt-1 mt-sm-0 subjects-toolbar__btn"
+        class="subjects-toolbar__btn"
         @click="$refs.dialogRef.addSubject()">
         New Subject
       </v-btn>
       <v-checkbox
         v-model="show_trashed"
-        class="ml-2 mt-0 mb-0 subjects-toolbar__checkbox"
+        class="subjects-toolbar__checkbox"
         label="Show removed subjects"
         hide-details></v-checkbox>
+
+      <div class="d-flex align-center flex-grow-1 flex-md-grow-0 ml-0 ml-md-auto mt-2 mt-md-0 subjects-search-section">
+        <div class="flex-grow-1 mr-2">
+          <v-text-field
+            v-model="searchText"
+            label="Enter Subject ID/Name"
+            dense
+            hide-details
+            @keyup.enter="handleSearch"
+          ></v-text-field>
+        </div>
+        <div>
+          <v-btn
+            class="subjects-submit-btn"
+            @click="searchText ? onClearSearch() : handleSearch()">
+            {{ searchText ? 'Clear' : 'Search' }}
+          </v-btn>
+        </div>
+      </div>
     </div>
     </div>
 
     <v-row class="subjects-page-row">
-      <v-col cols="12" md="8" class="subjects-table-col">
+      <v-col cols="12" :md="selected ? 7 : 12" class="subjects-table-col">
 
             <v-data-table
-              :headers="headers"
+              :headers="displayHeaders"
               :items="valid_subjects"
               :options.sync="options"
               :item-class="itemClasses"
               :loading="loading"
               :server-items-length="subject_total"
+              :mobile-breakpoint="0"
+              :dense="$vuetify.breakpoint.smAndDown"
               :footer-props="{
                 showFirstLastPage: false,
                 disableItemsPerPage: true,
@@ -43,50 +64,64 @@
               @item-selected="onSelect"
               @click:row="onRowClick">
               <template v-slot:item.name="{ item }">
-                <div class="float-right">
-                  <template v-if="$vuetify.breakpoint.smAndDown">
-                    <v-btn icon dark @click="openSubjectMenuSheet(item)">
-                      <v-icon>mdi-menu</v-icon>
-                    </v-btn>
-                  </template>
-                  <v-menu
-                    v-else
-                    v-model="item.isMenuOpen"
-                    offset-y
-                    right
-                    close-on-content-click
-                    content-class="subject-context-menu">
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn icon dark v-bind="attrs" v-on="on">
+                <div class="subject-name-cell">
+                  <div class="subject-name-text cursor-pointer">{{ item.name }}</div>
+                  <div class="subject-name-actions">
+                    <template v-if="$vuetify.breakpoint.smAndDown">
+                      <v-btn icon dark @click="openSubjectMenuSheet(item)">
                         <v-icon>mdi-menu</v-icon>
                       </v-btn>
                     </template>
-                    <v-list>
-                      <v-list-item link v-if="!item.trashed" @click="closeMenuAndEdit(item)">
-                        <v-list-item-title>Edit</v-list-item-title>
-                      </v-list-item>
-                      <v-list-item link v-show="!item.trashed" @click="closeMenuAndTrash(item)">
-                        <v-list-item-title>Trash</v-list-item-title>
-                      </v-list-item>
-                      <v-list-item link v-show="item.trashed" @click="closeMenuAndRestore(item)">
-                        <v-list-item-title>Restore</v-list-item-title>
-                      </v-list-item>
-                      <v-list-item link v-show="item.trashed" @click="closeMenuAndPermanentDelete(item)">
-                        <v-list-item-title>Delete permanently</v-list-item-title>
-                      </v-list-item>
-                      <v-list-item link v-show="!item.trashed && isSyncDownloadAllowed" @click="closeMenuAndDownload(item)">
-                        <v-list-item-title>Download data (old)</v-list-item-title>
-                      </v-list-item>
-                    </v-list>
-                  </v-menu>
+                    <div v-else class="subject-action-buttons">
+                      <v-btn
+                        v-if="!item.trashed"
+                        icon
+                        small
+                        dark
+                        class="subject-action-btn"
+                        title="Edit subject"
+                        @click.stop="editSubject(item)">
+                        <v-icon small>mdi-pencil</v-icon>
+                      </v-btn>
+                      <v-btn
+                        v-if="!item.trashed"
+                        icon
+                        small
+                        dark
+                        class="subject-action-btn"
+                        title="Trash subject"
+                        @click.stop="selectedSubjectForTrash = item; remove_dialog = true">
+                        <v-icon small>mdi-delete</v-icon>
+                      </v-btn>
+                      <v-btn
+                        v-if="item.trashed"
+                        icon
+                        small
+                        dark
+                        class="subject-action-btn"
+                        title="Restore subject"
+                        @click.stop="selectedSubjectForRestore = item; restore_dialog = true">
+                        <v-icon small>mdi-restore</v-icon>
+                      </v-btn>
+                      <v-btn
+                        v-if="item.trashed"
+                        icon
+                        small
+                        dark
+                        class="subject-action-btn"
+                        title="Delete permanently"
+                        @click.stop="selectedSubjectForPermanentDelete = item; remove_permanently_dialog = true">
+                        <v-icon small>mdi-delete-forever</v-icon>
+                      </v-btn>
+                    </div>
+                  </div>
                 </div>
-                <div class="cursor-pointer mt-2">{{ item.name }}</div>
               </template>
             </v-data-table>
 
 
       </v-col>
-      <v-col cols="12" md="4" class="sessions-table-col">
+      <v-col v-if="selected" cols="12" md="5" class="sessions-table-col">
 
             <v-data-table
               v-if="selected"
@@ -104,24 +139,41 @@
               fixed-header
               :height="$vuetify.breakpoint.smAndDown ? '50vh' : '80vh'"
               single-select
-              class="sessions-table mx-2"
+              class="sessions-table mx-2 flex-grow-1"
               @click:row="onRowSessionClick">
-            <template v-slot:default>
-                <tr>
-                  <th class="text-left">
-                    Session ID
-                  </th>
-                  <th class="text-left">
-                    Session Name
-                  </th>
-                  <th class="text-left">
-                    Trials
-                  </th>
-                  <th class="text-left">
-                    Date
-                  </th>
-                </tr>
-            </template>
+              <template v-slot:item.sessionName="{ item }">
+                <div class="session-name-text">{{ item.sessionName || 'Untitled' }}</div>
+              </template>
+              <template v-slot:item.id="{ item }">
+                <div class="session-id-cell" :title="item.id">
+                  <span class="session-id-preview">{{ getSessionIdPreview(item.id) }}</span>
+                  <v-btn
+                    icon
+                    small
+                    dark
+                    class="copy-session-id-btn"
+                    title="Copy session ID"
+                    @click.stop="copySessionId(item.id)">
+                    <v-icon small>mdi-content-copy</v-icon>
+                  </v-btn>
+                </div>
+              </template>
+              <template v-slot:item.created_at="{ item }">
+                <span>{{ item.created_at | date }}</span>
+              </template>
+              <template v-slot:item.controls="{ item }">
+                <div class="session-controls-cell">
+                  <v-btn
+                    icon
+                    small
+                    dark
+                    class="action-btn"
+                    title="Load session"
+                    @click.stop="loadSession(item)">
+                    <v-icon small>mdi-play</v-icon>
+                  </v-btn>
+                </div>
+              </template>
         </v-data-table>
       </v-col>
     </v-row>
@@ -251,6 +303,11 @@ export default {
   },
   name: 'Subjects',
   created: function () {},
+  beforeDestroy () {
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer)
+    }
+  },
   data () {
     return {
       loading: true,
@@ -274,6 +331,8 @@ export default {
       selectedSubjectForPermanentDelete: null,
       selectedSubjectForDownload: null,
       show_trashed: false,
+      searchText: '',
+      searchDebounceTimer: null,
       downloading: false,
       isArchiveInProgress: false,
       isArchiveDone: false,
@@ -287,8 +346,8 @@ export default {
         { text: 'Weight', value: 'weight' },
         { text: 'Height', value: 'height' },
         { text: 'Birth year', value: 'birth_year' },
-        { text: 'Sex', value: 'sex_display' },
-        { text: 'Gender', value: 'gender_display' },
+        { text: 'Sex', value: 'sex_display', width: '90px' },
+        { text: 'Gender', value: 'gender_display', width: '90px' },
         { text: 'Subject Tags', value: 'subject_tags', sortable: false},
         { text: 'Characteristics', value: 'characteristics', sortable: false}
       ],
@@ -301,20 +360,37 @@ export default {
       session_options: {},
 
       sessionHeaders: [
-        { text: 'Session ID', value: 'id' },
         { text: 'Session Name', value: 'sessionName' },
+        { text: 'Session ID', value: 'id', sortable: false },
         { text: 'Trials', value: 'trials_count' },
         { text: 'Date', value: 'created_at' },
+        { text: 'Actions', value: 'controls', sortable: false },
       ],
       selected: null,
     }
   },
-    computed: {
+  computed: {
     ...mapState({
       genders: state => state.data.genders,
       sexes: state => state.data.sexes,
       isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed
     }),
+    isPhone () {
+      return this.$vuetify.breakpoint.xsOnly
+    },
+    displayHeaders () {
+      if (!this.isPhone) {
+        return this.headers
+      }
+
+      return this.headers
+        .filter(({ value }) => ['name', 'weight', 'height', 'birth_year'].includes(value))
+        .map(header => ({
+          ...header,
+          align: 'start',
+          sortable: false
+        }))
+    }
   },
   watch:{
     showArchiveDialog(newShowArchiveDialog, oldShowArchiveDialog){
@@ -326,25 +402,57 @@ export default {
     },
     options: {
       handler () {
-        this.subject_start = (this.options.page - 1) * this.options.itemsPerPage
-        this.subject_sort = this.options.sortBy
-        this.subject_sort_desc = this.options.sortDesc
-        this.loadValidSubjects()
+        const page = this.options.page || 1
+        const itemsPerPage = this.options.itemsPerPage || this.subject_quantity
+        this.subject_start = (page - 1) * itemsPerPage
+        this.subject_sort = this.options.sortBy || []
+        this.subject_sort_desc = this.options.sortDesc || []
+        this.refreshSubjects()
         console.log("OPTIONS", this.options)
       },
       deep: true
     },
     show_trashed: {
       handler () {
-        this.loadValidSubjects()
-      },
-      deep: true
+        this.refreshSubjects()
+      }
     },
+    searchText: {
+      handler () {
+        if (this.searchDebounceTimer) {
+          clearTimeout(this.searchDebounceTimer)
+        }
+        if (!this.searchText.trim()) {
+          this.handleSearch()
+          return
+        }
+        this.searchDebounceTimer = setTimeout(() => {
+          this.handleSearch()
+        }, 300)
+      }
+    }
   },
   methods: {
     ...mapActions('data', ['trashExistingSubject', 'restoreTrashedSubject']),
+    refreshSubjects () {
+      this.loadValidSubjects()
+    },
+    onClearSearch () {
+      this.searchText = ''
+    },
+    handleSearch () {
+      if (this.searchDebounceTimer) {
+        clearTimeout(this.searchDebounceTimer)
+      }
+      this.subject_start = 0
+      if ((this.options.page || 1) !== 1) {
+        this.options = { ...this.options, page: 1 }
+        return
+      }
+      this.loadValidSubjects()
+    },
     loadSubjectSessions (subject_id) {
-      this.sessions_loading = true
+      this.session_loading = true
       let data = {
         start: this.session_start,
         quantity: this.session_quantity,
@@ -367,7 +475,8 @@ export default {
         quantity: this.subject_quantity,
         include_trashed: this.show_trashed,
         sort: this.subject_sort,
-        sort_desc: this.subject_sort_desc
+        sort_desc: this.subject_sort_desc,
+        search: this.searchText.trim()
       }
       let res = axios.get('/subjects/', {
         params: data
@@ -399,6 +508,42 @@ export default {
          this.$router.push({ name: 'Session', params: { id: item.id }})
          this.clicks = 0;
       }
+    },
+    loadSession (item) {
+      this.$router.push({ name: 'Session', params: { id: item.id } })
+    },
+    async copySessionId(sessionId) {
+      const id = String(sessionId || '');
+      if (!id) {
+        return
+      }
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(id)
+        } else {
+          const textArea = document.createElement('textarea')
+          textArea.value = id
+          textArea.style.position = 'fixed'
+          textArea.style.left = '-9999px'
+          textArea.style.top = '-9999px'
+          document.body.appendChild(textArea)
+          textArea.focus()
+          textArea.select()
+          document.execCommand('copy')
+          document.body.removeChild(textArea)
+        }
+        apiInfo('Session ID copied to clipboard.', 2500)
+      } catch (error) {
+        apiError(error)
+      }
+    },
+    getSessionIdPreview(sessionId) {
+      const id = String(sessionId || '')
+      if (!id) {
+        return ''
+      }
+      return id.length > 8 ? `${id.slice(0, 8)}...` : id
     },
     onRowClick (item, params) {
       params.select(!params.isSelected)
@@ -514,15 +659,64 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.subjects-page {
+  --subjects-top-gap: clamp(8px, calc(var(--app-bar-height, 64px) * 0.15), 14px);
+  padding-top: var(--subjects-top-gap);
+  height: calc(98vh - var(--app-bar-height, 64px));
+  height: calc(98dvh - var(--app-bar-height, 64px));
+  overflow: hidden;
+  box-sizing: border-box;
+
+  @media (max-width: 599px) {
+    height: calc(100vh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
+    height: calc(100dvh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (max-width: 959px) {
+    overflow-y: auto;
+  }
+}
+
 .subjects-toolbar {
+  gap: 8px;
   min-width: 0;
+  flex: 0 0 auto;
 
   @media (max-width: 959px) {
     justify-content: center;
   }
+
+  @media (max-width: 599px) {
+    gap: 6px;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
 }
-.subjects-toolbar__checkbox {
+
+.subjects-toolbar__btn {
+  margin: 0 !important;
   flex-shrink: 0;
+
+  @media (max-width: 599px) {
+    flex: 1 1 calc(50% - 3px);
+    width: calc(50% - 3px);
+    min-height: 44px;
+  }
+}
+
+.subjects-toolbar__checkbox {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 0 !important;
+
+  @media (max-width: 599px) {
+    flex: 1 1 100%;
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+  }
 }
 .subjects-toolbar__checkbox ::v-deep .v-input {
   margin-top: 0;
@@ -535,23 +729,91 @@ export default {
   margin-bottom: 0;
 }
 
+.subjects-search-section {
+  @media (max-width: 599px) {
+    flex: 1 1 100% !important;
+    max-width: 100%;
+    margin-left: 0 !important;
+    flex-direction: row;
+    align-items: center !important;
+    gap: 6px;
+
+    > div:first-child {
+      flex: 1 1 auto;
+      min-width: 0;
+      margin-right: 0 !important;
+    }
+
+    > div:last-child {
+      flex: 0 0 auto;
+    }
+  }
+}
+
+.subjects-submit-btn {
+  width: 120px;
+  min-width: 120px;
+  padding-left: 14px;
+  padding-right: 14px;
+  white-space: nowrap;
+}
+
 .subjects-page-row {
   min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0;
+
+  @media (max-width: 959px) {
+    flex: 0 0 auto;
+    min-height: auto;
+  }
 }
 .subjects-table-col,
 .sessions-table-col {
   min-width: 0;
+  min-height: 0;
+  display: flex;
 }
 
 .subjects-table,
 .sessions-table {
   max-width: 100%;
   min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  ::v-deep .v-data-table {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  ::v-deep .v-data-footer {
+    flex: 0 0 auto;
+    padding-bottom: clamp(8px, 1.8vh, 14px);
+  }
 
   ::v-deep .v-data-table__wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-x: auto;
+    overflow-y: auto;
     max-width: 100%;
     -webkit-overflow-scrolling: touch;
+  }
+
+  ::v-deep .v-data-table__wrapper thead th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  ::v-deep .v-data-table__wrapper thead th .v-data-table-header__content {
+    white-space: nowrap;
   }
 
   // Style mobile table rows
@@ -577,12 +839,164 @@ export default {
   @media (max-width: 599px) {
     ::v-deep .v-data-table {
       font-size: 0.875rem;
+      width: 100%;
+    }
+
+    ::v-deep .v-data-footer {
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      justify-content: center;
+      padding-top: 8px;
+      font-size: 0.78rem;
     }
 
     ::v-deep .v-data-table__wrapper {
+      overflow-x: hidden !important;
       -webkit-overflow-scrolling: touch;
     }
+
+    ::v-deep .v-data-table__wrapper table {
+      min-width: 0 !important;
+      width: 100% !important;
+      table-layout: fixed;
+    }
+
+    ::v-deep .v-data-table__wrapper thead th {
+      padding: 6px 6px !important;
+      font-size: 0.72rem !important;
+    }
+
+    ::v-deep .v-data-table__wrapper tbody td {
+      padding: 7px 6px !important;
+      vertical-align: middle;
+    }
+
+    ::v-deep .v-data-table__wrapper tbody tr {
+      height: 44px;
+    }
+
+    ::v-deep .v-data-table__wrapper th,
+    ::v-deep .v-data-table__wrapper td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left !important;
+    }
   }
+}
+
+.subjects-table {
+  ::v-deep .v-data-table__wrapper th:nth-child(1),
+  ::v-deep .v-data-table__wrapper td:nth-child(1) {
+    min-width: 300px;
+    width: 300px;
+  }
+
+  ::v-deep .v-data-table__wrapper th:nth-child(5),
+  ::v-deep .v-data-table__wrapper td:nth-child(5),
+  ::v-deep .v-data-table__wrapper th:nth-child(6),
+  ::v-deep .v-data-table__wrapper td:nth-child(6) {
+    min-width: 90px;
+    width: 90px;
+    max-width: 90px;
+  }
+
+  @media (max-width: 599px) {
+    ::v-deep .v-data-table__wrapper th:nth-child(1),
+    ::v-deep .v-data-table__wrapper td:nth-child(1) {
+      width: 38%;
+      min-width: 0;
+    }
+
+    ::v-deep .v-data-table__wrapper th:nth-child(2),
+    ::v-deep .v-data-table__wrapper td:nth-child(2) {
+      width: 20%;
+      min-width: 0;
+    }
+
+    ::v-deep .v-data-table__wrapper th:nth-child(3),
+    ::v-deep .v-data-table__wrapper td:nth-child(3) {
+      width: 20%;
+      min-width: 0;
+    }
+
+    ::v-deep .v-data-table__wrapper th:nth-child(4),
+    ::v-deep .v-data-table__wrapper td:nth-child(4) {
+      width: 22%;
+      min-width: 0;
+    }
+  }
+}
+
+.subject-name-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.subject-name-text {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subject-name-actions {
+  flex: 0 0 auto;
+}
+
+.subject-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.subject-action-btn {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .v-icon {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+}
+
+.session-name-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copy-session-id-btn,
+.action-btn {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
+.session-controls-cell {
+  display: flex;
+  align-items: center;
+}
+
+.session-id-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.session-id-preview {
+  font-family: inherit;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 </style>
 

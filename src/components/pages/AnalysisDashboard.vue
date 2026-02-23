@@ -1,14 +1,11 @@
 <template>
   <div class="analysis-dashboard-wrapper">
-    <!-- Mobile: overlay to close sidebar when clicking outside -->
-    <div
-      v-if="!leftMenuClosed && $vuetify.breakpoint.smAndDown"
-      class="analysis-dashboard-overlay"
-      @click="leftMenuClosed = true"
-    />
     <div id="body" class="chart-page d-flex flex-column" :class="{ 'left-menu-closed': leftMenuClosed }">
-      <div class="dashboard-body d-flex" v-if="show_dashboard">
-        <div v-for="(column, column_name, column_idx) in dashboard.layout" :key="column_idx" :class="column.classes">
+      <div class="dashboard-body" :class="{ 'has-metrics': hasMetricsColumn }" v-if="show_dashboard">
+        <div
+          v-for="(column, column_name, column_idx) in dashboard.layout"
+          :key="column_idx"
+          :class="[column.classes, { 'metrics-column': isMetricsColumn(column) }]">
           <div v-for="block in column.widgets" :key="block._id" :class="block.classes">
             <component :is="block.component"
                        @changeTimePosition="captureTimePosition"
@@ -28,12 +25,12 @@
     </div>
 
     <v-card class="sidebar left-sidebar">
-      <div class="pa-2 left-menu-close-button">
-        <v-btn icon @click="leftMenu" class="sidebar-close-btn">
+      <div class="pa-2 left-menu-close-button d-flex justify-end">
+        <v-btn icon @click="leftMenu" class="sidebar-close-btn" title="Close menu">
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </div>
-      <v-card-text height="100%" v-if="dashboard.data">
+      <v-card-text height="100%">
         <v-toolbar-title class="text-center">Data Menu</v-toolbar-title>
         <v-subheader class="subheader-bold"></v-subheader>
         <div class="left d-flex flex-column pa-2">
@@ -42,7 +39,7 @@
               <v-select v-model="subject_selected"
                         item-value="id"
                         item-text="name"
-                        :items="dashboard.data.subjects"
+                        :items="dashboardData.subjects"
                         label="Select subject" outlined dense return-object></v-select>
               <v-select v-model="session_selected"
                         item-value="id"
@@ -68,7 +65,14 @@
 
                   <v-dialog v-model="dialog" width="500">
                     <template v-slot:activator="{ on, attrs }">
-                        <v-btn small class="mt-4 w-100" v-bind="attrs" v-on="on" v-show="loggedIn && trial_selected">Share analysis publicly</v-btn>
+                        <v-btn
+                          class="mt-4 w-100 sidebar-action-btn"
+                          v-bind="attrs"
+                          v-on="on"
+                          v-show="loggedIn && trial_selected">
+                          <v-icon left small>mdi-share-variant</v-icon>
+                          Share analysis
+                        </v-btn>
                     </template>
 
                     <v-card>
@@ -116,10 +120,16 @@
                 </v-dialog>
 
 
-                <v-btn class="w-100 mt-4" :to="{ name: 'SelectSession' }">Back to session list
+                <v-btn class="w-100 mt-4 sidebar-action-btn" :to="{ name: 'SelectSession' }">
+                  <v-icon left small>mdi-arrow-left</v-icon>
+                  Back to session list
                 </v-btn>
 
-                <v-btn class="w-100 mt-4" @click="$router.push({ name: 'Session', params: { id: session_selected.id } })">
+                <v-btn
+                  v-show="trial_selected"
+                  class="w-100 mt-4 sidebar-action-btn"
+                  @click="$router.push({ name: 'Session', params: { id: session_selected.id } })">
+                  <v-icon left small>mdi-play-circle-outline</v-icon>
                   Go to Visualizer
                 </v-btn>
 
@@ -181,7 +191,7 @@ export default {
     },
     data() {
       return {
-        leftMenuClosed: true,
+        leftMenuClosed: false,
         subject_selected: null,
         session_selected: null,
         trial_selected: null,
@@ -204,11 +214,18 @@ export default {
         subjects: state => state.data.subjects,
         loggedIn: state => state.auth.verified
       }),
+      dashboardData() {
+        return this.dashboard?.data || { sessions: [], subjects: [], trials: [], results: [] }
+      },
       filteredSessions() {
-        return this.dashboard.data.sessions.filter(session => this.subject_selected && session.subject_id === this.subject_selected.id )
+        return this.dashboardData.sessions.filter(session => this.subject_selected && session.subject_id === this.subject_selected.id )
       },
       filteredTrials() {
-        return this.dashboard.data.trials.filter(trial => this.session_selected && trial.session_id === this.session_selected.id)
+        return this.dashboardData.trials.filter(trial => this.session_selected && trial.session_id === this.session_selected.id)
+      },
+      hasMetricsColumn() {
+        const columns = Object.values(this.dashboard?.layout || {})
+        return columns.some(column => this.isMetricsColumn(column))
       },
       dashboardUrl() {
         return location.origin + "/analysis-dashboard/" + this.dashboard.id +
@@ -239,16 +256,24 @@ export default {
         const urlParams = new URLSearchParams(queryString)
         this.share_subject_id = urlParams.get('subjectId')
         this.share_token = urlParams.get('shareToken')
+        this.leftMenuClosed = false
 
-        await this.loadAnalysisDashboard({id:this.$route.params.id, subject_id:this.share_subject_id, share_token:this.share_token})
+        try {
+          await this.loadAnalysisDashboard({id:this.$route.params.id, subject_id:this.share_subject_id, share_token:this.share_token})
+        } catch (error) {
+          apiWarning('Unable to load analysis dashboard data.')
+          console.error(error)
+        }
         let given_trial_id = this.$route.query.trialId
         if (given_trial_id) {
-          let trial_selected = this.dashboard.data.trials.filter(trial => trial.id === given_trial_id)[0]
-          let session_selected = this.dashboard.data.sessions.filter(session => session.id === trial_selected.session_id)[0]
-          let subject_selected = this.dashboard.data.subjects.filter(subject => subject.id === session_selected.subject_id)[0]
-          this.subject_selected = subject_selected
-          this.session_selected = session_selected
-          this.trial_selected = trial_selected
+          let trial_selected = this.dashboardData.trials.filter(trial => trial.id === given_trial_id)[0]
+          if (trial_selected) {
+            let session_selected = this.dashboardData.sessions.filter(session => session.id === trial_selected.session_id)[0]
+            let subject_selected = this.dashboardData.subjects.filter(subject => subject.id === session_selected?.subject_id)[0]
+            this.subject_selected = subject_selected || null
+            this.session_selected = session_selected || null
+            this.trial_selected = trial_selected
+          }
         }
     },
     methods: {
@@ -259,10 +284,36 @@ export default {
         captureTimePosition(time) {
           this.time_position = time;
         },
+        isMetricsColumn(column) {
+          const widgets = column?.widgets || []
+          const columnClass = String(column?.classes || '').toLowerCase()
+          if (columnClass.includes('scalar')) {
+            return true
+          }
+          return widgets.some(block => {
+            const blockClass = String(block?.classes || '').toLowerCase()
+            if (blockClass.includes('scalar')) {
+              return true
+            }
+
+            const component = block?.component
+            if (typeof component === 'string') {
+              const name = component.toLowerCase()
+              return name.includes('scalarvalue') || name.includes('scalar-value')
+            }
+
+            if (component && typeof component === 'object') {
+              const name = String(component.name || component.__name || '').toLowerCase()
+              return name.includes('scalar') || name.includes('value')
+            }
+
+            return false
+          })
+        },
         getResultUrl(trial_id) {
-          for(let i=0; i<this.dashboard.data.results.length; i++) {
-            if (this.dashboard.data.results[i].trial_id === trial_id) {
-              return this.dashboard.data.results[i].media
+          for(let i=0; i<this.dashboardData.results.length; i++) {
+            if (this.dashboardData.results[i].trial_id === trial_id) {
+              return this.dashboardData.results[i].media
             }
           }
         },
@@ -344,8 +395,10 @@ export default {
   width: 100%;
   max-width: 100vw;
   min-height: 100%;
+  max-height: none;
   overflow: visible;
   background-color: black;
+  box-sizing: border-box;
 }
 
 .analysis-dashboard-overlay {
@@ -360,13 +413,15 @@ export default {
 }
 
 .sidebar {
-  position: absolute;
-  top: 0;
+  position: fixed;
+  top: var(--app-bar-height, 64px);
   bottom: 0;
   width: 300px;
   transition: transform 0.2s;
-  overflow-y: scroll;
-  z-index: 20;
+  overflow-y: hidden;
+  z-index: 110;
+  background: #1f2229;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .left-sidebar {
@@ -394,26 +449,131 @@ export default {
   margin-left: 0 !important;
 }
 
-/* When left menu is open, constrain main content so right side stays on screen */
-#body:not(.left-menu-closed) .dashboard-body {
-  width: calc(100% - 320px);
-  max-width: calc(100vw - 320px);
-  overflow-x: auto;
+/* Main content container */
+.dashboard-body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   box-sizing: border-box;
 }
 
-/* When sidebar is open, keep scalar (type/metrics) visible – fixed on the right, below sidebar */
-#body:not(.left-menu-closed) .dashboard-body > div:has(.scalar-value-wrapper) {
-  position: fixed;
-  right: 0;
-  top: var(--app-bar-height, 64px);
-  bottom: 0;
-  width: 240px;
-  max-width: 40vw;
-  overflow-y: auto;
+/* Keep metrics on the right in both sidebar states on desktop */
+.dashboard-body.has-metrics {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  column-gap: 8px;
+  align-items: start;
+}
+
+/* Keep metrics on the right but in normal flow so page scroll handles overflow */
+.dashboard-body .metrics-column {
+  position: static;
+  width: 100%;
+  min-width: 280px;
+  flex: initial;
+  max-width: 42vw;
+  overflow: visible;
   background: black;
   z-index: 10;
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.4);
+  margin-left: 0;
+}
+
+/* Fallback: API layouts sometimes do not expose a reliable component marker.
+   Pin the last column to the metrics rail so it stays on the right. */
+.dashboard-body > div:last-child {
+  position: static;
+  width: 100%;
+  min-width: 280px;
+  flex: initial;
+  max-width: 42vw;
+  overflow: visible;
+  background: black;
+  z-index: 10;
+  margin-left: 0;
+}
+
+.dashboard-body.has-metrics > div:not(.metrics-column):not(:last-child) {
+  grid-column: 1;
+}
+
+.dashboard-body.has-metrics .metrics-column,
+.dashboard-body.has-metrics > div:last-child {
+  grid-column: 2;
+}
+
+/* Safety fallback: if class tagging fails, place scalar column on the right rail. */
+.dashboard-body.has-metrics > div:has(.scalar-value-wrapper) {
+  grid-column: 2 !important;
+}
+
+.dashboard-body .metrics-column .scalar-value-wrapper,
+.dashboard-body > div:last-child .scalar-value-wrapper {
+  padding-top: 0.25rem;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-body .metrics-column .scalar-wrapper,
+.dashboard-body > div:last-child .scalar-wrapper {
+  padding-left: 0.8rem;
+  padding-right: 0.8rem;
+  padding-top: 0.6rem;
+}
+
+/* Ensure metrics rail does not create an inner scrollbar. */
+.dashboard-body .metrics-column .scalar-value,
+.dashboard-body > div:last-child .scalar-value {
+  height: auto;
+  max-height: none;
+  overflow-y: visible;
+}
+
+.dashboard-body .metrics-column .scalar-plot,
+.dashboard-body > div:last-child .scalar-plot {
+  height: auto;
+  max-height: none;
+  overflow-y: visible;
+}
+
+/* Reduce metric value size in the right metrics rail. */
+.dashboard-body .metrics-column .scalar-text,
+.dashboard-body > div:last-child .scalar-text {
+  font-size: 26px;
+}
+
+.dashboard-body .metrics-column .info-text,
+.dashboard-body > div:last-child .info-text {
+  font-size: 24px;
+}
+
+/* Metric cards/dividers in right rail */
+.dashboard-body .metrics-column .scalar-value-wrapper > div,
+.dashboard-body > div:last-child .scalar-value-wrapper > div,
+.dashboard-body .metrics-column .scalar-wrapper > div,
+.dashboard-body > div:last-child .scalar-wrapper > div {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 0.6rem 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.dashboard-body .metrics-column .info-label,
+.dashboard-body > div:last-child .info-label,
+.dashboard-body .metrics-column .label-text,
+.dashboard-body > div:last-child .label-text,
+.dashboard-body .metrics-column .plot-caption,
+.dashboard-body > div:last-child .plot-caption {
+  padding-bottom: 0.28rem;
+  margin-bottom: 0.38rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dashboard-body .metrics-column .info-text,
+.dashboard-body > div:last-child .info-text,
+.dashboard-body .metrics-column .scalar-text,
+.dashboard-body > div:last-child .scalar-text {
+  margin-bottom: 0;
 }
 
 .dashboard-body > div {
@@ -456,12 +616,21 @@ export default {
 }
 
 .left-menu-close-button {
-  float: right;
+  width: 100%;
 }
 
 .left-menu-close-button .sidebar-close-btn {
   min-width: 40px;
   min-height: 40px;
+}
+
+.sidebar-action-btn {
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase;
 }
 
 .right-menu-close-button {
@@ -496,17 +665,55 @@ export default {
 }
 
 .dashboard-body {
-  margin-left: 320px;
+  margin-left: 0;
   margin-right: 10px;
   min-width: 0;
   flex: 1;
   padding-left: 1rem;
+  padding-bottom: 24px;
   display: flex;
   flex-wrap: wrap;
 }
 
+/* Re-assert desktop metrics rail after base dashboard-body flex styles. */
+@media (min-width: 961px) {
+  .dashboard-body.has-metrics {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    column-gap: 8px;
+    align-items: start;
+  }
+}
+
+#body {
+  padding-left: 320px;
+}
+
+.left-menu-closed#body {
+  padding-left: 0;
+}
+
 /* Small screens only: move scalar (type/metrics) to top and smaller font */
 @media (max-width: 960px) {
+  #body {
+    padding-left: 280px;
+  }
+
+  .left-menu-closed#body {
+    padding-left: 0;
+  }
+
+  .sidebar {
+    width: 280px;
+    overflow-y: auto;
+  }
+
+  #body:not(.left-menu-closed) .dashboard-body.has-metrics {
+    display: flex;
+    width: auto;
+    max-width: 100%;
+  }
+
   .dashboard-body {
     margin-left: 0;
     margin-right: 0;
@@ -514,7 +721,30 @@ export default {
   }
 
   /* Move scalar value column to top and use smaller font */
-  .dashboard-body > div:has(.scalar-value-wrapper) {
+  .dashboard-body .metrics-column {
+    position: static;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    width: auto;
+    max-width: 100%;
+    overflow-y: visible;
+    background: transparent;
+    box-shadow: none;
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .dashboard-body > div:last-child {
+    position: static;
+    right: auto;
+    top: auto;
+    bottom: auto;
+    width: auto;
+    max-width: 100%;
+    overflow-y: visible;
+    background: transparent;
+    box-shadow: none;
     order: -1;
     flex-basis: 100%;
   }
@@ -541,14 +771,17 @@ export default {
 .analysis-dashboard-wrapper {
   width: 100%;
   min-height: calc(100vh - var(--app-bar-height, 64px));
-  max-height: calc(100vh - var(--app-bar-height, 64px));
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  max-height: none;
+  overflow-y: visible;
+  overflow-x: hidden;
+  padding-bottom: 24px;
+  box-sizing: border-box;
 }
 
 .v-main:has(.analysis-dashboard-wrapper) {
   padding-left: 0 !important;
   padding-right: 0 !important;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 </style>

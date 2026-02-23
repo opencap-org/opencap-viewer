@@ -154,13 +154,13 @@
                       <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
                   </div>
   
-                  <v-btn small class="w-100" v-show="show_controls" :disabled="busy || state !== 'ready'"
+                  <v-btn small class="w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'"
                       @click="newSessionSameSetup">
-                      <v-icon left small>mdi-plus-box-multiple-outline</v-icon>
+                      <v-icon left small>mdi-plus-box-multiple</v-icon>
                       New session, same setup
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">
+                  <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">
                       <v-icon left small>mdi-plus-circle-outline</v-icon>
                       New session
                   </v-btn>
@@ -168,8 +168,8 @@
                   <v-dialog v-model="dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
                       :fullscreen="$vuetify.breakpoint.smAndDown">
                       <template v-slot:activator="{ on, attrs }">
-                          <v-btn small class="mt-4 w-100" v-bind="attrs" v-on="on" v-show="show_controls">
-                              <v-icon left small>mdi-share-variant-outline</v-icon>
+                          <v-btn small class="mt-4 w-100 session-action-btn" v-bind="attrs" v-on="on" v-show="show_controls">
+                              <v-icon left small>mdi-share-variant</v-icon>
                               Share session publicly
                           </v-btn>
                       </template>
@@ -220,7 +220,7 @@
   
   
                   <!-- Archive session -->
-                  <v-btn small class="mt-4 w-100" @click="showArchiveDialog = true">
+                  <v-btn small class="mt-4 w-100 session-action-btn" @click="showArchiveDialog = true">
                       <v-icon left small>mdi-download-outline</v-icon>
                       Download data
                   </v-btn>
@@ -285,12 +285,12 @@
                       Download data (old)
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
+                  <v-btn small class="mt-4 w-100 session-action-btn" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
                       <v-icon left small>mdi-view-dashboard-outline</v-icon>
                       Dashboard kinematics
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100" v-show="show_controls" @click="$router.push({ name: 'SelectSession'})"
+                  <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" @click="$router.push({ name: 'SelectSession'})"
                       :disabled="busy || state !== 'ready'">
                       <v-icon left small>mdi-arrow-left</v-icon>
                       Back to session list
@@ -2115,6 +2115,11 @@
         bottom: 0;
         z-index: 3;
         background-color: inherit !important;
+      }
+
+      .session-action-btn {
+        width: 100%;
+        height: 40px !important;
       }
 
       @media (max-width: 959px) {

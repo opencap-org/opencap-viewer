@@ -36,7 +36,7 @@
                   Forum
             </li>
           </a>
-          <a target="_blank" href="https://github.com/stanfordnmbl/opencap-core">
+          <a target="_blank" href="https://github.com/opencap-org">
             <li>
                   <i class="mdi mdi-source-repository inline-icon"></i>
                   Find on GitHub
