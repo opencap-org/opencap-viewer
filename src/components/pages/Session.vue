@@ -405,7 +405,8 @@
   
         <v-dialog
               v-model="trial_rename_dialog"
-              max-width="500"
+              content-class="compact-rename-dialog"
+              max-width="420"
               :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
             <v-card-text class="pt-4">
@@ -2031,8 +2032,18 @@
     user-select: none;
   }
   
+  // Session page uses full v-main height with fixed playback controls on mobile.
+  // Remove default v-main padding since Session handles its own layout.
+  .v-main:has(.step-5) {
+    padding-top: var(--app-bar-top-offset, 64px) !important;
+    padding-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
   .step-5 {
-    height: calc(100vh - var(--app-bar-height, 64px));
+    display: flex;
+    height: 100%;
     min-height: 0;
     flex-direction: row;
     overflow: hidden;
@@ -2054,13 +2065,14 @@
       position: relative;
 
       @media (max-width: 959px) {
-        padding-bottom: 72px;
+        // Reserve space for fixed playback controls at bottom
+        padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
       }
     }
   
     .mobile-menu-toggle {
       position: fixed;
-      top: calc(var(--app-bar-height, 64px) + 8px);
+      top: calc(var(--app-bar-top-offset, 56px) + 8px);
       left: 8px;
       z-index: 100;
       background-color: rgba(0, 0, 0, 0.8) !important;
@@ -2097,18 +2109,17 @@
       
       @media (max-width: 959px) {
         position: fixed;
-        top: var(--app-bar-height, 64px);
+        top: var(--app-bar-top-offset, 56px);
         left: 0;
         width: 280px;
         max-width: 85vw;
-        height: calc(100vh - var(--app-bar-height, 64px));
-        max-height: calc(100vh - var(--app-bar-height, 64px));
+        height: calc(100% - var(--app-bar-top-offset, 56px));
+        max-height: calc(100% - var(--app-bar-top-offset, 56px));
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-        padding-top: 48px; // Add padding to avoid overlap with burger button
-        background-color: rgb(18, 18, 18); // Different background when mobile menu
-        
+        padding-top: 48px;
+        background-color: rgb(18, 18, 18);
         &.mobile-open {
           transform: translateX(0);
         }
@@ -2121,7 +2132,7 @@
         flex-shrink: 0;
         position: relative;
         transform: none;
-        background-color: #000000; // Keep black on desktop
+        background-color: #000000;
       }
 
       .left-scroll {
@@ -2203,10 +2214,6 @@
       @media (max-width: 959px) {
         min-height: 250px;
         flex: 1 1 50vh;
-      }
-
-      @media (max-width: 599px) {
-        padding-bottom: calc(24px + env(safe-area-inset-bottom, 8px));
       }
   
       #mocap {
@@ -2368,7 +2375,8 @@
           z-index: 50;
           background-color: rgba(18, 18, 18, 0.98);
           border-top: 1px solid rgba(255, 255, 255, 0.15);
-          padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 12px);
+          padding: 8px;
+          padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
         }
       }
     }
@@ -2378,10 +2386,6 @@
       gap: 8px;
       position: relative;
       z-index: 2;
-
-      @media (max-width: 959px) {
-        padding-bottom: calc(90px + env(safe-area-inset-bottom, 8px));
-      }
 
       @media (min-width: 960px) {
         gap: 12px;

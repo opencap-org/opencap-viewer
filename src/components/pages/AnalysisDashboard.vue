@@ -1,5 +1,10 @@
 <template>
   <div class="analysis-dashboard-wrapper">
+    <div
+      v-if="!leftMenuClosed && $vuetify.breakpoint.smAndDown"
+      class="analysis-dashboard-overlay"
+      @click="leftMenuClosed = true"
+    />
     <div id="body" class="chart-page d-flex flex-column" :class="{ 'left-menu-closed': leftMenuClosed }">
       <div class="dashboard-body" :class="{ 'has-metrics': hasMetricsColumn }" v-if="show_dashboard">
         <div
@@ -255,7 +260,7 @@ export default {
         const urlParams = new URLSearchParams(queryString)
         this.share_subject_id = urlParams.get('subjectId')
         this.share_token = urlParams.get('shareToken')
-        this.leftMenuClosed = false
+        this.leftMenuClosed = !!(this.$vuetify.breakpoint.smAndDown)
 
         try {
           await this.loadAnalysisDashboard({id:this.$route.params.id, subject_id:this.share_subject_id, share_token:this.share_token})
@@ -407,13 +412,13 @@ export default {
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 15;
+  z-index: 190;
   cursor: pointer;
 }
 
 .sidebar {
   position: fixed;
-  top: var(--app-bar-height, 64px);
+  top: var(--app-bar-top-offset, 64px);
   bottom: 0;
   width: 300px;
   transition: transform 0.2s;
@@ -582,7 +587,7 @@ export default {
 .fixed-button {
   position: fixed;
   bottom: auto;
-  top: calc(var(--app-bar-height, 64px) + 10px);
+  top: calc(var(--app-bar-top-offset, 64px) + 10px);
   display: block;
   width: auto;
   max-width: fit-content;
@@ -600,7 +605,7 @@ export default {
 
 @media (max-width: 960px) {
   .fixed-button {
-    top: calc(var(--app-bar-height, 64px) + 8px);
+    top: calc(var(--app-bar-top-offset, 64px) + 8px);
   }
 }
 
@@ -702,45 +707,112 @@ export default {
   padding-left: 0;
 }
 
-/* Small screens only: move scalar (type/metrics) to top and smaller font */
+/* Small screens: bottom-sheet popup for sidebar, stacked dashboard content. */
 @media (max-width: 960px) {
   #body {
-    padding-left: 280px;
+    padding-left: 0;
   }
 
   .left-menu-closed#body {
     padding-left: 0;
   }
 
+  /* Bottom-sheet popup for sidebar */
   .sidebar {
-    width: 280px;
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 80vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-right: none;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 16px 16px 0 0;
+    z-index: 200;
+    transform: translateY(0);
+    visibility: visible !important;
+    pointer-events: auto;
+    transition: transform 0.3s ease;
   }
 
-  #body:not(.left-menu-closed) .dashboard-body.has-metrics {
-    display: flex;
-    width: auto;
-    max-width: 100%;
+  .sidebar::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    margin: 8px auto 0;
+    flex-shrink: 0;
+  }
+
+  .left-sidebar,
+  .right-sidebar {
+    left: 0;
+    right: 0;
+  }
+
+  .left-menu-closed > .left-sidebar,
+  .right-menu-closed > .right-sidebar {
+    transform: translateY(100%);
+    pointer-events: none;
+  }
+
+  .sidebar .v-card__text {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   .dashboard-body {
     margin-left: 0;
     margin-right: 0;
     padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 72px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    row-gap: 0.75rem;
   }
 
-  /* Move scalar value column to top and use smaller font */
+  .dashboard-body.has-metrics {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    width: 100%;
+    max-width: 100%;
+    align-items: stretch;
+  }
+
+  .dashboard-body > div {
+    position: relative !important;
+    float: none !important;
+    clear: both;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
   .dashboard-body .metrics-column {
     position: static;
     right: auto;
     top: auto;
     bottom: auto;
-    width: auto;
+    width: 100%;
+    min-width: 0;
     max-width: 100%;
     overflow-y: visible;
     background: transparent;
     box-shadow: none;
-    order: -1;
+    order: 10;
     flex-basis: 100%;
   }
 
@@ -749,13 +821,47 @@ export default {
     right: auto;
     top: auto;
     bottom: auto;
-    width: auto;
+    width: 100%;
+    min-width: 0;
     max-width: 100%;
     overflow-y: visible;
     background: transparent;
     box-shadow: none;
-    order: -1;
+    order: 10;
     flex-basis: 100%;
+  }
+
+  .dashboard-body.has-metrics > div:has(.scalar-value-wrapper) {
+    grid-column: auto !important;
+    order: 10;
+  }
+
+  .dashboard-body.has-metrics > div {
+    grid-column: auto !important;
+  }
+
+  /* Floating button fixed at bottom */
+  .fixed-button {
+    position: fixed !important;
+    top: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+    z-index: 120;
+    margin: 0 !important;
+  }
+
+  .fixed-button .v-btn {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    background: #333 !important;
+  }
+
+  .fixed-button-to-left {
+    left: 16px !important;
+    right: auto !important;
+  }
+
+  .fixed-button-to-right {
+    right: 16px !important;
+    left: auto !important;
   }
 
   .dashboard-body .scalar-value-wrapper {
@@ -779,18 +885,19 @@ export default {
 <style lang="scss">
 .analysis-dashboard-wrapper {
   width: 100%;
-  min-height: calc(100vh - var(--app-bar-height, 64px));
-  max-height: none;
-  overflow-y: visible;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overflow-x: hidden;
-  padding-bottom: 24px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
   box-sizing: border-box;
 }
 
 .v-main:has(.analysis-dashboard-wrapper) {
   padding-left: 0 !important;
   padding-right: 0 !important;
-  overflow-x: hidden;
-  overflow-y: auto;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 </style>

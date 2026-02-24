@@ -39,18 +39,18 @@
           class="chart-canvas"
         />
 
-        <v-btn
-          small
-          class="chart-reset-zoom-btn"
-          @click="onResetZoom"
-        >
-          Reset Zoom
-        </v-btn>
-
         <div v-if="showEmptyStateMessage" class="empty-state-message">
           No data selected. Choose a subject, session, and trial to display the chart.
         </div>
       </div>
+
+      <v-btn
+        small
+        class="chart-reset-zoom-btn"
+        @click="onResetZoom"
+      >
+        Reset Zoom
+      </v-btn>
     </div>
 
     <!-- Floating buttons (mobile); hide when corresponding sidebar is open -->
@@ -421,10 +421,16 @@ export default {
 
     toggleLeftMenu () {
       this.leftMenuClosed = !this.leftMenuClosed
+      if (!this.leftMenuClosed && this.$vuetify.breakpoint.smAndDown) {
+        this.rightMenuClosed = true
+      }
     },
 
     toggleRightMenu () {
       this.rightMenuClosed = !this.rightMenuClosed
+      if (!this.rightMenuClosed && this.$vuetify.breakpoint.smAndDown) {
+        this.leftMenuClosed = true
+      }
     },
 
     closeMenusOnMobile () {
@@ -957,6 +963,10 @@ export default {
   },
 
   async mounted () {
+    if (this.$vuetify.breakpoint.smAndDown) {
+      this.leftMenuClosed = true
+      this.rightMenuClosed = true
+    }
     if (!this.selected_trials.length) {
       this.selected_trials.push(this.createEmptyTrialSelection())
     }
@@ -1001,7 +1011,10 @@ export default {
 <style lang="scss">
 #body {
   position: relative;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: auto;
   min-height: 100%;
   width: 100%;
   overflow: visible;
@@ -1016,6 +1029,7 @@ export default {
   padding: 8px;
   box-sizing: border-box;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -1034,10 +1048,8 @@ export default {
 }
 
 .chart-reset-zoom-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 35;
+  margin-top: 8px;
+  align-self: flex-end;
 }
 
 .empty-state-message {
@@ -1085,7 +1097,7 @@ export default {
 /* ===== SIDEBARS ===== */
 .sidebar {
   position: fixed;
-  top: 0;
+  top: var(--app-bar-top-offset, 64px);
   bottom: 0;
   width: 300px;
   max-width: 85vw;
@@ -1116,25 +1128,101 @@ export default {
 }
 
 /* ===== MOBILE ===== */
-@media (max-width: 600px) {
+@media (max-width: 960px) {
+  .content-chart {
+    width: 100%;
+    height: auto;
+    min-height: auto;
+    padding: 12px 8px 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .chart-resizable {
+    width: calc(100vw - 16px) !important;
+    max-width: 100%;
+    min-width: 0;
+    height: clamp(280px, 55vh, 480px) !important;
+    resize: vertical;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 80vh;
+    border-radius: 16px 16px 0 0;
+    border-right: none;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    z-index: 200;
+    transform: translateY(0);
+    visibility: visible !important;
+  }
+
+  .sidebar::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    margin: 8px auto 0;
+    flex-shrink: 0;
+  }
+
   .left-sidebar,
   .right-sidebar {
-    width: 100%;
+    left: 0;
+    right: 0;
   }
 
-  .left-menu-closed .left-sidebar {
-    transform: translateY(-100%);
-  }
-
+  .left-menu-closed .left-sidebar,
   .right-menu-closed .right-sidebar {
     transform: translateY(100%);
+    pointer-events: none;
+  }
+
+  .sidebar .v-card__text {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-overlay {
+    z-index: 190;
+  }
+
+  .fixed-button {
+    position: fixed !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+    z-index: 120;
+    margin: 0 !important;
+  }
+
+  .fixed-button .v-btn {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    background: #333 !important;
+  }
+
+  .fixed-button-to-left {
+    left: 16px !important;
+    right: auto !important;
+  }
+
+  .fixed-button-to-right {
+    right: 16px !important;
+    left: auto !important;
   }
 }
 
 /* ===== FLOATING BUTTONS ===== */
 .fixed-button {
   position: fixed;
-  bottom: 16px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   z-index: 120;
   width: auto;
   max-width: fit-content;
@@ -1198,17 +1286,21 @@ export default {
 <style lang="scss">
 .chart-page-wrapper {
   width: 100%;
-  height: calc(100vh - var(--app-bar-height, 64px));
   min-height: calc(100vh - var(--app-bar-height, 64px));
-  max-height: calc(100vh - var(--app-bar-height, 64px));
-  overflow-y: auto;
+  min-height: calc(100dvh - var(--app-bar-height, 64px));
+  max-height: none;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
 
 /* Override Vuetify layout padding that reserves left/right space (v-main is parent of this page) */
 .v-main:has(.chart-page-wrapper) {
+  padding-top: var(--app-bar-top-offset, 64px) !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
-  overflow: visible;
+  padding-bottom: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 </style>

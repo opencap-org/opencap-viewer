@@ -2,7 +2,7 @@
   <v-app :style="appStyle">
     <v-app-bar
       ref="appBar"
-      app      
+      app
       dark>
 
       <router-link
@@ -38,20 +38,14 @@ export default {
     'profile-dropdown': ProfileDropdown},
   data () {
     return {
-      logoutTimer: null,
-      appBarHeight: 64
+      logoutTimer: null
     }
   },
   created () {
     this.startTimer()
   },
-  mounted () {
-    this.updateAppBarHeight()
-    window.addEventListener('resize', this.updateAppBarHeight)
-  },
   beforeDestroy () {
     this.cancelTimer()
-    window.removeEventListener('resize', this.updateAppBarHeight)
   },
   methods: {
     ...mapActions('auth', ['logout']),
@@ -67,15 +61,9 @@ export default {
       // redirect to login and remove all info
       this.logout()
     },
-    updateAppBarHeight () {
-      this.$nextTick(() => {
-        const appBarElement = this.$refs.appBar && this.$refs.appBar.$el
-        if (!appBarElement) return
-        const measuredHeight = Math.ceil(appBarElement.getBoundingClientRect().height)
-        if (measuredHeight > 0 && measuredHeight !== this.appBarHeight) {
-          this.appBarHeight = measuredHeight
-        }
-      })
+    resetMainScroll () {
+      const vMain = this.$el && this.$el.querySelector('.v-main')
+      if (vMain) vMain.scrollTop = 0
     }
   },
   computed: {
@@ -85,8 +73,7 @@ export default {
     }),
     appStyle () {
       return {
-        background: this.$vuetify.theme.themes.dark.background,
-        '--app-bar-height': `${this.appBarHeight}px`
+        background: this.$vuetify.theme.themes.dark.background
       }
     }
   },
@@ -94,10 +81,7 @@ export default {
     $route () {
       this.cancelTimer()
       this.startTimer()
-      this.updateAppBarHeight()
-    },
-    verified () {
-      this.updateAppBarHeight()
+      this.$nextTick(() => this.resetMainScroll())
     }
   }
 }

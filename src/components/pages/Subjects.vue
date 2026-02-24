@@ -125,12 +125,14 @@
 
             <v-data-table
               v-if="selected"
-              :headers="sessionHeaders"
+              :headers="sessionDisplayHeaders"
               :items="valid_sessions"
               :options.sync="session_options"
               :item-class="itemClasses"
               :loading="session_loading"
               :server-items-length="session_total"
+              :mobile-breakpoint="0"
+              :dense="$vuetify.breakpoint.smAndDown"
               :footer-props="{
                 showFirstLastPage: false,
                 disableItemsPerPage: true,
@@ -142,7 +144,24 @@
               class="sessions-table mx-2 flex-grow-1"
               @click:row="onRowSessionClick">
               <template v-slot:item.sessionName="{ item }">
-                <div class="session-name-text">{{ item.sessionName || 'Untitled' }}</div>
+                <div class="session-name-cell">
+                  <div class="session-name-text">{{ item.sessionName || 'Untitled' }}</div>
+                  <div v-if="isPhone" class="session-meta-row">
+                    <span class="session-id-preview session-id-preview--mobile" :title="item.id">
+                      {{ getSessionIdPreview(item.id) }}
+                    </span>
+                    <span class="session-trials-preview">{{ item.trials_count || 0 }} trials</span>
+                    <v-btn
+                      icon
+                      x-small
+                      dark
+                      class="copy-session-id-btn copy-session-id-btn--mobile"
+                      title="Copy session ID"
+                      @click.stop="copySessionId(item.id)">
+                      <v-icon x-small>mdi-content-copy</v-icon>
+                    </v-btn>
+                  </div>
+                </div>
               </template>
               <template v-slot:item.id="{ item }">
                 <div class="session-id-cell" :title="item.id">
@@ -385,6 +404,19 @@ export default {
 
       return this.headers
         .filter(({ value }) => ['name', 'weight', 'height', 'birth_year'].includes(value))
+        .map(header => ({
+          ...header,
+          align: 'start',
+          sortable: false
+        }))
+    },
+    sessionDisplayHeaders () {
+      if (!this.isPhone) {
+        return this.sessionHeaders
+      }
+
+      return this.sessionHeaders
+        .filter(({ value }) => ['sessionName', 'created_at', 'controls'].includes(value))
         .map(header => ({
           ...header,
           align: 'start',
@@ -660,16 +692,15 @@ export default {
 
 <style lang="scss" scoped>
 .subjects-page {
-  --subjects-top-gap: clamp(8px, calc(var(--app-bar-height, 64px) * 0.15), 14px);
-  padding-top: var(--subjects-top-gap);
-  height: calc(98vh - var(--app-bar-height, 64px));
-  height: calc(98dvh - var(--app-bar-height, 64px));
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
+  padding: 16px 0;
   box-sizing: border-box;
 
   @media (max-width: 599px) {
-    height: calc(100vh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
-    height: calc(100dvh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
+    padding: 8px 0;
   }
 
   @media (max-width: 959px) {
@@ -783,6 +814,7 @@ export default {
   width: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
 
   ::v-deep .v-data-table {
@@ -794,7 +826,7 @@ export default {
 
   ::v-deep .v-data-footer {
     flex: 0 0 auto;
-    padding-bottom: clamp(8px, 1.8vh, 14px);
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   }
 
   ::v-deep .v-data-table__wrapper {
@@ -843,7 +875,7 @@ export default {
     }
 
     ::v-deep .v-data-footer {
-      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
       justify-content: center;
       padding-top: 8px;
       font-size: 0.78rem;
@@ -971,6 +1003,24 @@ export default {
   text-overflow: ellipsis;
 }
 
+.session-name-cell {
+  min-width: 0;
+}
+
+.session-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  min-width: 0;
+}
+
+.session-trials-preview {
+  font-size: 0.72rem;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
 .copy-session-id-btn,
 .action-btn {
   background-color: rgba(255, 255, 255, 0.1) !important;
@@ -997,6 +1047,73 @@ export default {
   font-family: inherit;
   font-size: 0.8rem;
   white-space: nowrap;
+}
+
+.sessions-table {
+  ::v-deep .v-data-table__wrapper th:nth-child(1),
+  ::v-deep .v-data-table__wrapper td:nth-child(1) {
+    min-width: 180px;
+  }
+
+  ::v-deep .v-data-table__wrapper th:nth-child(2),
+  ::v-deep .v-data-table__wrapper td:nth-child(2) {
+    min-width: 130px;
+    width: 130px;
+  }
+
+  ::v-deep .v-data-table__wrapper th:nth-child(3),
+  ::v-deep .v-data-table__wrapper td:nth-child(3) {
+    min-width: 72px;
+    width: 72px;
+  }
+
+  ::v-deep .v-data-table__wrapper th:nth-child(4),
+  ::v-deep .v-data-table__wrapper td:nth-child(4) {
+    min-width: 112px;
+    width: 112px;
+  }
+
+  ::v-deep .v-data-table__wrapper th:nth-child(5),
+  ::v-deep .v-data-table__wrapper td:nth-child(5) {
+    min-width: 66px;
+    width: 66px;
+  }
+
+  @media (max-width: 599px) {
+    ::v-deep .v-data-table__wrapper th:nth-child(1),
+    ::v-deep .v-data-table__wrapper td:nth-child(1) {
+      width: 54%;
+      min-width: 0;
+    }
+
+    ::v-deep .v-data-table__wrapper th:nth-child(2),
+    ::v-deep .v-data-table__wrapper td:nth-child(2) {
+      width: 31%;
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    ::v-deep .v-data-table__wrapper th:nth-child(3),
+    ::v-deep .v-data-table__wrapper td:nth-child(3) {
+      width: 15%;
+      min-width: 0;
+    }
+  }
+}
+
+@media (max-width: 599px) {
+  .session-id-preview--mobile {
+    font-size: 0.72rem;
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .copy-session-id-btn--mobile {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+  }
 }
 </style>
 

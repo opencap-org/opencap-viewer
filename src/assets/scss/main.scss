@@ -66,6 +66,17 @@
   --page-navigation-gap: 12px;
 }
 
+// Vuetify 2 default toolbar heights: 56px for smAndDown, 64px for mdAndUp.
+// Defined statically in CSS so the value is available on first paint (no JS measurement race).
+.v-application {
+  --app-bar-height: 64px;
+  --app-bar-top-offset: calc(var(--app-bar-height) + env(safe-area-inset-top, 0px));
+
+  @media (max-width: 959px) {
+    --app-bar-height: 56px;
+  }
+}
+
 .page-navigation {
   margin-top: var(--page-navigation-gap) !important;
 }
@@ -99,17 +110,11 @@ body,
   overflow-x: hidden;
 }
 
-// Ensure content is never hidden under app bar on first paint (Vuetify 2 timing issue).
-// Vuetify sets padding-top via inline style from $vuetify.application, which can be 0 on first
-// render before the app bar registers; !important lets this rule win until layout is ready.
-// padding-bottom keeps content (and buttons) above Safari's bottom bar / home indicator on mobile.
+// Override Vuetify's inline padding-top on v-main (which can be 0 on first render).
+// --app-bar-top-offset (defined above) = static bar height + env(safe-area-inset-top).
 .v-application .v-main {
-  padding-top: calc(
-    var(--app-bar-height, var(--v-layout-top, 64px)) +
-    env(safe-area-inset-top, 0px) +
-    var(--main-top-gap, 0px)
-  ) !important;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  padding-top: var(--app-bar-top-offset, 64px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
   min-height: 100vh;
@@ -127,28 +132,21 @@ body,
   background-color: darkorange !important;
 }
 
+.compact-rename-dialog {
+  .v-card {
+    width: fit-content;
+    min-width: min(320px, calc(100vw - 48px));
+    max-width: min(420px, calc(100vw - 48px));
+    margin: 0 auto;
+  }
+}
+
 // Mobile safe area for Safari bottom bar
 @media (max-width: 599px) {
-  body {
-    padding-bottom: 80px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
-  }
-
-  // Ensure each route page starts below the dynamic iOS top safe area on real devices.
-  .v-application .v-main__wrap > * {
-    padding-top: env(safe-area-inset-top, 0px);
-    box-sizing: border-box;
-  }
-
   .v-application .v-main > .container,
   .v-application .v-main > .container-fluid {
     padding-left: 8px;
     padding-right: 8px;
-  }
-  
-  .v-application .v-main {
-    --main-top-gap: 8px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
   }
 
   // Keep default touch target size accessible throughout the app.

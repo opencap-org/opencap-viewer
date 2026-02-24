@@ -230,7 +230,8 @@
     <v-dialog
       v-model="rename_dialog"
       v-click-outside="clickOutsideDialogSessionHideMenu"
-      max-width="500"
+      content-class="compact-rename-dialog"
+      max-width="420"
       :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSessionForRename">
         <v-card-text class="pt-4">
@@ -803,17 +804,15 @@ export default {
 }
 
 .select-session {
-  --sessions-top-gap: clamp(10px, calc(var(--app-bar-height, 64px) * 0.2), 18px);
-  padding-top: var(--sessions-top-gap);
-  height: calc(98vh - var(--app-bar-height, 64px));
-  height: calc(98dvh - var(--app-bar-height, 64px));
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
+  padding: 16px 0;
   box-sizing: border-box;
 
   @media (max-width: 599px) {
-    height: calc(100vh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
-    height: calc(100dvh - var(--app-bar-height, 64px) - 24px - env(safe-area-inset-bottom, 0px));
-    --sessions-top-gap: clamp(8px, 2vh, 12px);
+    padding: 8px 0;
   }
 
   .sessions-table {
@@ -821,19 +820,16 @@ export default {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
     min-height: 0;
 
     ::v-deep .v-data-footer {
-      padding-bottom: clamp(8px, 1.8vh, 14px);
+      padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
       flex: 0 0 auto;
     }
     
     @media (max-width: 599px) {
       margin: 0 4px 8px 4px;
-      
-      ::v-deep .v-data-footer {
-        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-      }
     }
     
     .v-data-table__wrapper {
@@ -888,9 +884,23 @@ export default {
       .copy-session-id-btn {
         background-color: rgba(255, 255, 255, 0.1) !important;
         border-radius: 4px;
-        margin: 0 2px;
+        margin: 0 0 0 6px;
         width: 32px !important;
+        min-width: 32px !important;
         height: 32px !important;
+        flex-shrink: 0;
+
+        @media (max-width: 959px) {
+          width: 28px !important;
+          min-width: 28px !important;
+          height: 28px !important;
+        }
+
+        @media (max-width: 599px) {
+          width: 26px !important;
+          min-width: 26px !important;
+          height: 26px !important;
+        }
 
         &:hover {
           background-color: rgba(255, 255, 255, 0.2) !important;
@@ -906,11 +916,16 @@ export default {
         align-items: center;
         gap: 6px;
         min-width: 0;
+        width: 100%;
       }
 
       .session-id-preview {
         font-family: inherit;
         font-size: 0.8rem;
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
       }
 
