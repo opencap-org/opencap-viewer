@@ -637,7 +637,7 @@
           <v-card-title>Advanced Analysis</v-card-title>
           <v-card-text v-if="analysisFunctions.length > 0">
   
-                  <v-row v-for="(func, index) in analysisFunctionsWithMenu"
+                  <v-row v-for="(func, index) in analysisFunctions"
                       v-bind:item="func"
                       v-bind:index="index"
                       v-bind:key="func.id"
@@ -1315,9 +1315,6 @@
       async invokeAnalysisFunction(functionId, trial_id, trial_name) {
         console.log(['invokeAnalysisFunction', functionId, trial_id, trial_name])
         this.setAnalysisFunctionTrial({functionId, trialId: trial_id});
-        this.analysisFunctionsWithMenu.forEach(func => {
-          func.isMenuOpen = false
-        });
         const state = this;
         const invokeAnalysisFunctionUrl = new URL(`/analysis-functions/${functionId}/invoke/`, axios.defaults.baseURL);
         const invokeData = {session_id: this.session.id, specific_trial_names: [trial_name]};
