@@ -914,26 +914,34 @@ export default {
 
   /* Mobile optimizations for Visualizer component */
   .video-player {
+    flex-direction: column !important;
+
     .right {
-      flex: 0 0 100px !important;
-      width: 100px !important;
-      max-width: 28% !important;
-      position: absolute;
-      right: 0;
-      top: 0;
+      flex: 0 0 auto !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      position: static !important;
+      right: auto !important;
+      top: auto !important;
+      height: auto !important;
+      margin-top: 8px;
+      gap: 8px;
 
       .videos {
         width: 100%;
+        max-height: 88px;
+        flex: 0 0 auto !important;
         
         video {
-          width: 100%;
-          max-height: 70px !important;
+          width: auto;
+          max-width: 100%;
+          max-height: 88px !important;
           object-fit: contain;
         }
       }
 
       .speed-control-button {
-        min-width: 56px !important;
+        min-width: 64px !important;
         font-size: 0.7rem !important;
         padding: 0 6px !important;
 
@@ -944,6 +952,8 @@ export default {
     }
 
     .viewer {
+      min-width: 0;
+
       .video-controls-row {
         flex-wrap: nowrap !important;
         gap: 4px !important;
