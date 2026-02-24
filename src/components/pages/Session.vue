@@ -1,6 +1,45 @@
 <template>
     <div class="step-5 d-flex">
-        <div class="left d-flex flex-column pa-2">
+        <!-- Mobile menu button -->
+        <v-btn
+            v-if="!leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+            class="mobile-menu-toggle ui-no-zoom"
+            icon
+            @click="leftMenuOpen = true">
+            <v-icon>mdi-menu</v-icon>
+        </v-btn>
+        
+        <!-- Overlay for mobile -->
+        <div 
+            v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+            class="mobile-overlay"
+            @click="leftMenuOpen = false">
+        </div>
+        
+        <div class="left ui-no-zoom d-flex flex-column pa-2" :class="{ 'mobile-open': leftMenuOpen }">
+            <!-- Mobile close button -->
+            <v-btn
+                v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+                class="mobile-close-btn ui-no-zoom"
+                icon
+                @click="leftMenuOpen = false">
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+
+            <div class="left-scroll d-flex flex-column">
+            <!-- Open in app button for monocular sessions on mobile -->
+            <v-btn
+                v-if="showOpenInAppButton"
+                color="primary-dark"
+                class="mb-4 w-100"
+                large
+                @click="openInApp">
+                <v-icon left>mdi-cellphone-arrow-down</v-icon>
+                Open in App
+            </v-btn>
+            <p v-if="showOpenInAppButton" class="open-in-app-requirement mb-4">
+              Monocular requires OpenCap app version 2.0+.
+            </p>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
@@ -16,7 +55,7 @@
                   <p v-if="state === 'recording'">{{ n_cameras_connected }} devices are recording, do not refresh</p>
                   <p v-if="state === 'processing'">{{ n_videos_uploaded  }} of {{ n_cameras_connected }} videos uploaded, do not refresh.</p>
               </ValidationObserver>
-  
+
               <div class="trials flex-grow-1">
                   <div v-for="(t, index) in filteredTrialsWithMenu"
                       v-bind:item="t"
@@ -27,161 +66,51 @@
                       :class="{ selected: isSelected(t) }">
                       <Status :value="t" :class="trialClasses(t)" @click="loadTrial(t)" />
                       <div class="">
+                        <!-- Mobile: bottom sheet for better touch UX -->
+                        <template v-if="$vuetify.breakpoint.smAndDown">
+                          <v-btn
+                            icon
+                            dark
+                            @click="openTrialMenuSheet(t)">
+                            <v-icon>mdi-menu</v-icon>
+                          </v-btn>
+                        </template>
+                        <!-- Desktop: dropdown menu -->
                         <v-menu
-                            v-model="t.isMenuOpen"
-                            offset-y
-                          >
+                          v-else
+                          v-model="t.isMenuOpen"
+                          offset-y
+                          right
+                          close-on-content-click
+                          content-class="trial-context-menu">
                           <template v-slot:activator="{ on, attrs }">
                             <v-btn
-                                icon
+                              icon
                               dark
                               v-bind="attrs"
-                              v-on="on"
-                            >
+                              v-on="on">
                               <v-icon>mdi-menu</v-icon>
                             </v-btn>
                           </template>
                           <v-list>
-                            <v-list-item link v-if="t.name !== 'neutral'" @click="renameTrialDialog(t)">
+                            <v-list-item link v-if="t.name !== 'neutral'" @click="closeMenuAndRename(t)">
                               <v-list-item-title>Rename</v-list-item-title>
                             </v-list-item>
-                            <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="analysisDialog(t)">
+                            <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="closeMenuAndAnalysis(t)">
                               <v-list-item-title>Analysis</v-list-item-title>
                             </v-list-item>
-  
-                            <v-list-item link @click="addTagTrialDialog(t)">
+                            <v-list-item link @click="closeMenuAndEditTags(t)">
                               <v-list-item-title>Edit Tags</v-list-item-title>
                             </v-list-item>
-
-                              <v-dialog
-                                      v-model="remove_dialog"
-                                      v-click-outside="clickOutsideDialogTrialHideMenu"
-                                      max-width="500">
-                                <template v-slot:activator="{ on }">
-                                  <v-list-item link v-show="!t.trashed" v-on="on">
-                                    <v-list-item-title>Trash</v-list-item-title>
-                                  </v-list-item>
-                                </template>
-                                <v-card>
-                                  <v-card-text class="pt-4">
-                                    <v-row class="m-0">
-                                      <v-col cols="2">
-                                        <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                      </v-col>
-                                      <v-col cols="10">
-                                        <p>
-                                          Do you want to trash trial {{t.name}}?
-                                          You will be able to restore it for 30 days. After that,
-                                          this trial will be permanently removed.
-                                        </p>
-                                      </v-col>
-                                    </v-row>
-                                  </v-card-text>
-                                  <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                      color="blue darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; remove_dialog = false"
-                                    >
-                                      No
-                                    </v-btn>
-                                    <v-btn
-                                      color="red darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; remove_dialog = false; trashTrial(t)"
-                                    >
-                                      Yes
-                                    </v-btn>
-                                  </v-card-actions>
-                                </v-card>
-                              </v-dialog>
-  
-                              <v-dialog
-                                      v-model="restore_dialog"
-                                      v-click-outside="clickOutsideDialogTrialHideMenu"
-                                      max-width="500">
-                                <template v-slot:activator="{ on }">
-                                  <v-list-item link v-show="t.trashed" v-on="on">
-                                    <v-list-item-title>Restore</v-list-item-title>
-                                  </v-list-item>
-                                </template>
-                                <v-card>
-                                  <v-card-text class="pt-4">
-                                    <v-row class="m-0">
-                                      <v-col cols="2">
-                                        <v-icon x-large color="green">mdi-undo-variant</v-icon>
-                                      </v-col>
-                                      <v-col cols="10">
-                                        <p>
-                                          Do you want to restore trial {{t.name}}?
-                                        </p>
-                                      </v-col>
-                                    </v-row>
-                                  </v-card-text>
-                                  <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                      color="blue darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; restore_dialog = false"
-                                    >
-                                      No
-                                    </v-btn>
-                                    <v-btn
-                                      color="green darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; restore_dialog = false; restoreTrial(t)"
-                                    >
-                                      Yes
-                                    </v-btn>
-                                  </v-card-actions>
-                                </v-card>
-                              </v-dialog>
-  
-                              <v-dialog
-                                      v-model="permanent_delete_dialog"
-                                      v-click-outside="clickOutsideDialogTrialHideMenu"
-                                      max-width="500">
-                                <template v-slot:activator="{ on }">
-                                  <v-list-item link v-show="!t.trashed" v-on="on">
-                                    <v-list-item-title >Delete</v-list-item-title>
-                                  </v-list-item>
-                                </template>
-                                <v-card>
-                                  <v-card-text class="pt-4">
-                                    <v-row class="m-0">
-                                      <v-col cols="2">
-                                        <v-icon x-large color="red">mdi-close-circle</v-icon>
-                                      </v-col>
-                                      <v-col cols="10">
-                                        <p>
-                                          Do you want to permanently delete trial {{t.name}}?
-                                          This action cannot be undone. Use Trash to keep the ability to restore the trial.
-                                        </p>
-                                      </v-col>
-                                    </v-row>
-                                  </v-card-text>
-                                  <v-card-actions>
-                                    <v-spacer></v-spacer>
-                                    <v-btn
-                                      color="blue darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; permanent_delete_dialog = false"
-                                    >
-                                      No
-                                    </v-btn>
-                                    <v-btn
-                                      color="red darken-1"
-                                      text
-                                      @click="t.isMenuOpen = false; permanent_delete_dialog = false; permanentDeleteTrial(t)"
-                                    >
-                                      Yes
-                                    </v-btn>
-                                  </v-card-actions>
-                                </v-card>
-                              </v-dialog>
-  
+                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenTrashDialog(t)">
+                              <v-list-item-title>Trash</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
+                              <v-list-item-title>Restore</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
+                              <v-list-item-title>Delete</v-list-item-title>
+                            </v-list-item>
                           </v-list>
                         </v-menu>
                       </div>
@@ -189,27 +118,63 @@
   
                   </div>
               </div>
-  
-              <v-btn class="mt-4 w-100" @click="toggleSessionMenuButtons()">
+
+              <!-- Mobile: trial options bottom sheet -->
+              <v-bottom-sheet
+                v-model="showTrialMenuSheet"
+                @input="val => !val && (selectedTrialForMenu = null)">
+                <v-sheet class="text-center trial-menu-sheet">
+                  <v-list v-if="selectedTrialForMenu">
+                    <v-list-item link v-if="selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndRename(selectedTrialForMenu)">
+                      <v-list-item-title>Rename</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="!selectedTrialForMenu.trashed && selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndAnalysis(selectedTrialForMenu)">
+                      <v-list-item-title>Analysis</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link @click="closeSheetAndEditTags(selectedTrialForMenu)">
+                      <v-list-item-title>Edit Tags</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenTrashDialog(selectedTrialForMenu)">
+                      <v-list-item-title>Trash</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="selectedTrialForMenu.trashed" @click="closeSheetAndOpenRestoreDialog(selectedTrialForMenu)">
+                      <v-list-item-title>Restore</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
+                      <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-sheet>
+              </v-bottom-sheet>
+
+              <v-btn class="session-actions-toggle w-100" @click="toggleSessionMenuButtons()">
                   <v-icon v-if="showSessionMenuButtons">mdi-menu-down</v-icon>
                   <v-icon v-else>mdi-menu-up</v-icon>
               </v-btn>
+
               <div v-if="showSessionMenuButtons">
                   <div>
                       <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
                   </div>
   
-                  <v-btn small class="w-100" v-show="show_controls" :disabled="busy || state !== 'ready'"
-                      @click="newSessionSameSetup">New session, same setup
+                  <v-btn small class="w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'"
+                      @click="newSessionSameSetup">
+                      <v-icon left small>mdi-plus-box-multiple</v-icon>
+                      New session, same setup
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">New
-                      session
+                  <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">
+                      <v-icon left small>mdi-plus</v-icon>
+                      New session
                   </v-btn>
   
-                  <v-dialog v-model="dialog" width="500">
+                  <v-dialog v-model="dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
+                      :fullscreen="$vuetify.breakpoint.smAndDown">
                       <template v-slot:activator="{ on, attrs }">
-                          <v-btn small class="mt-4 w-100" v-bind="attrs" v-on="on" v-show="show_controls">Share session publicly</v-btn>
+                          <v-btn small class="mt-4 w-100 session-action-btn" v-bind="attrs" v-on="on" v-show="show_controls">
+                              <v-icon left small>mdi-share-variant</v-icon>
+                              Share session publicly
+                          </v-btn>
                       </template>
   
                       <v-card>
@@ -258,19 +223,21 @@
   
   
                   <!-- Archive session -->
-                  <v-btn small class="mt-4 w-100" @click="showArchiveDialog = true">
+                  <v-btn small class="mt-4 w-100 session-action-btn" @click="showArchiveDialog = true">
+                      <v-icon left small>mdi-download-outline</v-icon>
                       Download data
                   </v-btn>
                   <v-dialog
                       v-model="showArchiveDialog"
-                      max-width="500">
+                      max-width="500"
+                      :fullscreen="$vuetify.breakpoint.smAndDown">
                       <v-card>
                           <v-card-text class="pt-4">
                               <v-row class="m-0">
-                              <v-col cols="2">
+                              <v-col cols="12" sm="2">
                                   <v-icon x-large color="green">mdi-download</v-icon>
                               </v-col>
-                              <v-col cols="10">
+                              <v-col cols="12" sm="10">
                                   <p v-if="isArchiveInProgress & !isArchiveDone">
                                       <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                                       Download in progress
@@ -316,63 +283,160 @@
                   <!-- End archive session -->
   
                   <v-btn small v-if="isSyncDownloadAllowed" class="mt-4 w-100" :disabled="downloading" @click="onDownloadData">
+                      <v-icon v-if="!downloading" left small>mdi-download</v-icon>
                       <v-progress-circular v-if="downloading" indeterminate class="mr-2" color="grey" size="14" width="2" />
                       Download data (old)
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
+                  <v-btn small class="mt-4 w-100 session-action-btn" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
+                      <v-icon left small>mdi-view-dashboard-outline</v-icon>
                       Dashboard kinematics
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100" v-show="show_controls" @click="$router.push({ name: 'SelectSession'})"
+                  <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" @click="$router.push({ name: 'SelectSession'})"
                       :disabled="busy || state !== 'ready'">
+                      <v-icon left small>mdi-arrow-left</v-icon>
                       Back to session list
                   </v-btn>
               </div>
+            </div>
           </div>
   
-        <div class="viewer flex-grow-1">
+        <div class="main-content d-flex flex-grow-1">
+        <!-- Centered Open in App prompt for monocular mobile sessions -->
+        <div v-if="showOpenInAppButton && !trial" class="open-in-app-center d-flex flex-column align-center justify-center">
+            <v-icon size="80" color="primary-dark" class="mb-4">mdi-cellphone-arrow-down</v-icon>
+            <h2 class="white--text mb-4 text-center">Ready to Record</h2>
+            <p class="white--text text-center mb-6 px-4">Click the button below to start recording from the mobile app. Make sure you have the latest version of the OpenCap app (2.0+) installed. <a class="open-in-app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.</p>
+            <v-btn
+                color="primary-dark"
+                x-large
+                @click="openInApp"
+                class="open-in-app-btn">
+                <v-icon left>mdi-launch</v-icon>
+                Open in App
+            </v-btn>
+        </div>
+
+        <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
             <div v-if="trial" class="d-flex flex-column h-100">
   
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
   
   
-                  <div v-if="!videoControlsDisabled" style="display: flex; flex-wrap: wrap; align-items: center;">
+                  <div v-if="!videoControlsDisabled && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                          :disabled="state !== 'ready'" dark style="flex: 0.1; margin-right: 5px;" @input="onChangeTime"/>
+                          :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"/>
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
-                          class="mb-2" style="flex: 1;" />
+                          class="mb-2 flex-grow-1 timeline-slider" />
+
+                      <div class="playback-controls-inline d-flex align-center">
+                        <VideoNavigation
+                            :playing="playing"
+                            :value="frame"
+                            :maxFrame="frames.length - 1"
+                            :loop="loopPlayback"
+                            :show-loop-toggle="true"
+                            :disabled="videoControlsDisabled"
+                            @play="togglePlay(true)"
+                            @pause="togglePlay(false)"
+                            @toggle-loop="toggleLoopPlayback"
+                            @input="onNavigate"
+                            class="playback-navigation" />
+
+                        <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+                      </div>
                   </div>
               </div>
   
             <div v-else-if="trialLoading" class="flex-grow-1 d-flex align-center justify-center">
                 <v-progress-circular indeterminate color="grey" size="30" width="4" />
             </div>
+            <div v-else class="session-empty-state d-flex flex-column align-center justify-center text-center">
+                <v-icon size="56" color="grey lighten-1" class="mb-3">mdi-chart-box-outline</v-icon>
+                <h3 class="mb-2">No data selected/recorded</h3>
+                <p v-if="show_controls" class="mb-0 px-4">Type a trial name on the left and click Start recording or select a trial from the list.</p>
+                <p v-else class="mb-0 px-4">Select a trial from the list to view motion data.</p>
+            </div>
         </div>
   
-        <div class="right d-flex flex-column">
-            <div class="videos flex-grow-1 d-flex flex-column">
-              <video v-for="(video, index) in videos" :key="`video-${index}`" :ref="`video-${index}`" muted
-                  playsinline :src="video.media" crossorigin="anonymous" @ended="onVideoEnded(index)" />
+        <div class="right d-flex flex-column" :style="mobileVideoPanelStyle">
+            <div class="videos d-flex flex-column">
+              <video 
+                  v-for="(video, index) in videos" 
+                  :key="`video-${index}`" 
+                  :ref="`video-${index}`" 
+                  muted
+                  playsinline 
+                  :src="video.media" 
+                  crossorigin="anonymous" 
+                  @ended="onVideoEnded(index)"
+                  class="video-element" />
             </div>
-  
-            <SpeedControl v-model="playSpeed" />
-  
-              <VideoNavigation :playing="playing" :value="frame" :maxFrame="frames.length - 1"
-                  :disabled="videoControlsDisabled" @play="togglePlay(true)" @pause="togglePlay(false)"
-                  @input="onNavigate" class="mb-2" />
+
+            <div v-if="isMobileOrTablet" class="mobile-video-toolbar ui-no-zoom d-flex justify-end">
+              <v-btn
+                  small
+                  class="playback-video-size speed-control-button"
+                  @click="cycleMobileVideoSize">
+                Cam {{ mobileVideoSizeLabel }}
+              </v-btn>
+            </div>
+
+            <div v-if="isMobileOrTablet" class="right-spacer" />
+
+            <div v-if="isMobileOrTablet" class="playback-controls ui-no-zoom">
+              <div class="playback-timeline-mobile d-flex align-center px-1">
+                <v-text-field
+                    label="Time (s)"
+                    type="number"
+                    :step="0.01"
+                    :value="time"
+                    :disabled="state !== 'ready'"
+                    dark
+                    class="time-input mr-2"
+                    @input="onChangeTime" />
+                <v-slider
+                    :value="frame"
+                    :min="0"
+                    :max="frames.length - 1"
+                    @input="onNavigate"
+                    hide-details
+                    class="flex-grow-1 timeline-slider" />
+              </div>
+
+              <div class="playback-controls-row">
+                <VideoNavigation
+                    :playing="playing"
+                    :value="frame"
+                    :maxFrame="frames.length - 1"
+                    :loop="loopPlayback"
+                    :show-loop-toggle="true"
+                    :disabled="videoControlsDisabled"
+                    @play="togglePlay(true)"
+                    @pause="togglePlay(false)"
+                    @toggle-loop="toggleLoopPlayback"
+                    @input="onNavigate"
+                    class="playback-navigation" />
+
+                <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+              </div>
+            </div>
           </div>
+        </div>
   
         <v-dialog
               v-model="trial_rename_dialog"
-              max-width="500">
+              content-class="compact-rename-dialog"
+              max-width="420"
+              :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
             <v-card-text class="pt-4">
               <v-row class="m-0">
-                <v-col cols="2">
+                <v-col cols="12" sm="2">
                   <v-icon x-large color="orange">mdi-rename-box</v-icon>
                 </v-col>
-                <v-col cols="10">
+                <v-col cols="12" sm="10">
                   <p v-if="session.trials[trial_rename_index]?.status === 'processing' || session.trials[trial_rename_index]?.status === 'uploading'" class="text-orange">
                       You can't rename a trial while it's being uploaded or processed. Please wait before attempting to rename the trial.
                   </p>
@@ -403,14 +467,15 @@
 
               <v-dialog
             v-model="trial_modify_tags"
-            max-width="500">
+            max-width="500"
+            :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4">
             <v-row class="m-0">
-              <v-col cols="2">
+              <v-col cols="12" sm="2">
                 <v-icon x-large color="orange">mdi-rename-box</v-icon>
               </v-col>
-              <v-col cols="10">
+              <v-col cols="12" sm="10">
                 <p v-if="session.trials[trial_modify_tags_index]?.status === 'processing' || session.trials[trial_modify_tags_index]?.status === 'uploading'" class="text-orange">
                     You can't modify trial tags while it's being uploaded or processed. Please wait before attempting to modify the tags.
                 </p>
@@ -445,21 +510,139 @@
           </v-card-text>
         </v-card>
       </v-dialog>
+
+      <!-- Trash trial dialog (extracted for mobile-friendly behavior) -->
+      <v-dialog
+        v-model="remove_dialog"
+        v-click-outside="clickOutsideDialogTrialHideMenu"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        persistent>
+        <v-card>
+          <v-card-text class="pt-4" v-if="trialForTrashDialog">
+            <v-row class="m-0">
+              <v-col cols="12" sm="2">
+                <v-icon x-large color="red">mdi-close-circle</v-icon>
+              </v-col>
+              <v-col cols="12" sm="10">
+                <p>
+                  Do you want to trash trial {{ trialForTrashDialog.name }}?
+                  You will be able to restore it for 30 days. After that,
+                  this trial will be permanently removed.
+                </p>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="closeTrashDialog">
+              No
+            </v-btn>
+            <v-btn
+              color="red darken-1"
+              text
+              @click="confirmTrashTrial">
+              Yes
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Restore trial dialog -->
+      <v-dialog
+        v-model="restore_dialog"
+        v-click-outside="clickOutsideDialogTrialHideMenu"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        persistent>
+        <v-card>
+          <v-card-text class="pt-4" v-if="trialForRestoreDialog">
+            <v-row class="m-0">
+              <v-col cols="12" sm="2">
+                <v-icon x-large color="green">mdi-undo-variant</v-icon>
+              </v-col>
+              <v-col cols="12" sm="10">
+                <p>
+                  Do you want to restore trial {{ trialForRestoreDialog.name }}?
+                </p>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="closeRestoreDialog">
+              No
+            </v-btn>
+            <v-btn
+              color="green darken-1"
+              text
+              @click="confirmRestoreTrial">
+              Yes
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- Permanent delete trial dialog -->
+      <v-dialog
+        v-model="permanent_delete_dialog"
+        v-click-outside="clickOutsideDialogTrialHideMenu"
+        max-width="500"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        persistent>
+        <v-card>
+          <v-card-text class="pt-4" v-if="trialForPermanentDeleteDialog">
+            <v-row class="m-0">
+              <v-col cols="12" sm="2">
+                <v-icon x-large color="red">mdi-close-circle</v-icon>
+              </v-col>
+              <v-col cols="12" sm="10">
+                <p>
+                  Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
+                  This action cannot be undone. Use Trash to keep the ability to restore the trial.
+                </p>
+              </v-col>
+            </v-row>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="closePermanentDeleteDialog">
+              No
+            </v-btn>
+            <v-btn
+              color="red darken-1"
+              text
+              @click="confirmPermanentDeleteTrial">
+              Yes
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
   
     <v-dialog
         v-model="showAnalysisDialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
-        max-width="800">
+        :max-width="$vuetify.breakpoint.smAndDown ? '100%' : '800'"
+        :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
           <v-card-title>Advanced Analysis</v-card-title>
           <v-card-text v-if="analysisFunctions.length > 0">
   
-              <v-row v-for="(func, index) in analysisFunctionsWithMenu"
+                  <v-row v-for="(func, index) in analysisFunctionsWithMenu"
                       v-bind:item="func"
                       v-bind:index="index"
                       v-bind:key="func.id"
                       :ref="func.id">
-                  <v-col cols="3">
+                  <v-col cols="12" sm="3">
                     {{ func.title }}
   
                     <v-tooltip bottom v-if="func.info.length > 0">
@@ -470,8 +653,8 @@
                     </v-tooltip>
   
                   </v-col>
-                  <v-col cols="5">{{ func.description }}</v-col>
-                  <v-col cols="4">
+                  <v-col cols="12" sm="5">{{ func.description }}</v-col>
+                  <v-col cols="12" sm="4">
                     <v-btn small v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
@@ -486,16 +669,20 @@
                         >
                         Run
                     </v-btn>
-                      <v-btn small v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)">
+                      <v-btn
+                        small
+                        v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
+                        @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
+                      >
                           <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:green'">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
-                          <v-menu offset-y>
+                          <v-menu offset-y left close-on-content-click content-class="analysis-submenu">
                               <template v-slot:activator="{ on, attrs }">
-                              <v-btn icon dark v-bind="attrs" v-on="on" >
+                              <v-btn icon dark v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
                                   <v-icon>mdi-menu</v-icon>
                               </v-btn>
                               </template>
   
-                              <v-list>
+                              <v-list class="analysis-submenu-list">
                                   <v-list-item link
                                       @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                                       :disabled="trial_analysis_index in func.trials">
@@ -532,7 +719,7 @@
         <v-btn
           color="red darken-1"
           text
-          @click="session.trials[trial_analysis_index].isMenuOpen = false; showAnalysisDialog = false;"
+          @click="showTrialMenuSheet = false; selectedTrialForMenu = null; (session.trials[trial_analysis_index] || {}).isMenuOpen = false; showAnalysisDialog = false;"
         >
           Close
         </v-btn>
@@ -550,6 +737,7 @@
   import { mapState, mapMutations, mapActions } from 'vuex'
   import { apiError, apiErrorRes, apiSuccess } from '@/util/ErrorMessage.js'
   import { playRecordingSound, playRecordingFinishedSound } from "@/util/SoundMessage.js";
+  import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
   import Status from '@/components/ui/Status'
   import * as THREE from 'three'
   import * as THREE_OC from '@/orbitControls'
@@ -651,7 +839,9 @@
               frame: 0,
               time: 0,
               playing: false,
+              loopPlayback: true,
               playSpeed: 1,
+              mobileVideoSizeIndex: 0,
   
               show_controls: 1,
   
@@ -663,6 +853,7 @@
   
               trialsPoll: null,
               showSessionMenuButtons: true,
+              leftMenuOpen: false,
   
               n_calibrated_cameras: 0,
               n_cameras_connected: 0,
@@ -674,7 +865,16 @@
               trial_modify_tags: false,
               trial_modify_tags_index: 0,
 
+              // Mobile trial menu - trial whose options are shown in bottom sheet
+              showTrialMenuSheet: false,
+              selectedTrialForMenu: null,
+              // Trial context for Trash/Restore/Delete dialogs (extracted from v-for for proper mobile UX)
+              trialForTrashDialog: null,
+              trialForRestoreDialog: null,
+              trialForPermanentDeleteDialog: null,
+
               isAuditoryFeedbackEnabled: false,
+              controlGestureGuard: null,
           }
       },
       filters: {
@@ -708,9 +908,6 @@
         sessionUrl() {
           return location.origin + "/session/" + this.session.id;
         },
-        analysisFunctionsWithMenu() {
-          return this.analysisFunctions.map((func) => ({...func, isMenuOpen: false}))
-        },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
         },
@@ -736,9 +933,52 @@
         tagsOptions () {
             return Object.entries(this.trialTagsList).map((s) => ({ text: s[1], value: s[0] }))
         },
+        isMobileOrTablet() {
+          return this.$vuetify.breakpoint.smAndDown
+        },
+        isMonocularSession() {
+          return !!this.session?.isMono
+        },
+        sessionDeepLinkUrl() {
+          if (!this.session?.id) return null
+          const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null
+          const subjectName = this.session?.subject_name || null
+          return getSessionDeepLink(this.session.id, token, subjectName)
+        },
+        isSameDevice() {
+          if (this.$route.query.sameDevice === 'true') {
+            return true
+          }
+          return this.isSessionMarkedSameDevice(this.session?.id)
+        },
+        showOpenInAppButton() {
+          return this.isMobileOrTablet && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
+        },
+        mobileVideoSizeLabel() {
+          return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
+        },
+        mobileVideoPanelStyle() {
+          if (!this.isMobileOrTablet) {
+            return {}
+          }
+
+          const widths = [120, 150, 180]
+          const minWidths = [100, 120, 140]
+          const maxWidths = ['35%', '45%', '55%']
+          const maxHeight = [120, 150, 180]
+          const idx = this.mobileVideoSizeIndex
+
+          return {
+            width: `${widths[idx]}px`,
+            minWidth: `${minWidths[idx]}px`,
+            maxWidth: maxWidths[idx],
+            '--mobile-video-max-height': `${maxHeight[idx]}px`
+          }
+        }
       },
     async mounted() {
       await this.loadSession(this.$route.params.id)
+      this.persistSameDeviceSessionFlag()
 
       this.loadTrialTags()
 
@@ -775,6 +1015,10 @@
         console.log(doneTrials[0])
         this.loadTrial(doneTrials[0])
       }
+
+      // Add keyboard event listener
+      window.addEventListener('keydown', this.handleKeyboard)
+      this.bindControlGestureGuards()
     },
     beforeDestroy() {
       this.cancelPoll()
@@ -784,6 +1028,10 @@
       if (this.resizeObserver) {
         this.resizeObserver.unobserve(this.$refs.mocap)
       }
+
+      // Remove keyboard event listener
+      window.removeEventListener('keydown', this.handleKeyboard)
+      this.unbindControlGestureGuards()
     },
     watch: {
       trial() {
@@ -842,6 +1090,37 @@
         'loadSession',
         'initSessionSameSetup',
         'loadAnalysisFunctions', 'loadAnalysisFunctionsPending', 'loadAnalysisFunctionsStates', 'loadTrialTags']),
+      bindControlGestureGuards() {
+        this.controlGestureGuard = (event) => {
+          const target = event.target
+          if (!target || !target.closest || !target.closest('.ui-no-zoom')) {
+            return
+          }
+
+          if (event.type === 'touchmove') {
+            if (event.touches && event.touches.length > 1) {
+              event.preventDefault()
+            }
+            return
+          }
+
+          event.preventDefault()
+        }
+
+        document.addEventListener('gesturestart', this.controlGestureGuard, { passive: false })
+        document.addEventListener('gesturechange', this.controlGestureGuard, { passive: false })
+        document.addEventListener('touchmove', this.controlGestureGuard, { passive: false })
+      },
+      unbindControlGestureGuards() {
+        if (!this.controlGestureGuard) {
+          return
+        }
+
+        document.removeEventListener('gesturestart', this.controlGestureGuard)
+        document.removeEventListener('gesturechange', this.controlGestureGuard)
+        document.removeEventListener('touchmove', this.controlGestureGuard)
+        this.controlGestureGuard = null
+      },
       async changeState() {
         switch (this.state) {
           case 'ready': {
@@ -1073,7 +1352,38 @@
       },
       newSession() {
         this.clearAll()
-        this.$router.push({name: 'ConnectDevices'})
+        this.$router.push({name: 'RecordingMode'})
+      },
+      openInApp() {
+        if (this.sessionDeepLinkUrl) {
+          window.location.href = this.sessionDeepLinkUrl
+        }
+      },
+      getSameDeviceSessionStore() {
+        if (typeof localStorage === 'undefined') return {}
+        try {
+          const raw = localStorage.getItem('opencap_same_device_sessions')
+          if (!raw) return {}
+          const parsed = JSON.parse(raw)
+          return parsed && typeof parsed === 'object' ? parsed : {}
+        } catch (error) {
+          return {}
+        }
+      },
+      setSameDeviceSessionStore(store) {
+        if (typeof localStorage === 'undefined') return
+        localStorage.setItem('opencap_same_device_sessions', JSON.stringify(store))
+      },
+      isSessionMarkedSameDevice(sessionId) {
+        if (!sessionId) return false
+        const store = this.getSameDeviceSessionStore()
+        return store[sessionId] === true
+      },
+      persistSameDeviceSessionFlag() {
+        if (this.$route.query.sameDevice !== 'true' || !this.session?.id) return
+        const store = this.getSameDeviceSessionStore()
+        store[this.session.id] = true
+        this.setSameDeviceSessionStore(store)
       },
       setPublic(p) {
         console.log(p)
@@ -1081,7 +1391,8 @@
       },
       async newSessionSameSetup() {
         await this.initSessionSameSetup()
-        this.$router.push({name: 'Neutral', params: {id: this.session.id}})
+        const query = this.isMonocularSession ? { isMono: 'true', fromDevice: 'true' } : {}
+        this.$router.push({name: 'Neutral', params: {id: this.session.id}, query})
       },
       startPoll() {
         this.statusPoll = window.setTimeout(async () => {
@@ -1147,6 +1458,57 @@
           for (let t of this.filteredTrialsWithMenu) {
             t.isMenuOpen = false;
           }
+          this.showTrialMenuSheet = false;
+          this.selectedTrialForMenu = null;
+        }
+      },
+      openTrialMenuSheet(trial) {
+        this.selectedTrialForMenu = trial;
+        this.showTrialMenuSheet = true;
+      },
+      closeMenuAndRename(t) { t.isMenuOpen = false; this.renameTrialDialog(t); },
+      closeMenuAndAnalysis(t) { t.isMenuOpen = false; this.analysisDialog(t); },
+      closeMenuAndEditTags(t) { t.isMenuOpen = false; this.addTagTrialDialog(t); },
+      closeMenuAndOpenTrashDialog(t) { t.isMenuOpen = false; this.trialForTrashDialog = t; this.remove_dialog = true; },
+      closeMenuAndOpenRestoreDialog(t) { t.isMenuOpen = false; this.trialForRestoreDialog = t; this.restore_dialog = true; },
+      closeMenuAndOpenDeleteDialog(t) { t.isMenuOpen = false; this.trialForPermanentDeleteDialog = t; this.permanent_delete_dialog = true; },
+      closeSheetAndRename(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.renameTrialDialog(t); },
+      closeSheetAndAnalysis(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.analysisDialog(t); },
+      closeSheetAndEditTags(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.addTagTrialDialog(t); },
+      closeSheetAndOpenTrashDialog(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.trialForTrashDialog = t; this.remove_dialog = true; },
+      closeSheetAndOpenRestoreDialog(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.trialForRestoreDialog = t; this.restore_dialog = true; },
+      closeSheetAndOpenDeleteDialog(t) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.trialForPermanentDeleteDialog = t; this.permanent_delete_dialog = true; },
+      closeTrashDialog() {
+        this.trialForTrashDialog = null;
+        this.remove_dialog = false;
+        for (let t of this.filteredTrialsWithMenu) t.isMenuOpen = false;
+      },
+      closeRestoreDialog() {
+        this.trialForRestoreDialog = null;
+        this.restore_dialog = false;
+        for (let t of this.filteredTrialsWithMenu) t.isMenuOpen = false;
+      },
+      closePermanentDeleteDialog() {
+        this.trialForPermanentDeleteDialog = null;
+        this.permanent_delete_dialog = false;
+        for (let t of this.filteredTrialsWithMenu) t.isMenuOpen = false;
+      },
+      confirmTrashTrial() {
+        if (this.trialForTrashDialog) {
+          this.trashTrial(this.trialForTrashDialog);
+          this.closeTrashDialog();
+        }
+      },
+      confirmRestoreTrial() {
+        if (this.trialForRestoreDialog) {
+          this.restoreTrial(this.trialForRestoreDialog);
+          this.closeRestoreDialog();
+        }
+      },
+      confirmPermanentDeleteTrial() {
+        if (this.trialForPermanentDeleteDialog) {
+          this.permanentDeleteTrial(this.trialForPermanentDeleteDialog);
+          this.closePermanentDeleteDialog();
         }
       },
   
@@ -1443,13 +1805,17 @@
       onResize() {
         const container = this.$refs.mocap
         if (container && this.renderer) {
-          this.renderer.setSize(container.clientWidth, container.clientHeight)
-        }
-  
-        if (this.renderer) {
-          const canvas = this.renderer.domElement;
-          this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
-          this.camera.updateProjectionMatrix();
+          const width = container.clientWidth || container.offsetWidth
+          const height = container.clientHeight || container.offsetHeight
+          
+          if (width > 0 && height > 0) {
+            this.renderer.setSize(width, height)
+            
+            if (this.camera) {
+              this.camera.aspect = width / height
+              this.camera.updateProjectionMatrix()
+            }
+          }
         }
       },
       animate() {
@@ -1525,11 +1891,15 @@
       },
       onVideoEnded(index) {
         if (index === 0) {
-          this.videos.forEach((video, index) => {
-            const vid_element = this.videoElement(index)
-            vid_element.currentTime = 0
-            vid_element.play()
-          })
+          if (this.loopPlayback) {
+            this.videos.forEach((video, index) => {
+              const vid_element = this.videoElement(index)
+              vid_element.currentTime = 0
+              vid_element.play()
+            })
+          } else {
+            this.togglePlay(false)
+          }
         }
       },
       videoElement(index) {
@@ -1567,6 +1937,12 @@
             vid_element.pause()
           })
         }
+      },
+      toggleLoopPlayback() {
+        this.loopPlayback = !this.loopPlayback
+      },
+      cycleMobileVideoSize() {
+        this.mobileVideoSizeIndex = (this.mobileVideoSizeIndex + 1) % 3
       },
       onNavigate(frame) {
         const step = this.vid0().duration / this.frames.length
@@ -1635,6 +2011,36 @@
           }
         }
         window.alert(`Result with tag "${tag}" not found`);
+      },
+      handleKeyboard(event) {
+        // Only handle keyboard events when trial is loaded and video controls are enabled
+        if (this.videoControlsDisabled) {
+          return
+        }
+
+        // Ignore if user is typing in an input field
+        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+          return
+        }
+
+        switch (event.key) {
+          case ' ': // Space bar - toggle play/pause
+            event.preventDefault()
+            this.togglePlay(!this.playing)
+            break
+          case 'ArrowLeft': // Left arrow - previous frame
+            event.preventDefault()
+            if (this.frame > 0) {
+              this.onNavigate(this.frame - 1)
+            }
+            break
+          case 'ArrowRight': // Right arrow - next frame
+            event.preventDefault()
+            if (this.frame < this.frames.length - 1) {
+              this.onNavigate(this.frame + 1)
+            }
+            break
+        }
       }
     }
   }
@@ -1644,19 +2050,165 @@
   .trashed {
     color: gray !important;
   }
+
+  /* Trial context menu - prevent overflow on small screens */
+  .trial-context-menu {
+    max-width: min(320px, calc(100vw - 24px));
+  }
+
+  /* Analysis submenu - adequate touch targets and width on mobile */
+  .analysis-submenu {
+    min-width: 180px;
+    max-width: min(260px, calc(100vw - 32px));
+  }
+  .analysis-submenu-list .v-list-item {
+    min-height: 48px;
+  }
+  .analysis-menu-btn {
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+
+  /* Trial menu bottom sheet - safe area for notched phones */
+  .trial-menu-sheet {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
   
   .text-orange {
     color: orange !important;
   }
+
+  .ui-no-zoom {
+    touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
   
   .step-5 {
-    height: calc(100vh - 64px);
+    position: fixed;
+    top: var(--app-bar-height, 64px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    z-index: 1;
+    background-color: #000;
+    
+.main-content {
+      min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+      position: relative;
+    }
   
+    .mobile-menu-toggle {
+      position: fixed;
+      top: calc(var(--app-bar-height, 56px) + 8px);
+      left: 8px;
+      z-index: 100;
+      background-color: rgba(0, 0, 0, 0.8) !important;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      
+      @media (min-width: 960px) {
+        display: none !important;
+      }
+    }
+    
+    .mobile-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 98;
+      
+      @media (min-width: 960px) {
+        display: none !important;
+      }
+    }
+    
     .left {
-      width: 250px;
+      min-width: 0;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 99;
+      display: flex;
+      flex-direction: column;
+
+      @media (min-width: 960px) {
+        width: 250px;
+        height: 100%;
+        background-color: #000000;
+      }
+
+      @media (max-width: 959px) {
+        position: fixed;
+        top: var(--app-bar-height, 56px);
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        max-width: 85vw;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+        padding-top: 48px;
+        background-color: rgb(18, 18, 18);
+
+        &.mobile-open {
+          transform: translateX(0);
+        }
+      }
+
+      .left-scroll {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: 12px;
+      }
+
+      .session-actions-toggle {
+        margin-top: 16px;
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        background-color: inherit !important;
+      }
+
+      .session-action-btn {
+        width: 100%;
+        height: 40px !important;
+      }
+
+      @media (max-width: 959px) {
+        .left-scroll {
+          padding-bottom: 64px;
+        }
+
+        .session-actions-toggle {
+          margin-top: 0;
+          position: fixed;
+          left: 0;
+          bottom: max(8px, env(safe-area-inset-bottom, 0));
+          width: 280px !important;
+          max-width: 85vw;
+          z-index: 102;
+        }
+
+        &:not(.mobile-open) .session-actions-toggle {
+          display: none;
+        }
+      }
   
       .trials {
-        overflow-y: auto;
+        overflow-y: visible;
+        flex-grow: 0;
   
         .trial {
           border-radius: 4px;
@@ -1668,30 +2220,308 @@
           }
         }
       }
+      
+      .mobile-close-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 101;
+        
+        @media (min-width: 960px) {
+          display: none !important;
+        }
+      }
     }
   
     .viewer {
-      height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
   
       #mocap {
         width: 100%;
+        height: 100%;
+        min-height: 0;
         overflow: hidden;
+        flex: 1 1 auto;
+        touch-action: none;
   
         canvas {
           width: 100% !important;
+          height: 100% !important;
+        }
+      }
+
+      .session-empty-state {
+        flex: 1 1 auto;
+        min-height: 0;
+        color: rgba(255, 255, 255, 0.86);
+
+        h3 {
+          font-size: 1.4rem;
+          font-weight: 500;
+        }
+
+        p {
+          max-width: 420px;
+          color: rgba(255, 255, 255, 0.72);
         }
       }
     }
   
     .right {
-      flex: 0 0 200px;
-      height: 100%;
+      flex-shrink: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+
+      .mobile-video-toolbar {
+        padding: 0;
+        margin-top: 8px;
+      }
+  
+      @media (max-width: 959px) {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 120px;
+        min-width: 100px;
+        max-width: 35%;
+        height: auto;
+        z-index: 1;
+      }
+  
+      @media (min-width: 960px) {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        flex: none;
+        width: 200px;
+        max-height: none;
+        height: 100%;
+        z-index: 1;
+      }
   
       .videos {
         overflow-y: auto;
-        width: 200px;
+        overflow-x: hidden;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        min-height: 0;
+        flex: 0 0 auto;
+        
+        @media (min-width: 960px) {
+          width: 200px;
+          padding: 0;
+          margin: 0;
+        }
+
+        @media (max-width: 959px) {
+          align-items: flex-end;
+        }
+      }
+
+      .right-spacer {
+        flex: 1 1 auto;
+        min-height: 0;
+        pointer-events: none;
+
+        @media (max-width: 959px) {
+          flex: 0 0 0;
+          min-height: 0;
+          overflow: hidden;
+        }
+
+        @media (min-width: 960px) {
+          background: transparent;
+        }
+      }
+      
+      .video-element {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        background-color: transparent;
+        margin: 0;
+        padding: 0;
+        display: block;
+        
+        @media (max-width: 959px) {
+          width: 100%;
+          object-position: right center;
+          max-height: var(--mobile-video-max-height, 120px);
+        }
+        
+        @media (min-width: 960px) {
+          max-height: none;
+        }
+      }
+      
+      .playback-controls {
+        flex-shrink: 0;
+        padding: 8px;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+        .playback-controls-row {
+          display: flex;
+          align-items: center;
+        }
+
+        .playback-navigation {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+
+      .playback-speed {
+        flex: 0 0 auto;
+      }
+
+      .playback-timeline-mobile {
+        margin-top: 4px;
+
+        .time-input {
+          flex: 0 0 70px !important;
+          width: 70px !important;
+          max-width: 70px !important;
+          min-width: 70px !important;
+        }
+
+        .timeline-slider {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+      }
+
+        .playback-video-size {
+          flex: 0 0 auto;
+          text-transform: none;
+          min-width: 70px;
+          margin-right: 4px;
+        }
+        
+        @media (max-width: 959px) {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 50;
+          background-color: var(--bottom-toolbar-bg);
+          border-top: 1px solid rgba(255, 255, 255, 0.15);
+          padding: 6px 8px;
+          padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+        }
       }
     }
+
+    .video-controls {
+      width: 100%;
+      gap: 8px;
+      position: relative;
+      z-index: 2;
+      flex-shrink: 0;
+
+      @media (max-width: 959px) {
+        /* Hide desktop controls on mobile - they duplicate the mobile fixed bar */
+        display: none !important;
+      }
+
+      @media (min-width: 960px) {
+        gap: 12px;
+      }
+
+      @media (max-width: 599px) {
+        flex-wrap: nowrap;
+      }
+
+      .timeline-slider {
+        min-width: 140px;
+      }
+      
+      .time-input {
+        min-width: 100px;
+        max-width: 150px;
+        margin-right: 8px;
+        
+        @media (max-width: 599px) {
+          min-width: 0;
+          width: 48px;
+          max-width: 48px;
+          margin-right: 8px;
+          margin-bottom: 0;
+        }
+      }
+
+      .playback-controls-inline {
+        flex: 0 0 auto;
+        min-width: max-content;
+      }
+
+      @media (min-width: 960px) {
+        .timeline-slider {
+          margin-bottom: 0 !important;
+        }
+
+        .time-input {
+          margin-right: 0;
+          min-width: 108px;
+          max-width: 130px;
+        }
+      }
+    }
+
+    .open-in-app-center {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10;
+      padding: 24px;
+      /* Let clicks pass through the overlay except for the explicit button */
+      pointer-events: none;
+
+      h2 {
+        font-size: 1.75rem;
+        font-weight: 500;
+      }
+
+      p {
+        font-size: 1rem;
+        opacity: 0.9;
+        max-width: 400px;
+      }
+
+      .open-in-app-btn {
+        font-size: 1.1rem;
+        padding: 16px 32px;
+        height: auto;
+        /* Make only the button clickable */
+        pointer-events: auto;
+      }
+
+      .open-in-app-store-link {
+        color: #ffcc80;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        pointer-events: auto;
+      }
+    }
+  }
+
+  .open-in-app-requirement {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.85);
   }
   </style>
   

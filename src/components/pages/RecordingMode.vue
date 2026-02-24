@@ -1,0 +1,216 @@
+<template>
+  <MainLayout
+    :fixedHeight="false">
+
+    <template v-slot:left><div class="d-none"></div></template>
+    <template v-slot:right><div class="d-none"></div></template>
+
+    <div class="recording-mode-wrapper d-flex flex-column align-center justify-center">
+      <h1 class="mb-6 text-center">How will you record?</h1>
+      
+
+      <div class="options-container">
+        <v-card
+          class="option-card pa-6 d-flex flex-column align-center"
+          outlined
+          hover
+          @click="selectMonocular">
+          <v-icon size="64" color="primary" class="mb-4">mdi-cellphone</v-icon>
+          <div class="title-row mb-2">
+            <h2 class="option-title mb-0">Monocular</h2>
+            <v-chip
+              x-small
+              color="warning"
+              text-color="black"
+              class="beta-chip ml-2">
+              Beta
+            </v-chip>
+          </div>
+          <p class="text-center option-description">
+            Record with a single phone. Simplified setup, no calibration needed. <strong>Requires OpenCap app 2.0+ from the App Store.</strong>
+          </p>
+          <a
+            class="best-practices-link mt-2"
+            href="https://www.opencap.ai/best-practices?variant=monocular"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click.stop>
+            Read monocular best practices
+          </a>
+          <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
+        </v-card>
+
+        <v-card
+          class="option-card pa-6 d-flex flex-column align-center"
+          outlined
+          hover
+          @click="selectMultiPhone">
+          <div class="d-flex justify-center align-center mb-4">
+            <v-icon size="64" color="primary" class="mr-2">mdi-cellphone</v-icon>
+            <v-icon size="64" color="primary">mdi-cellphone</v-icon>
+          </div>
+          <h2 class="mb-2 option-title">2+ phones</h2>
+          <p class="text-center option-description">
+            Record with multiple phones for higher accuracy. Requires calibration.
+          </p>
+          <a
+            class="best-practices-link mt-2"
+            href="https://www.opencap.ai/best-practices"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click.stop>
+            Read 2+ phones best practices
+          </a>
+          <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
+        </v-card>
+      </div>
+
+      <div class="mt-6">
+        <v-btn text @click="$router.push({ name: 'SelectSession' })">
+          <v-icon left>mdi-arrow-left</v-icon>
+          Back to sessions
+        </v-btn>
+      </div>
+    </div>
+  </MainLayout>
+</template>
+
+<script>
+import MainLayout from '@/layout/MainLayout'
+
+export default {
+  name: 'RecordingMode',
+  components: {
+    MainLayout
+  },
+  methods: {
+    isMobileOrTablet() {
+      // Use user agent to detect iPhone, iPad, Android, or touch device
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      // iPadOS 13+ identifies as Mac, so check for touch support
+      const isIpad = (/iPad/.test(ua)) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isIphone = /iPhone/.test(ua);
+      const isAndroid = /Android/.test(ua);
+      return isIpad || isIphone || isAndroid;
+    },
+    selectMonocular() {
+      if (this.isMobileOrTablet()) {
+        this.$router.push({ name: 'DeviceCheck' })
+      } else {
+        this.$router.push({ name: 'ConnectDevices', query: { isMono: 'true' } })
+      }
+    },
+    selectMultiPhone() {
+      // For multi-phone recordings always go straight to ConnectDevices (QR flow).
+      this.$router.push({ name: 'ConnectDevices', query: { isMono: 'false' } })
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.recording-mode-wrapper {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  min-height: 60vh;
+  padding: 12px 16px 24px 16px;
+}
+
+.subtitle-text {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 500px;
+}
+
+.options-container {
+  width: 100%;
+  max-width: 920px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.option-card {
+  width: 100%;
+  min-height: 280px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.option-description {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 320px;
+  width: 100%;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-card,
+.option-card .option-title {
+  color: #ffffff; /* ensure text in cards is white */
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.beta-chip {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.option-card .v-icon {
+  color: #ffffff !important;
+}
+
+.best-practices-link {
+  color: #ffcc80;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.select-button {
+  min-width: 120px;
+}
+
+@media (max-width: 959px) {
+  .recording-mode-wrapper {
+    padding: 8px 12px 20px 12px;
+  }
+
+  .options-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 100%;
+    gap: 10px;
+  }
+
+  .option-card {
+    min-height: 220px;
+    min-width: 0;
+    padding: 14px !important;
+  }
+
+  .option-card .option-title {
+    font-size: 1.05rem;
+  }
+
+  .option-description {
+    font-size: 0.85rem;
+  }
+}
+</style>

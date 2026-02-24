@@ -1,14 +1,30 @@
 <template>
-  <div class="speed-control d-flex justify-center">
-    <div
-      v-for="(s, index) in speeds"
-      :key="index"
-      class="speed"
-      :class="{ selected: s.value === value }"
-      @click="$emit('input', s.value)">
-      {{ s.name }}
-    </div>
-  </div>  
+  <v-menu offset-y>
+    <template v-slot:activator="{ on, attrs }">
+      <v-btn
+        v-bind="attrs"
+        v-on="on"
+        small
+        class="speed-control-button">
+        <v-icon small left>mdi-speedometer</v-icon>
+        {{ selectedSpeedLabel }}
+        <v-icon small right>mdi-menu-down</v-icon>
+      </v-btn>
+    </template>
+
+    <v-list dense class="speed-control-menu">
+      <v-list-item
+        v-for="(s, index) in speeds"
+        :key="index"
+        @click="$emit('input', s.value)">
+        <v-list-item-title
+          class="speed-option"
+          :class="{ selected: s.value === value }">
+          {{ s.name }}
+        </v-list-item-title>
+      </v-list-item>
+    </v-list>
+  </v-menu>
 </template>
 
 <script>
@@ -32,21 +48,38 @@ export default {
       ]
     }
   },
+  computed: {
+    selectedSpeedLabel () {
+      const selected = this.speeds.find(s => s.value === this.value)
+      return selected ? selected.name : `${this.value}x`
+    }
+  }
 }
 </script>
 
 <style lang="scss">
-.speed-control {
-  .speed {
-    font-size: 12px;
-    padding: 2px 4px;
-    border-radius: 2px;
-    cursor: pointer;
+.speed-control-button {
+  min-width: 80px;
+  text-transform: none;
+}
 
-    &.selected {
-      background-color: white;
-      color: black;
-      cursor: default;
+.speed-option {
+  font-size: 14px;
+
+  &.selected {
+    font-weight: 600;
+  }
+}
+
+/* Mobile: make speed control more compact */
+@media (max-width: 960px) {
+  .speed-control-button {
+    min-width: 60px;
+    font-size: 0.75rem;
+    padding: 0 6px;
+
+    .v-icon {
+      font-size: 14px;
     }
   }
 }

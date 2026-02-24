@@ -134,7 +134,7 @@ export default {
           const valid_date = remember_device_timestamp != null ? parseInt(remember_device_timestamp) + 90*24*60*60*1000 >= Date.now() : false
           let go_to_validate = true
 
-          if (remember_device_timestamp && valid_date) {
+              if (remember_device_timestamp && valid_date) {
               // Skip the 2FA step if the user has logged in within the last 90 days
               let res = await axios.get('/check-otp-verified/')
               console.log(res.data)
@@ -179,22 +179,42 @@ export default {
 <style lang="scss">
 .login-main {
   button {
-    width: 200px;
+    width: 100%;
+    max-width: 260px;
   }
-.wrapper-box {
-    max-height: calc(100vh - 90px);
+
+  .wrapper-box {
+    max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+    max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
     overflow-y: scroll;
     -ms-overflow-style: none;
     scrollbar-width: none;
+
     &::-webkit-scrollbar {
       display: none;
     }
   }
+
   a {
     text-decoration: none !important;
 
     &:hover {
       text-decoration: underline !important;
+    }
+  }
+
+  @media (max-width: 599px) {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+
+    .wrapper-box {
+      max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    button {
+      max-width: none;
     }
   }
 }

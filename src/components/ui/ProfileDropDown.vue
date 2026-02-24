@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-dropdown mr-4" @click="toggleDropdown">
+  <div class="profile-dropdown" @click="toggleDropdown">
     <img :src="profile_picture_url" alt="Profile" class="profile-image" />
     <transition name="fade">
       <div v-if="isDropdownOpen" class="dropdown-content">
@@ -36,7 +36,7 @@
                   Forum
             </li>
           </a>
-          <a target="_blank" href="https://github.com/stanfordnmbl/opencap-core">
+          <a target="_blank" href="https://github.com/opencap-org">
             <li>
                   <i class="mdi mdi-source-repository inline-icon"></i>
                   Find on GitHub
@@ -141,6 +141,7 @@ export default {
 .profile-dropdown {
   position: relative;
   cursor: pointer;
+  z-index: 1001;
 }
 
 .profile-image {
@@ -151,15 +152,21 @@ export default {
 
 .dropdown-content {
   position: absolute;
-  top: 50px; /* Adjust the top position according to your layout */
+  top: calc(100% + 8px);
   right: 0;
   background-color: #111111;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border-radius: 4px;
   padding: 8px;
-  z-index: 1;
+  z-index: 1000;
   width: auto;
   min-width: 25em;
+  max-width: calc(100vw - 32px);
+  
+  @media (max-width: 599px) {
+    min-width: 200px;
+    right: -8px;
+  }
 }
 
 ul {

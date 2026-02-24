@@ -1,358 +1,374 @@
-<template>
+\<template>
   <MainLayout
-    leftButton="Back"
-    :rightButton="rightButtonCaption"
     :step="4"
+    :fixedHeight="false"
     :rightDisabled="busy || disabledNextButton"
-    :rightSpinner="busy && !imgs"
-    @left="$router.push(`/${session.id}/calibration`)"
-    @right="onNext"
-  >
-    <v-card v-if="imgs" class="step-4-1 pa-2 d-flex flex-column">
-      <v-card-title class="justify-center"> Verify neutral pose </v-card-title>
+    @left="$router.push(`/${session.id}/calibration`)">
 
-      <v-card-text class="d-flex flex-grow-1 scroll-y">
-        <div
-          v-for="(imgCol, colIndex) in imgCols"
-          :key="colIndex"
-          class="d-flex flex-column"
-        >
-          <img
-            v-for="(img, imgIndex) in imgCol"
-            :key="imgIndex"
-            :src="img"
-            width="150"
-            class="ma-1"
-          />
-        </div>
-      </v-card-text>
-    </v-card>
+    <!-- Ensure MainLayout's own slots are effectively empty or hidden -->
+    <template v-slot:left><div class="d-none"></div></template>
+    <template v-slot:right><div class="d-none"></div></template>
 
-    <div v-else class="step-4-1 d-flex flex-column">
+    <div class="neutral-wrapper">
+      <div class="neutral-content">
+        <v-card v-if="imgs" class="step-4-1 pa-2 d-flex flex-column">
+          <v-card-title class="justify-center"> Verify neutral pose </v-card-title>
 
-      <v-card class="mb-4">
-        <v-card-title class="justify-center subject-title">
-          Session Info
-        </v-card-title>
-          <v-card-text>
-            <v-row align="center">
-              <v-col cols="11">
-                <v-autocomplete
-                  ref="selectSubjectsRef"
-                  required
-                  v-model="subject"
-                  item-text="display_name"
-                  item-value="id"
-                  label="Subject"
-                  :items="loaded_subjects"
-                  :loading="subject_loading"
-                  :search-input.sync="subject_search"
-                  return-object
-                >
-                  <template v-slot:append-item>
-                    <div v-intersect="loadNextSubjectsListPage" />
-                  </template>
-                  <template v-slot:selection>{{ subject.display_name }}</template>
-                </v-autocomplete>
-
-<!--                <v-select-->
-<!--                    ref="selectSubjectsRef"-->
-<!--                    @click="reloadSubjects"-->
-<!--                    @input="isAllInputsValidSelectSubject"-->
-<!--                    class="cursor-pointer"-->
-<!--                    required-->
-<!--                    v-model="subject"-->
-<!--                    item-text="display_name"-->
-<!--                    item-value="id"-->
-<!--                    label="Subject"-->
-<!--                    :items="subjectSelectorChoices"-->
-<!--                    return-object-->
-<!--                ></v-select>-->
-              </v-col>
-              <v-col cols="1">
-                <v-btn
-                  icon
-                  @click="openNewSubjectPopup">
-                  <v-icon>mdi-plus</v-icon>
-                </v-btn>
-              </v-col>
-            </v-row>
-            <v-text-field
-              v-model="sessionName"
-              label="Session Name (optional)"
-              type="text"
-              required
-              :error="formErrors.name != null"
-              :error-messages="formErrors.name"
-            ></v-text-field>
-<!--            <div>-->
-<!--              <ul>-->
-<!--                <li>loaded_subjects: {{ loaded_subjects }}</li>-->
-<!--                <li>subject: {{ subject }}</li>-->
-<!--                <li>subject_loading: {{ subject_loading }}</li>-->
-<!--                <li>subject_search: {{ subject_search }}</li>-->
-
-<!--                <li>sessionName: {{ sessionName }}</li>-->
-<!--              </ul>-->
-
-<!--            </div>-->
-          </v-card-text>
-      </v-card>
-
-      <v-card class="mb-4">
-        <div class="d-flex justify-center">
-          <v-card-title class="justify-center data-title">
-            Data sharing agreement
-          </v-card-title>
-          <v-tooltip bottom="">
-            <template v-slot:activator="{ on }">
-              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-            </template>
-            The information on this page as well as videos of your movement are
-            uploaded to a secure cloud server for processing. Please have the
-            subject select their data sharing preferences below. Identified
-            videos do not have the face blurred, de-identified videos have faces
-            blurred, and processed data (e.g., joint angles) is de-identified.
-            Please read our privacy terms for details.
-          </v-tooltip>
-        </div>
-
-        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-          <ValidationObserver
-            tag="div"
-            class="d-flex flex-column checkbox-box"
-            ref="observer"
-          >
-            <v-checkbox
-              v-model="data_sharing_0"
-              @click="isAllInputsValid"
-              label="The subject understands that the recorded identified videos and processed data are stored in secure PHI-compliant storage and agrees to share them with the OpenCap development team for algorithm development. We may use this data in scientific publications, but will only publicly share the data that the subject agrees to share below."
-              :rules="[checkboxRule]"
-              required=""
-            ></v-checkbox>
-
-            <ValidationProvider
-              rules="required"
-              v-slot="{ errors }"
-              name="Data sharing agreement"
+          <v-card-text class="d-flex flex-grow-1 scroll-y">
+            <div
+              v-for="(imgCol, colIndex) in imgCols"
+              :key="colIndex"
+              class="d-flex flex-column"
             >
-              <v-select
-                v-model="data_sharing"
-                label="Please select which data the subject is willing to share publicly; we encourage the subject to share as much as they feel comfortable."
-                @change="isAllInputsValid"
-                :items="data_sharing_choices"
-                :error="errors.length > 0"
-                :error-messages="errors[0]"
+              <img
+                v-for="(img, imgIndex) in imgCol"
+                :key="imgIndex"
+                :src="img"
+                width="150"
+                class="ma-1"
               />
-            </ValidationProvider>
-          </ValidationObserver>
-        </v-card-text>
-      </v-card>
- 
-    <div class="d-flex justify-center">
-        <template>
-        <div class="text-center">
-          <v-btn
-            color="primary-dark"
-            class="mt-4 mb-4 ml-4 mr-4"
-            x-large
-            @click="openAdvancedSettings"
-          >
-            Advanced Settings
-          </v-btn>
+            </div>
+          </v-card-text>
+        </v-card>
 
-          <v-dialog
-            v-model="advancedSettingsDialog"
-            scrollable
-            width="700px"
-            max-height="400px"
-          >
-            <v-card height="fit-content">
-              <v-card-actions class="justify-end">
-                <v-btn color="primary-dark" @click="advancedSettingsDialog = false">✖</v-btn>
-              </v-card-actions>
+        <div v-else class="neutral-layout">
+          <div class="left-column" :class="{ 'full-width': isMonocularMode }">
+            <div class="cards-row d-flex flex-column">
+              <v-card class="mb-4 session-info-card">
+                <v-card-title class="justify-center subject-title">
+                  Session Info
+                </v-card-title>
+                  <v-card-text>
+                    <v-row align="center">
+                      <v-col cols="10">
+                        <v-autocomplete
+                          ref="selectSubjectsRef"
+                          required
+                          v-model="subject"
+                          item-text="display_name"
+                          item-value="id"
+                          label="Subject"
+                          :items="loaded_subjects"
+                          :loading="subject_loading"
+                          :search-input.sync="subject_search"
+                          return-object
+                          dense
+                        >
+                          <template v-slot:append-item>
+                            <div v-intersect="loadNextSubjectsListPage" />
+                          </template>
+                          <template v-slot:selection>{{ subject.display_name }}</template>
+                        </v-autocomplete>
+                      </v-col>
+                      <v-col cols="1">
+                        <v-btn
+                          icon
+                          small
+                          @click="openNewSubjectPopup">
+                          <v-icon>mdi-plus</v-icon>
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                    <v-text-field
+                      v-model="sessionName"
+                      label="Session Name"
+                      type="text"
+                      required
+                      @input="isAllInputsValid"
+                      @blur="validateSessionName"
+                      :error="formErrors.name != null"
+                      :error-messages="formErrors.name"
+                      dense
+                    ></v-text-field>
+                  </v-card-text>
+              </v-card>
 
-              <v-card-title class="justify-center data-title">
-                <span class="mr-2">Scaling setup</span>
-                <v-tooltip bottom="" max-width="500px">
-                  <template v-slot:activator="{ on }">
-                    <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                  </template>
-                  OpenCap uses data from the neutral pose to scale the musculoskeletal model to the anthropometry of the subject.
-                  By default, OpenCap assumes that the subject is standing with an upright posture and the feet pointing forward (i.e., straight back and no bending or rotation at the hips, knees, or ankles) as shown in the example neutral pose. These assumptions are modeled in the OpenSim scaling setup.
-                  If the subject cannot adopt this pose, you can select the "Any pose" scaling setup, which does not assume any specific posture but still requires all body segments to be visible by at least two cameras.
-                  We recommend using the default scaling setup unless the subject cannot adopt the upright standing neutral pose.
-                </v-tooltip>
-              </v-card-title>
-              <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                <v-select
-                    v-model="scaling_setup"
-                    label="Select scaling setup"
-                    v-bind:items="scaling_setups"
-                  />
-              </v-card-text>
+              <v-card class="data-sharing-card">
+                <div class="d-flex justify-center">
+                  <v-card-title class="justify-center data-title">
+                    Data sharing agreement
+                  </v-card-title>
+                  <v-tooltip bottom="">
+                    <template v-slot:activator="{ on }">
+                      <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                    </template>
+                    The information on this page as well as videos of your movement are
+                    uploaded to a secure cloud server for processing. Please have the
+                    subject select their data sharing preferences below. Identified
+                    videos do not have the face blurred, de-identified videos have faces
+                    blurred, and processed data (e.g., joint angles) is de-identified.
+                    Please read our privacy terms for details.
+                  </v-tooltip>
+                </div>
 
-              <v-card-title class="justify-center data-title">
-                <span class="mr-2">Human pose estimation model</span>
-                <v-tooltip bottom="" max-width="500px">
-                  <template v-slot:activator="{ on }">
-                    <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                  </template>
-                  OpenCap supports two human pose estimation models: OpenPose and HRNet. We recommend using OpenPose for computation speed, but both models provide similar accuracy.
-                  OpenPose is restricted to academic or non-profit organization non-commercial research use (consult the license at https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/LICENSE).
-                  HRNet, as implemented by Open-MMLab, has a permissive Apache 2.0 license (consult the license at https://github.com/open-mmlab/mmpose/blob/master/LICENSE).
-                  Please ensure that you have the rights to use the model you select. The OpenCap authors deny any responsibility regarding license infringement.
-                </v-tooltip>
-              </v-card-title>
-              <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                <v-select
-                    v-model="pose_model"
-                    label="Select human pose estimation model"
-                    v-bind:items="pose_models"
-                  />
-              </v-card-text>
+                <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                  <ValidationObserver
+                    tag="div"
+                    class="d-flex flex-column checkbox-box"
+                    ref="observer"
+                  >
+                    <v-checkbox
+                      v-model="data_sharing_0"
+                      @click="isAllInputsValid"
+                      label="The subject understands that the recorded identified videos and processed data are stored in secure PHI-compliant storage and agrees to share them with the OpenCap development team for algorithm development. We may use this data in scientific publications, but will only publicly share the data that the subject agrees to share below."
+                      :rules="[checkboxRule]"
+                      required=""
+                      dense
+                    ></v-checkbox>
+
+                    <ValidationProvider
+                      rules="required"
+                      v-slot="{ errors }"
+                      name="Data sharing agreement"
+                    >
+                      <v-select
+                        v-model="data_sharing"
+                        label="Please select which data the subject is willing to share publicly; we encourage the subject to share as much as they feel comfortable."
+                        @change="isAllInputsValid"
+                        :items="data_sharing_choices"
+                        :error="errors.length > 0"
+                        :error-messages="errors[0]"
+                        dense
+                      />
+                    </ValidationProvider>
+                  </ValidationObserver>
+                </v-card-text>
+              </v-card>
+            </div>
+      
+            <div class="advanced-settings-row d-flex justify-center" v-if="!isMonocularMode">
+                <v-btn
+                  color="primary-dark"
+                  class="mt-4 mb-4"
+                  x-large
+                  @click="openAdvancedSettings"
+                >
+                  Advanced Settings
+                </v-btn>
+
+                  <v-dialog
+                    v-model="advancedSettingsDialog"
+                    scrollable
+                    :width="$vuetify.breakpoint.smAndDown ? '95%' : '700px'"
+                    :max-height="$vuetify.breakpoint.smAndDown ? '90vh' : '90vh'"
+                    content-class="advanced-settings-dialog"
+                  >
+                    <v-card class="advanced-settings-card">
+                      <v-card-actions class="justify-end">
+                        <v-btn color="primary-dark" @click="advancedSettingsDialog = false">✖</v-btn>
+                      </v-card-actions>
+
+                      <v-card-title class="justify-center data-title">
+                        <span class="mr-2">Scaling setup</span>
+                        <v-tooltip bottom="" max-width="500px">
+                          <template v-slot:activator="{ on }">
+                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                          </template>
+                          OpenCap uses data from the neutral pose to scale the musculoskeletal model to the anthropometry of the subject.
+                          By default, OpenCap assumes that the subject is standing with an upright posture and the feet pointing forward (i.e., straight back and no bending or rotation at the hips, knees, or ankles) as shown in the example neutral pose. These assumptions are modeled in the OpenSim scaling setup.
+                          If the subject cannot adopt this pose, you can select the "Any pose" scaling setup, which does not assume any specific posture but still requires all body segments to be visible by at least two cameras.
+                          We recommend using the default scaling setup unless the subject cannot adopt the upright standing neutral pose.
+                        </v-tooltip>
+                      </v-card-title>
+                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                        <v-select
+                            v-model="scaling_setup"
+                            label="Select scaling setup"
+                            :items="scaling_setups"
+                            item-text="text"
+                            item-value="value"
+                          />
+                      </v-card-text>
+
+                      <v-card-title class="justify-center data-title">
+                        <span class="mr-2">Human pose estimation model</span>
+                        <v-tooltip bottom="" max-width="500px">
+                          <template v-slot:activator="{ on }">
+                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                          </template>
+                          OpenCap supports two human pose estimation models: OpenPose and HRNet. We recommend using OpenPose for computation speed, but both models provide similar accuracy.
+                          OpenPose is restricted to academic or non-profit organization non-commercial research use (consult the license at https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/LICENSE).
+                          HRNet, as implemented by Open-MMLab, has a permissive Apache 2.0 license (consult the license at https://github.com/open-mmlab/mmpose/blob/master/LICENSE).
+                          Please ensure that you have the rights to use the model you select. The OpenCap authors deny any responsibility regarding license infringement.
+                        </v-tooltip>
+                      </v-card-title>
+                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                        <v-select
+                            v-model="pose_model"
+                            label="Select human pose estimation model"
+                            :items="pose_models"
+                            item-text="text"
+                            item-value="value"
+                          />
+                      </v-card-text>
   
-              <v-card-title class="justify-center data-title">
-                Framerate
-              </v-card-title>
-              <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                <v-select
-                    v-model="framerate"
-                    label="Select framerate"
-                    v-bind:items="framerates_available"
-                    @change="updateFrequency"
-                  />
-              </v-card-text>
+                      <v-card-title class="justify-center data-title">
+                        <span class="mr-2">Framerate</span>
+                        <v-tooltip bottom="" max-width="500px">
+                          <template v-slot:activator="{ on }">
+                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                          </template>
+                          The framerate determines the number of frames per second at which the videos are recorded. Higher framerates provide more temporal resolution but reduce the maximum recording time.
+                        </v-tooltip>
+                      </v-card-title>
+                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                        <v-select
+                            v-model="framerate"
+                            label="Select framerate"
+                            :items="framerates_available"
+                            item-text="text"
+                            item-value="value"
+                            @change="updateFrequency"
+                          />
+                      </v-card-text>
 
-              <v-card-title class="justify-center data-title">
-                <span class="mr-2">Musculoskeletal model</span>
-                <v-tooltip bottom="" max-width="500px">
-                  <template v-slot:activator="{ on }">
-                    <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                  </template>
-                  Full body model: Musculoskeletal model with 33 degrees of freedom from Lai et al. 2017 (https://pubmed.ncbi.nlm.nih.gov/28900782/) with modified hip abductor muscle paths from Uhlrich et al. 2022 (https://pubmed.ncbi.nlm.nih.gov/35798755/). Recommended for primarily lower extremity tasks (e.g., gait).
-                  <br><br>
-                  Full body model with ISB shoulder: Incorporates a 6 degree-of-freedom shoulder complex joint. It incorporates a scapulothoracic body with 3 translational degrees of freedom relative to the torso. The glenohumoral joint uses the Y-X-Y rotation sequence (elevation plane, elevation, rotation) recommended by the ISB (https://pubmed.ncbi.nlm.nih.gov/15844264/). Recommended for upper extremity tasks (e.g., pitching).
-                </v-tooltip>
-              </v-card-title>
-              <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                <v-select
-                    v-model="openSimModel"
-                    label="Select musculoskeletal model"
-                    v-bind:items="openSimModels"
-                  />
-              </v-card-text>
+                      <v-card-title class="justify-center data-title">
+                        <span class="mr-2">Musculoskeletal model</span>
+                        <v-tooltip bottom="" max-width="500px">
+                          <template v-slot:activator="{ on }">
+                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                          </template>
+                          Full body model: Musculoskeletal model with 33 degrees of freedom from Lai et al. 2017 (https://pubmed.ncbi.nlm.nih.gov/28900782/) with modified hip abductor muscle paths from Uhlrich et al. 2022 (https://pubmed.ncbi.nlm.nih.gov/35798755/). Recommended for primarily lower extremity tasks (e.g., gait).
+                          <br><br>
+                          Full body model with ISB shoulder: Incorporates a 6 degree-of-freedom shoulder complex joint. It incorporates a scapulothoracic body with 3 translational degrees of freedom relative to the torso. The glenohumoral joint uses the Y-X-Y rotation sequence (elevation plane, elevation, rotation) recommended by the ISB (https://pubmed.ncbi.nlm.nih.gov/15844264/). Recommended for upper extremity tasks (e.g., pitching).
+                        </v-tooltip>
+                      </v-card-title>
+                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                        <v-select
+                            v-model="openSimModel"
+                            label="Select musculoskeletal model"
+                            :items="openSimModels"
+                            item-text="text"
+                            item-value="value"
+                          />
+                      </v-card-text>
 
-              <v-card-title class="justify-center data-title">
-                <span class="mr-2">Marker augmenter model</span>
-                <v-tooltip bottom="" max-width="500px">
-                  <template v-slot:activator="{ on }">
-                    <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                  </template>
-                  OpenCap uses an LSTM model, also called marker augmenter model, to predict the 3D position of 43 anatomical markers from the 3D position of 20 video keypoints (https://www.biorxiv.org/content/10.1101/2022.07.07.499061v1). 
-                  The anatomical markers are used as input to OpenSim to compute joint angles using inverse kinematics.
-                  <br><br>
-                  The latest model (v0.3, default) is more accurate and more robust to different activities than v0.2. We recommend using it for new studies. 
-                  It was trained on 1475 hours of motion capture data and resulted in an RMSE of 4.4 +/- 0.3 deg (OpenPose) and 4.1 +/- 0.3 deg (HRnet) for joint angles across 18 degrees of freedom.
-                  <br><br>                  
-                  The original model (v0.2) underwent training using 708 hours of motion capture data, yielding an RMSE of 4.8 +/- 0.2 deg (OpenPose and HRNet) for joint angles across 18 degrees of freedom. 
-                  <br><br>
-                  The performance evaluation was conducted in comparison to marker-based motion capture using data from 10 subjects performing 4 different types of activities (walking, squatting, sit-to-stand, and drop jumps). 
-                  The dataset used for training the latest model (v0.3) contains data from more subjects and from a more diverse set of tasks; model v0.3 is therefore expected to be more accurate for a wider variety of tasks and to yield more accurate results.
-                  We recommend using v0.3 for new studies but warn users that we might still adjust the model in the future. 
-                  If you would like to use the model that was default prior to 07-30-2023, select v0.2.
-                </v-tooltip>
-              </v-card-title>
-              <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                <v-select
-                    v-model="augmenter_model"
-                    label="Select marker augmenter model"
-                    v-bind:items="augmenter_models"
-                  />
-              </v-card-text>
+                      <v-card-title class="justify-center data-title">
+                        <span class="mr-2">Marker augmenter model</span>
+                        <v-tooltip bottom="" max-width="500px">
+                          <template v-slot:activator="{ on }">
+                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                          </template>
+                          OpenCap uses an LSTM model, also called marker augmenter model, to predict the 3D position of 43 anatomical markers from the 3D position of 20 video keypoints (https://www.biorxiv.org/content/10.1101/2022.07.07.499061v1). 
+                          The anatomical markers are used as input to OpenSim to compute joint angles using inverse kinematics.
+                          <br><br>
+                          The latest model (v0.3, default) is more accurate and more robust to different activities than v0.2. We recommend using it for new studies. 
+                          It was trained on 1475 hours of motion capture data and resulted in an RMSE of 4.4 +/- 0.3 deg (OpenPose) and 4.1 +/- 0.3 deg (HRnet) for joint angles across 18 degrees of freedom.
+                          <br><br>                  
+                          The original model (v0.2) underwent training using 708 hours of motion capture data, yielding an RMSE of 4.8 +/- 0.2 deg (OpenPose and HRNet) for joint angles across 18 degrees of freedom. 
+                          <br><br>
+                          The performance evaluation was conducted in comparison to marker-based motion capture using data from 10 subjects performing 4 different types of activities (walking, squatting, sit-to-stand, and drop jumps). 
+                          The dataset used for training the latest model (v0.3) contains data from more subjects and from a more diverse set of tasks; model v0.3 is therefore expected to be more accurate for a wider variety of tasks and to yield more accurate results.
+                          We recommend using v0.3 for new studies but warn users that we might still adjust the model in the future. 
+                          If you would like to use the model that was default prior to 07-30-2023, select v0.2.
+                        </v-tooltip>
+                      </v-card-title>
+                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                        <v-select
+                            v-model="augmenter_model"
+                            label="Select marker augmenter model"
+                            :items="augmenter_models"
+                            item-text="text"
+                            item-value="value"
+                          />
+                      </v-card-text>
 
-              <v-card-title class="justify-center data-title">
-                <span class="mr-2">Filter frequency</span>
-                <v-tooltip bottom="" max-width="500px">
-                  <template v-slot:activator="{ on }">
-                    <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                  </template>
-                  OpenCap uses a low-pass Butterworth filter to smooth the 2D video keypoints. The filter frequency is the cutoff frequency of the filter.
-                  <br><br>                  
-                  By default, OpenCap uses a filter frequency of half the framerate (if the framerate is 60fps, the filter frequency is 30Hz), except for gait activities, for which the filter frequency is 12Hz.
-                  <br><br>
-                  You can here enter a different filter frequency. WARNING: this filter frequency will be applied to ALL motion trials of your session. As per the Nyquist Theorem, the filter frequency should be less than half the framerate.
-                  If you enter a filter frequency higher than half the framerate, we will use half the framerate as the filter frequency instead.
-                  <br><br>
-                  We recommend consulting the literature to find a suitable filter frequency for your specific tasks. If you are unsure, we recommend using the default filter frequency.
-                </v-tooltip>
-              </v-card-title>
-              <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                <v-combobox
-                :key="componentKey"
-                v-model="tempFilterFrequency"
-                label="Enter frequency (Hz) or choose default"
-                :items="filter_frequencies"
-                :allow-custom="true"
-                :return-object="false"
-                @change="validateAndSetFrequency"
-                item-text="text"
-                item-value="value"
-                ></v-combobox>
+                      <v-card-title class="justify-center data-title">
+                        <span class="mr-2">Filter frequency</span>
+                        <v-tooltip bottom="" max-width="500px">
+                          <template v-slot:activator="{ on }">
+                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                          </template>
+                          OpenCap uses a low-pass Butterworth filter to smooth the 2D video keypoints. The filter frequency is the cutoff frequency of the filter.
+                          <br><br>                  
+                          By default, OpenCap uses a filter frequency of half the framerate (if the framerate is 60fps, the filter frequency is 30Hz), except for gait activities, for which the filter frequency is 12Hz.
+                          <br><br>
+                          You can here enter a different filter frequency. WARNING: this filter frequency will be applied to ALL motion trials of your session. As per the Nyquist Theorem, the filter frequency should be less than half the framerate.
+                          If you enter a filter frequency higher than half the framerate, we will use half the framerate as the filter frequency instead.
+                          <br><br>
+                          We recommend consulting the literature to find a suitable filter frequency for your specific tasks. If you are unsure, we recommend using the default filter frequency.
+                        </v-tooltip>
+                      </v-card-title>
+                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                        <v-combobox
+                        :key="componentKey"
+                        v-model="tempFilterFrequency"
+                        label="Enter frequency (Hz) or choose default"
+                        :items="filter_frequencies"
+                        :allow-custom="true"
+                        :return-object="false"
+                        @change="validateAndSetFrequency"
+                        item-text="text"
+                        item-value="value"
+                        ></v-combobox>
+                      </v-card-text>
+                    </v-card>
+                  </v-dialog>
+            </div>
+          </div>
+
+          <v-card v-if="!isMonocularMode" class="step-4-2 ml-4 d-flex images-box right-column">
+            <v-card class="mb-0">
+              <v-card-text style="padding-top: 5px; padding-bottom: 0; font-size: 16px;">
+              <p>{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
               </v-card-text>
             </v-card>
-          </v-dialog>
+
+            <v-card-title class="justify-center">
+              Record neutral pose
+            </v-card-title>
+            
+            <v-card-text class="d-flex justify-center align-center record-pose-content">
+              <div class="d-flex flex-column mr-4 record-pose-instructions">
+                <ul>
+                  <li>
+                    The subject should adopt the example neutral pose
+                    <ul>
+                      <li class="space-above-small">Upright standing posture with feet pointing forward</li>
+                      <li class="space-above-small">Straight back and no bending or rotation at the hips, knees, or ankles</li>
+                    </ul>
+                  </li>
+                  <li class="space-above-small">The subject should stand still</li>
+                  <li class="space-above-small">
+                    The subject should be visible by all cameras 
+                    <ul>
+                      <li class="space-above-small">Nothing in the way
+                        of cameras view when hitting Record</li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+              <div class="d-flex flex-column align-center ">
+                <span class="sub-header" style="font-size: 18px;">Example neutral pose</span>
+                <ExampleImage
+                  image="/images/step-4/big_good_triangle.jpg"
+                  :width="256"
+                  :height="341"
+                  good
+                />
+              </div>
+            </v-card-text>
+            <v-card-title class="justify-center record-pose-footer-title">
+              If the subject cannot adopt the example neutral pose, select "Any pose" scaling setup under Advanced Settings
+            </v-card-title>
+          </v-card>
         </div>
-      </template>
+      </div>
+
+      <!-- Custom navigation bar for Neutral page -->
+      <div class="custom-navigation page-navigation d-flex justify-space-between align-center w-100 flex-nowrap">
+            <v-btn text @click="navigateBack">
+              <v-icon left>mdi-arrow-left</v-icon>
+              {{ backButtonLabel }}
+            </v-btn>
+            <v-btn class="same-width"
+              :disabled="busy || disabledNextButton"
+              :loading="busy && !imgs"
+              @click="isMonocularMode ? skipProcessingToMonocular() : onNext()">
+              Next
+            </v-btn>
+          </div>
     </div>
-    </div>
-
-    <v-card class="step-4-2 ml-4 d-flex images-box">
-
-      <v-card class="mb-0">
-        <v-card-text style="padding-top: 5px; padding-bottom: 0; font-size: 16px;">
-        <p>{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
-        </v-card-text>
-      </v-card>
-
-      <v-card-title class="justify-center">
-        Record neutral pose
-      </v-card-title>
-      <v-card-text class="d-flex justify-center align-center">
-        <div class="d-flex flex-column mr-4">
-          <ul>
-            <li>
-              The subject should adopt the example neutral pose
-              <ul>
-                <li class="space-above-small">Upright standing posture with feet pointing forward</li>
-                <li class="space-above-small">Straight back and no bending or rotation at the hips, knees, or ankles</li>
-              </ul>
-            </li>
-            <li class="space-above-small">The subject should stand still</li>
-            <li class="space-above-small">
-              The subject should be visible by all cameras 
-              <ul>
-                <li class="space-above-small">Nothing in the way
-                  of cameras view when hitting Record</li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-        <div class="d-flex flex-column align-center ">
-          <span class="sub-header" style="font-size: 18px;">Example neutral pose</span>
-          <ExampleImage
-            image="/images/step-4/big_good_triangle.jpg"
-            :width="256"
-            :height="341"
-            good
-          />
-        </div>
-      </v-card-text>
-      <v-card-title class="justify-center" style="font-size: 18px; word-break: keep-all;">
-        If the subject cannot adopt the example neutral pose, select "Any pose" scaling setup under Advanced Settings
-      </v-card-title>
-
-    </v-card>
   
     <DialogComponent
       ref="dialogRef"
@@ -380,6 +396,7 @@ export default {
   },
   data() {
     return {
+      isMonocularMode: false,
       formErrors: {
         name: null,
         weight: null,
@@ -390,13 +407,10 @@ export default {
       },
       advancedSettingsDialog: false,
       selected: null,
-
       subject_query: "",
-      // subject_search: "",
       subject_loading: false,
       subject_start: 0,
       loaded_subjects: [],
-
       sessionName: "",
       subject: null,
       identifier: "",
@@ -454,52 +468,29 @@ export default {
         processing: "Processing",
       },
       checkboxRule: (v) => !!v || 'The subject must agree to continue!',
-
       n_calibrated_cameras: 0,
       n_cameras_connected: 0,
       n_videos_uploaded: 0,
-
-      tempFilterFrequency: 'default', // Temporary input holder
+      tempFilterFrequency: 'default',
       componentKey: 0,
-
       isAuditoryFeedbackEnabled: false,
     };
   },
   created() {
-    // Load the initial value from localStorage
     const storedValue = localStorage.getItem("auditory_feedback");
     this.isAuditoryFeedbackEnabled = storedValue === "true";
   },
   computed: {
     ...mapState({
-      // subjects: (state) => state.data.subjects,
-      session: (state) => state.data.session,
-      trialId: (state) => state.data.trialId,
+      session: state => state.data.session,
+      trialId: state => state.data.trialId,
       genders: state => state.data.genders,
       sexes: state => state.data.sexes,
+      username: state => state.auth.username,
     }),
     subjectSelectorChoices() {
       return this.subjectsMapped;
     },
-    // subjectsMapped () {
-    //   return this.subjects.map(s => ({
-    //     id: s.id,
-    //     display_name: `${s.name} (${s.weight} Kg, ${s.height} m, ${s.birth_year})`,
-    //     name: s.name,
-    //     birth_year: s.birth_year,
-    //     subject_tags: s.subject_tags,
-    //     characteristics: s.characteristics,
-    //     gender: s.gender,
-    //     gender_display: this.genders[s.gender],
-    //     sex_at_birth: s.sex_at_birth,
-    //     sex_display: this.sexes[s.sex_at_birth],
-    //     height: s.height,
-    //     weight: s.weight,
-    //     created_at: s.created_at,
-    //     trashed: s.trashed,
-    //     trashed_at: s.trashed_at
-    //   })).filter(s => this.show_trashed || !s.trashed)
-    // },
     rightButtonCaption() {
       return this.imgs
         ? "Confirm"
@@ -512,7 +503,6 @@ export default {
     imgCols() {
       let res = [];
       let iRes = null;
-      let i = 0;
       for (let i = 0; i < this.imgs.length; i++) {
         if (i % 2 == 0) {
           iRes = [this.imgs[i]];
@@ -536,6 +526,15 @@ export default {
     errorsConsole() {
       return this.errors;
     },
+    backButtonLabel() {
+      if (this.isMonocularMode && this.$route.query.fromDevice === 'true') {
+        return 'Back';
+      }
+      if (this.isMonocularMode) {
+        return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to connect devices';
+      }
+      return 'Back to calibration';
+    },
     subject_search: {
       get() {
         return this.subject_query
@@ -545,14 +544,18 @@ export default {
           this.subject_query = value
           this.subject_start = 0
           this.loadSubjectsList(false)
-        }
       }
     }
+    },
   },
   async mounted() {
-    apiInfo("You can now record a neutral pose different than the upright standing pose (e.g., sitting). Select 'Any pose' 'Advanced Settings'.", 8000);
+    if (this.$route.query.isMono === 'true') {
+      this.isMonocularMode = true;
+    }
+    if (!this.isMonocularMode) {
+      apiInfo("You can now record a neutral pose different than the upright standing pose (e.g., sitting). Select 'Any pose' 'Advanced Settings'.", 8000);
+    }
     this.loadSession(this.$route.params.id)
-    // this.loadSubjects()
     if (this.$route.query.autoRecord) {
       this.onNext();
     }
@@ -563,50 +566,42 @@ export default {
     this.loadSubjectsList(false)
   },
   watch: {
-    // subjects(new_val, old_val) {
-    //   // If no subjects, do nothing.
-    //   if (old_val.length === 0 && new_val.length === 0) {
-    //       return
-    //   // If loading first time and there are subjects, select first.
-    //   } if (old_val.length === 0 && new_val.length !== 0) {
-    //       this.subject = new_val[0]
-    //   // If there are more subjects now than before, that means a new one has been created. Select it.
-    //   } else if (old_val.length < new_val.length) {
-    //       const serializedArr1 = new Set(old_val.map(item => JSON.stringify(item)));
-    //
-    //       // Find the index by comparing serialized objects
-    //       this.subject = new_val[new_val.findIndex(item => !serializedArr1.has(JSON.stringify(item)))];
-    //   // Else, do nothing.
-    //   } else return
-    //
-    // },
-    // subject_search (newVal, oldVal) {
-    //   console.log('watch subject_search', newVal, oldVal)
-    //   this.subject_start = 0;
-    //   if (newVal) {
-    //   // this.loadSubjectsList(false, String(newVal))
-    //     this.loadSubjectsList(false)
-    //   }
-    // }
     subject (newVal, oldVal) {
-      console.log('watch subject', newVal, oldVal)
       if (newVal === null) {
         this.clearSubjectSearch()
       }
+      this.isAllInputsValid()
+    },
+    sessionName() {
+      this.isAllInputsValid()
+    },
+    data_sharing() {
+      this.isAllInputsValid()
+    },
+    data_sharing_0() {
+      this.isAllInputsValid()
     },
   },
   methods: {
     ...mapMutations("data", ["setNeutral", "setTrialId"]),
     ...mapActions("data", ["loadSubjects", "loadSession"]),
+    navigateBack() {
+      if (this.isMonocularMode) {
+        if (this.$route.query.fromDevice === 'true') {
+          this.$router.push({ name: 'DeviceCheck' });
+        } else {
+          this.$router.push({ path: `/${this.session.id}/connect-devices`, query: { isMono: 'true' } });
+        }
+      } else {
+        this.$router.push(`/${this.session.id}/calibration`);
+      }
+    },
     isSomeInputInvalid(state, input) {
       setTimeout(() => {
         this.formErrors[input] = state;
       },0)
     },
     loadSubjectsList (append_result = false) {
-      console.log('loading subjects:', this.subject_search, ' - ', append_result)
-      console.log('subject=', this.subject)
-
       this.subject_loading = true
       let data = {
         search: this.subject_search,
@@ -614,13 +609,12 @@ export default {
         quantity: 40,
         simple: 'true'
       }
-      let res = axios.get('/subjects/', {params: data}).then((res) => {
+      axios.get('/subjects/', {params: data}).then((res) => {
         if (append_result) {
           this.loaded_subjects = [...this.loaded_subjects, ...res.data.subjects]
         } else {
           this.loaded_subjects = res.data.subjects
         }
-        // this.subject_loading = false
         this.subject_loading = false
       }).catch((error) => {
         this.subject_loading = false
@@ -640,7 +634,6 @@ export default {
       this.loadSubjectsList(false)
     },
     submitAddSubject (data) {
-      console.log('submitAddSubject', data)
       let obj = {
         id: data.id,
         display_name: `${data.name} (${data.weight} Kg, ${data.height} m, ${data.birth_year})`,
@@ -649,11 +642,21 @@ export default {
       this.subject = obj
     },
     reloadSubjects() {
-      console.log('reloading subjects')
-      // this.loadSubjects()
     },
     openNewSubjectPopup() {
         this.$refs.dialogRef.edit_dialog = true
+    },
+    validateSessionName() {
+      const trimmedSessionName = (this.sessionName || '').trim();
+
+      if (!trimmedSessionName) {
+        this.formErrors.name = "Session name is required.";
+        return false;
+      }
+
+      this.sessionName = trimmedSessionName;
+      this.formErrors.name = null;
+      return true;
     },
     isAllInputsValidSelectSubject() {
         this.formErrors = {
@@ -665,7 +668,7 @@ export default {
         }
 
         let inputsInvalidSecond;
-        if(!this.subject || !this.data_sharing || !this.data_sharing_0 ) {
+        if(!this.subject || !this.data_sharing || !this.data_sharing_0 || !this.validateSessionName()) {
             inputsInvalidSecond = true
         }
 
@@ -681,7 +684,7 @@ export default {
         }
 
         let inputsInvalidSecond;
-        if(this.subject === null || this.subject.id === 'new' || !this.subject || !this.data_sharing || !this.data_sharing_0 ) {
+        if(this.subject === null || this.subject.id === 'new' || !this.subject || !this.data_sharing || !this.data_sharing_0 || !this.validateSessionName()) {
             inputsInvalidSecond = true
         }
 
@@ -689,12 +692,12 @@ export default {
     },
     async onNext() {
       if (this.imgs) {
-        // Confirm
         this.$router.push({
           name: "Session",
           params: {
             id: this.session.id,
           },
+          query: this.$route.query.fromDevice === 'true' ? { sameDevice: 'true' } : {},
         });
       } else {
         if (this.n_calibrated_cameras < 2) {
@@ -703,18 +706,17 @@ export default {
           else if (this.n_calibrated_cameras == 1)
               apiError("There is only 1 calibrated camera, but at least 2 cameras are necessary. Please go back and calibrate your cameras.");
         } else {
+          if (!this.validateSessionName()) {
+            this.isAllInputsValid();
+            return;
+          }
+
           if (await this.$refs.observer.validate()) {
             apiInfo("Recording...")
             this.lastPolledStatus = "";
-            // Record press
             this.busy = true;
             this.setNeutral({
                 subject: this.subject,
-              // identifier: this.identifier,
-              // weight: this.weight,
-              // height: this.height,
-              // sex: this.sex,
-              // gender: this.gender,
               data_sharing: this.data_sharing,
               scaling_setup: this.scaling_setup,
               pose_model: this.pose_model,
@@ -724,15 +726,10 @@ export default {
               filter_frequency: this.filter_frequency,
             });
             try {
-              const resUpdate = await axios.get(
+              await axios.get(
                 `/sessions/${this.session.id}/set_metadata/`,
                 {
                   params: {
-                    // subject_id: this.identifier,
-                    // subject_mass: this.weight,
-                    // subject_height: this.height,
-                    // subject_sex: this.sex,
-                    // subject_gender: this.gender,
                     settings_data_sharing: this.data_sharing,
                     settings_scaling_setup: this.scaling_setup,
                     settings_pose_model: this.pose_model,
@@ -745,7 +742,7 @@ export default {
                 }
               );
 
-              const resSubject = await axios.get(
+              await axios.get(
                   `/sessions/${this.session.id}/set_subject/`,
                   {
                       params: {
@@ -753,6 +750,7 @@ export default {
                       }
                   }
               )
+              
               const res = await axios.get(
                 `/sessions/${this.session.id}/record/`,
                 {
@@ -779,22 +777,9 @@ export default {
     },
     async pollStatus() {
       try {
-        //const res = await axios.get(`/sessions/1966df9a-0a60-4365-9404-43e53750b784/neutral_img/`)
         const res = await axios.get(
           `/sessions/${this.session.id}/neutral_img/`
         );
-        // test
-        /*
-        this.imgs = [
-          '/images/neutral_pose.png',
-          '/images/neutral_pose.png',
-          '/images/neutral_pose.png',
-          '/images/neutral_pose.png',
-          '/images/neutral_pose.png',
-          //'/images/neutral_pose.png'
-        ]
-        this.busy = false
-        */
         switch (res.data.status) {
           case "done": {
             this.$toasted.clear()
@@ -803,9 +788,8 @@ export default {
               params: {
                 id: this.session.id,
               },
+              query: this.$route.query.fromDevice === 'true' ? { sameDevice: 'true' } : {},
             });
-            //this.imgs = res.data.img
-            //this.busy = false
             break;
           }
           case "error": {
@@ -860,10 +844,8 @@ export default {
     },
     async getAvailableFramerates() {
       const session_settings = await axios.get(`/sessions/${this.session.id}/get_session_settings/`)
-      // If the session has framerates.
       if('data' in session_settings && 'framerates' in session_settings.data) {
         this.framerates_available = []
-        // Push them to available framerates
         session_settings.data.framerates.forEach(element => {
           if(element == 60) {
             this.framerates_available.push({"text": "60fps (max recording time: 60s, default)", "value": 60})
@@ -874,7 +856,6 @@ export default {
           }
         });
       }
-      // If not, or we did not recognize them (different to 60, 120 or 240), set 60 as default.
       if(this.framerates_available.length == 0) {
         this.framerates_available.push({"text": "60fps (max recording time: 60s, default)", "value": 60})
       }
@@ -909,11 +890,285 @@ export default {
       this.tempFilterFrequency = this.filter_frequency;
       this.componentKey += 1;
     },
+    async skipProcessingToMonocular() {
+      if (!this.validateSessionName()) {
+        this.isAllInputsValid();
+        return;
+      }
+
+      if (await this.$refs.observer.validate()) {
+        this.busy = true;
+        try {
+          await axios.get(
+            `/sessions/${this.session.id}/set_metadata/`,
+            {
+              params: {
+                isMono: true,
+                settings_data_sharing: this.data_sharing,
+                // settings_scaling_setup: this.scaling_setup,
+                // settings_pose_model: this.pose_model,
+                settings_framerate: this.framerate,
+                settings_session_name: this.sessionName,
+                settings_openSimModel: this.openSimModel,
+                // settings_augmenter_model: this.augmenter_model,
+                // settings_filter_frequency: this.filter_frequency,
+              },
+            }
+          );
+
+          await axios.get(
+            `/sessions/${this.session.id}/set_subject/`,
+            {
+              params: {
+                subject_id: this.subject.id,
+              }
+            }
+          );
+          
+          this.$router.push({
+            name: "Session",
+            params: {
+              id: this.session.id,
+            },
+            query: this.$route.query.fromDevice === 'true' ? { sameDevice: 'true' } : {},
+          });
+        } catch (error) {
+          apiError(error);
+          this.busy = false;
+        }
+      }
+    },
   },
 };
 </script>
 
 <style lang="scss">
+.neutral-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: calc(100% + 16px);
+  min-height: 0;
+  overflow-x: hidden;
+  /* Use min-height like MainLayout when fixedHeight=false - allows natural growth */
+  min-height: calc(100vh - var(--app-bar-height, 64px) - 32px);
+  /* Counteract half of MainLayout's pa-4 padding (16px) to get 8px total */
+  margin-left: -8px;
+  margin-right: -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+.neutral-content {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: calc(100vh - var(--app-bar-height, 64px) - 32px - 68px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.custom-navigation {
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: 8px;
+  background-color: transparent; 
+  z-index: 10;
+  flex-wrap: nowrap;
+  gap: 8px;
+  justify-content: space-between;
+
+  ::v-deep .v-btn {
+    min-width: 120px;
+  }
+
+  /* Ensure Back and Next are identical width/height */
+  .v-btn.same-width {
+    width: 140px;
+    min-width: 140px;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+  }
+
+  @media (max-width: 359px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    .custom-nav-slot {
+      width: 100%;
+      justify-content: center;
+    }
+    .custom-nav-left {
+      order: 1;
+    }
+    .custom-nav-right {
+      order: 2;
+      justify-content: center;
+    }
+  }
+}
+
+.custom-nav-slot {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  
+  ::v-deep .v-btn {
+    margin: 0;
+  }
+}
+
+.custom-nav-left {
+  justify-content: flex-start;
+  padding-left: 0;
+  margin-left: 0;
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.custom-nav-right {
+  justify-content: flex-end;
+  padding-right: 0;
+  margin-right: 0;
+  width: auto;
+  flex: 0 0 auto;
+  
+  @media (max-width: 599px) {
+    justify-content: center;
+    padding-right: 0;
+    margin-right: 0;
+    width: 100%;
+  }
+}
+
+.neutral-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  min-height: auto;
+  height: auto;
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  margin-right: 0;
+  
+  @media (max-width: 960px) {
+    flex-direction: column;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+.left-column {
+  flex: 0 0 48%; 
+  max-width: 48%;
+  overflow-y: visible;
+  overflow-x: hidden;
+  height: auto;
+  min-height: auto;
+  align-self: flex-start;
+  flex-shrink: 0;
+  padding-left: 0;
+  padding-right: 0;
+  
+  &.full-width {
+    flex: 1 1 auto;
+    flex-shrink: 0;
+    max-width: 100%;
+    padding-right: 0;
+  }
+
+  @media (max-width: 960px) {
+    flex: 1 1 auto;
+    flex-shrink: 0;
+    max-width: 100%;
+    padding-right: 0;
+    padding-left: 0;
+  }
+  
+  .cards-row {
+    gap: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    min-height: 0;
+  }
+  
+  .session-info-card,
+  .data-sharing-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    overflow: visible;
+    
+    &.v-card {
+      overflow: visible;
+    }
+    
+    .v-card__text {
+      overflow: visible !important;
+      max-height: none !important;
+      height: auto !important;
+    }
+  }
+  
+  .data-sharing-card {
+    overflow: visible !important;
+    
+    ::v-deep .v-card__text {
+      overflow: visible !important;
+      max-height: none !important;
+    }
+    
+    ::v-deep .v-sheet {
+      overflow: visible !important;
+    }
+  }
+  
+  .advanced-settings-row {
+    width: 100%;
+    margin-top: 0;
+    flex-shrink: 0;
+    min-height: 52px;
+  }
+}
+
+.right-column {
+  flex-grow: 1;   
+  flex-basis: 0;    
+  
+  @media (max-width: 960px) {
+    flex: 1;
+    max-width: 100%;
+    margin-left: 0 !important; 
+    margin-top: 16px;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    
+    .step-4-2.ml-4 {
+      margin-left: 0 !important;
+    }
+  }
+}
+
 .step-4-1 {
   flex: 0 0 50%;
   li {
@@ -923,10 +1178,59 @@ export default {
     }
   }
 }
+
 .step-4-2 {
   flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  
+  @media (max-width: 960px) {
+    margin-left: 0 !important;
+    
+    &.ml-4 {
+      margin-left: 0 !important;
+    }
+  }
+  
   h1 {
     line-height: 1.15;
+  }
+  
+  .v-card__text {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    box-sizing: border-box;
+    
+    ul {
+      max-width: 100%;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+    
+    li {
+      max-width: 100%;
+    }
+  }
+  
+  .v-card__title {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    box-sizing: border-box;
+  }
+  
+  .record-pose-footer-title {
+    font-size: 18px;
+    line-height: 1.4;
+    text-align: center;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
@@ -943,23 +1247,42 @@ export default {
   column-gap: 16px;
 }
 
-//.subject-title {
-//  padding-bottom: 0;
-//}
-
 .images-box {
   display: flex;
   flex-direction: column;
   height: fit-content;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 
   ul {
     font-size: 16px;
+    max-width: 100%;
+    padding-left: 20px;
+    margin: 0;
+  }
+  
+  .v-card {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .record-pose-content {
+    flex-wrap: wrap;
+    
+    @media (max-width: 959px) {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+  
+  .record-pose-instructions {
+    min-width: 0;
+    max-width: 100%;
   }
 }
-
-//.checkbox-wrapper {
-//  padding-top: 0;
-//}
 
 .checkbox-box > div {
   margin-top: 0;
@@ -995,7 +1318,283 @@ export default {
   font-weight: bold;
 }
 
-//.data-title {
-//  padding-bottom: 7px;
-//}
+/* Ensure dropdowns appear above navigation buttons */
+.v-select__content,
+.v-autocomplete__content,
+.v-menu__content {
+  z-index: 999 !important;
+}
+
+.custom-navigation {
+  z-index: 10;
+}
+
+/* Advanced Settings Dialog Responsive Styles */
+.advanced-settings-dialog {
+  z-index: 200 !important;
+  
+  ::v-deep .v-dialog__content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    max-height: 90vh;
+  }
+  
+  .v-card.advanced-settings-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: visible !important;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 48px;
+    padding-top: 48px;
+    min-height: auto;
+    background-color: #1e1e1e !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    border-radius: 8px;
+    
+    * {
+      background-color: transparent;
+    }
+    
+    &::before,
+    &::after {
+      background-color: #1e1e1e !important;
+    }
+    
+    ::v-deep .v-card__title,
+    ::v-deep .v-card__text,
+    ::v-deep .v-card__actions,
+    ::v-deep .data-title,
+    ::v-deep .checkbox-wrapper {
+      background-color: #1e1e1e !important;
+      color: #ffffff !important;
+    }
+    
+    ::v-deep .v-card__title span,
+    ::v-deep .data-title span {
+      color: #ffffff !important;
+      background-color: transparent !important;
+    }
+    
+    ::v-deep .v-input {
+      background-color: #1e1e1e !important;
+    }
+    
+    ::v-deep .v-input__slot {
+      background-color: rgba(255,255,255,0.08) !important;
+      color: #ffffff !important;
+    }
+    
+    ::v-deep .v-select__selection,
+    ::v-deep .v-select__selections {
+      color: #ffffff !important;
+    }
+    
+    ::v-deep .v-label {
+      color: rgba(255,255,255,0.7) !important;
+    }
+    
+    ::v-deep .v-input__append-inner .v-icon {
+      color: rgba(255,255,255,0.7) !important;
+    }
+    
+    ::v-deep .v-icon {
+      color: rgba(255,255,255,0.7) !important;
+    }
+    
+    ::v-deep .v-tooltip span {
+      background-color: transparent !important;
+    }
+  }
+  
+  .v-card__title.data-title {
+    padding: 20px 16px 12px 16px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    
+    @media (max-width: 599px) {
+      padding: 16px 12px 10px 12px;
+      font-size: 16px;
+    }
+  }
+  
+  .v-card__text.checkbox-wrapper {
+    padding: 8px 16px 20px 16px !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+    align-items: flex-start !important;
+    flex-shrink: 0;
+    min-height: auto;
+    overflow: visible !important;
+    position: relative;
+    
+    @media (max-width: 599px) {
+      padding: 6px 12px 16px 12px !important;
+    }
+    
+    &:last-of-type {
+      padding-bottom: 40px !important;
+      margin-bottom: 0;
+      
+      @media (max-width: 599px) {
+        padding-bottom: 32px !important;
+      }
+    }
+    
+    .v-select,
+    .v-combobox {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 100% !important;
+      margin-bottom: 4px;
+      flex: 0 0 auto;
+      visibility: visible !important;
+      opacity: 1 !important;
+      display: block !important;
+      position: relative !important;
+      z-index: 1;
+      
+      ::v-deep .v-input {
+        width: 100% !important;
+        min-width: 100% !important;
+      }
+      
+      ::v-deep .v-input__control {
+        width: 100% !important;
+        min-width: 100% !important;
+      }
+      
+      ::v-deep .v-input__slot {
+        width: 100% !important;
+        min-width: 100% !important;
+      }
+      
+      ::v-deep .v-select__selections {
+        width: 100% !important;
+      }
+      
+      ::v-deep .v-input__append-inner {
+        display: block !important;
+      }
+    }
+  }
+  
+  .full-width-select {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    
+    ::v-deep .v-input__control {
+      width: 100%;
+    }
+    
+    ::v-deep .v-input__slot {
+      width: 100%;
+    }
+  }
+  
+  /* Add spacing between sections */
+  .v-card__title + .v-card__text {
+    margin-top: 0;
+  }
+  
+  .v-card__text + .v-card__title {
+    margin-top: 16px;
+    
+    @media (max-width: 599px) {
+      margin-top: 12px;
+    }
+  }
+  
+  .v-card__actions {
+    padding: 12px 16px 8px 16px;
+    flex-shrink: 0;
+    z-index: 30;
+    margin-top: 0;
+    margin-bottom: 0;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    
+    @media (max-width: 599px) {
+      padding: 10px 12px 6px 12px;
+    }
+    
+    .v-btn {
+      min-width: 40px;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.08);
+      color: #ffffff;
+    }
+  }
+  
+  .v-tooltip {
+    .v-icon {
+      margin-left: 4px;
+      flex-shrink: 0;
+    }
+  }
+  
+  @media (max-width: 599px) {
+    .data-title {
+      font-size: 16px;
+      line-height: 1.4;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      
+      span {
+        flex: 1 1 100%;
+        margin-bottom: 4px;
+        text-align: center;
+      }
+      
+      .v-tooltip {
+        flex: 0 0 auto;
+        margin-left: 4px;
+      }
+    }
+    
+    .v-card__title {
+      .v-tooltip {
+        max-width: 100%;
+      }
+    }
+  }
+  
+  /* Ensure tooltips don't overflow on small screens */
+  @media (max-width: 599px) {
+    ::v-deep .v-tooltip__content {
+      max-width: 90vw !important;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+  }
+  
+  /* Ensure dropdown menus are visible */
+  ::v-deep .v-menu__content {
+    z-index: 1000 !important;
+    overflow: visible !important;
+  }
+  
+  ::v-deep .v-select__menu {
+    z-index: 1000 !important;
+  }
+}
 </style>

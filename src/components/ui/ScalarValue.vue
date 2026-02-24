@@ -71,4 +71,31 @@ export default {
   overflow-y: auto;
 }
 
+@media (max-width: 960px) {
+  .scalar-value-wrapper {
+    padding: 0.75rem 1rem;
+  }
+
+  .scalar-value {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+
+  .info-text {
+    font-size: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .scalar-text {
+    font-size: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .info-label,
+  .label-text {
+    font-size: 0.8125rem !important;
+  }
+}
+
 </style>

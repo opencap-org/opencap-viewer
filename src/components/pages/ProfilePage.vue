@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex flex-column">
+  <div class="d-flex flex-column profile-page-wrapper">
     <div class="pa-2 d-flex">
       <div class="container">
 
@@ -384,7 +384,7 @@
                 <h2>Upload Image</h2>
                 <img class="profile-image-preview rounded-circle img-fluid mt-4" v-if="selectedImage" :src="selectedImage" alt="Uploaded Image">
                 <br/>
-                <input type="file" @change="handleImageUploaded" accept="image/*">
+                <input class="profile-file-input" type="file" @change="handleImageUploaded" accept="image/*">
                 <br/>
                 <v-btn class="my-4" @click="handleSaveImage()">Save Image</v-btn>
                 <br/>
@@ -691,5 +691,27 @@ export default {
   width: 20em;
   height: 20em;
   border-radius: 50%;
+}
+
+.profile-page-wrapper {
+  width: 100%;
+  min-height: calc(100vh - var(--app-bar-height, 64px));
+  min-height: calc(100dvh - var(--app-bar-height, 64px));
+  max-height: calc(100vh - var(--app-bar-height, 64px));
+  max-height: calc(100dvh - var(--app-bar-height, 64px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.v-main:has(.profile-page-wrapper) {
+  overflow: visible;
+}
+
+.profile-file-input::file-selector-button {
+  color: #000;
+}
+
+.profile-file-input::-webkit-file-upload-button {
+  color: #000;
 }
 </style>

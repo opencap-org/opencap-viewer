@@ -18,6 +18,8 @@ import NewPassword from '@/components/pages/NewPassword'
 import RecycleBin from "@/components/pages/RecycleBin.vue";
 import Subjects from "@/components/pages/Subjects.vue";
 import ProfilePage from '@/components/pages/ProfilePage'
+import RecordingMode from '@/components/pages/RecordingMode'
+import DeviceCheck from '@/components/pages/DeviceCheck'
 import License from '@/components/pages/License'
 
 Vue.use(Router)
@@ -53,6 +55,16 @@ var router = new Router({
       component: SelectSession
     },
     {
+      path: '/recording-mode',
+      name: 'RecordingMode',
+      component: RecordingMode
+    },
+    {
+      path: '/device-check',
+      name: 'DeviceCheck',
+      component: DeviceCheck
+    },
+    {
       path: '/:id/connect-devices',
       name: 'ConnectDevicesForId',
       component: ConnectDevices
@@ -78,7 +90,7 @@ var router = new Router({
       component: Session
     },
     {
-      path: '/dashboard/:id',
+      path: '/dashboard/:id?',
       name: 'Dashboard',
       component: Dashboard
     },
@@ -150,7 +162,9 @@ const acceptedRoutes = [
   'NewPassword',
   'RecycleBin',
   'Subjects',
-  'ProfilePage'
+  'ProfilePage',
+  'RecordingMode',
+  'DeviceCheck'
 ]
 
 router.beforeEach((to, from, next) => {

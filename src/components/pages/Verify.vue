@@ -122,7 +122,8 @@ export default {
 <style lang="scss">
 .login-main {
   button {
-    width: 200px;
+    width: 100%;
+    max-width: 260px;
   }
 
   a {
@@ -130,6 +131,15 @@ export default {
 
     &:hover {
       text-decoration: underline !important;
+    }
+  }
+
+  @media (max-width: 599px) {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+
+    button {
+      max-width: none;
     }
   }
 }

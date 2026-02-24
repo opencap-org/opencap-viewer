@@ -3,14 +3,16 @@
         <div class="viewer flex-grow-1">
             <div v-if="trial" class="d-flex flex-column h-100">
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
-                <div v-if="!videoControlsDisabled" style="display: flex; flex-wrap: wrap; align-items: center;">
-                    <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                        dark style="flex: 0.1; margin-right: 5px;" @input="onChangeTime"/>
+                <div v-if="!videoControlsDisabled" class="video-controls-row">
+                    <div class="time-input-wrap">
+                        <v-text-field label="Time (s)" type="number" :step="0.01" :value="formattedTime"
+                            dark dense hide-details @input="onChangeTime"/>
+                    </div>
                     <v-slider :value="frame"
                               :min="timeToFrame(timeStart)"
                               :max="timeToFrame(timeEnd)"
                               @input="onNavigate" hide-details
-                        class="mb-2" style="flex: 1;" />
+                        class="mb-2 slider-wrap" />
                 </div>
             </div>
 
@@ -78,11 +80,16 @@ export default {
             trialLoading: false,
             timeStart: 0,
             timeEnd: 0,
+            resizeObserver: null,
         }
     },
     computed: {
         videoControlsDisabled() {
             return !this.trial || this.frames.length === 0
+        },
+        formattedTime() {
+            const t = Number(this.time)
+            return Number.isFinite(t) ? t.toFixed(2) : '0.00'
         },
     },
     watch: {
@@ -95,9 +102,33 @@ export default {
     async mounted(){
         this.timeStart = this.result.indices.start
         this.timeEnd = this.result.indices.end
+        window.addEventListener('resize', this.onResize)
+        window.addEventListener('keydown', this.onKeydown)
+        this.initResizeObserver()
         await this.loadTrial(this.trialID);
     },
+    beforeDestroy() {
+        window.removeEventListener('resize', this.onResize)
+        window.removeEventListener('keydown', this.onKeydown)
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect()
+            this.resizeObserver = null
+        }
+    },
     methods: {
+        initResizeObserver() {
+            if (typeof ResizeObserver === 'undefined' || !this.$refs.mocap) {
+                return
+            }
+            if (this.resizeObserver) {
+                this.resizeObserver.disconnect()
+                this.resizeObserver = null
+            }
+            this.resizeObserver = new ResizeObserver(() => {
+                this.onResize()
+            })
+            this.resizeObserver.observe(this.$refs.mocap)
+        },
         async loadTrial(trialID) {
             console.log('loadTrial')
             this.time = this.timeStart
@@ -154,6 +185,7 @@ export default {
                     if (this.frames.length > 0) {
                         this.$nextTick(() => {
                             try {
+                                this.initResizeObserver()
                                 while (this.$refs.mocap.lastChild) {
                                     this.$refs.mocap.removeChild(this.$refs.mocap.lastChild)
                                 }
@@ -170,6 +202,7 @@ export default {
                                 this.scene = new THREE.Scene()
                                 this.renderer = new THREE.WebGLRenderer({ antialias: true })
                                 this.renderer.shadowMap.enabled = true;
+                                this.renderer.setPixelRatio(window.devicePixelRatio || 1)
                                 this.onResize()
                                 container.appendChild(this.renderer.domElement)
                                 this.controls = new THREE_OC.OrbitControls(this.camera, this.renderer.domElement)
@@ -279,12 +312,14 @@ export default {
         onResize() {
             const container = this.$refs.mocap
             if (container && this.renderer) {
-                this.renderer.setSize(container.clientWidth, container.clientHeight)
-            }
-
-            if (this.renderer) {
-                const canvas = this.renderer.domElement;
-                this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                const width = container.clientWidth
+                const height = container.clientHeight
+                if (!width || !height) {
+                    return
+                }
+                // Keep drawing buffer in sync with the visible canvas size.
+                this.renderer.setSize(width, height, true)
+                this.camera.aspect = width / height;
                 this.camera.updateProjectionMatrix();
             }
         },
@@ -449,6 +484,34 @@ export default {
 
             this.animateOneFrame()
         },
+        onKeydown(event) {
+            const activeTag = document.activeElement?.tagName?.toLowerCase()
+            const isTypingTarget = ['input', 'textarea', 'select'].includes(activeTag) || document.activeElement?.isContentEditable
+            if (isTypingTarget || this.videoControlsDisabled) {
+                return
+            }
+
+            if (event.code === 'Space') {
+                event.preventDefault()
+                this.togglePlay(!this.playing)
+                return
+            }
+
+            if (event.code === 'ArrowRight') {
+                event.preventDefault()
+                this.togglePlay(false)
+                const nextFrame = Math.min(this.frame + 1, this.frames.length - 1)
+                this.onNavigate(nextFrame)
+                return
+            }
+
+            if (event.code === 'ArrowLeft') {
+                event.preventDefault()
+                this.togglePlay(false)
+                const prevFrame = Math.max(this.frame - 1, 0)
+                this.onNavigate(prevFrame)
+            }
+        },
         maxVideoDuration() {
             return this.vid0() ? (this.vid0().duration - 1) : 0
         },
@@ -459,7 +522,7 @@ export default {
 <style lang="scss">
 
 .video-player {
-    height: calc(100% - 64px);
+    height: 100%;
 
     .left {
         width: 250px;
@@ -487,7 +550,9 @@ export default {
             overflow: hidden;
 
             canvas {
+                display: block;
                 width: 100% !important;
+                height: 100% !important;
             }
         }
     }
@@ -497,8 +562,80 @@ export default {
         height: 100%;
 
         .videos {
-            overflow-y: auto;
+            overflow: hidden;
             width: 200px;
+        }
+    }
+}
+
+.video-controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0 4px;
+}
+
+.video-controls-row .time-input-wrap {
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    flex: 0 0 72px;
+}
+
+.video-controls-row .slider-wrap {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 960px) {
+    .video-player {
+        .right {
+            flex: 0 0 120px;
+            width: 120px;
+            max-width: 30%;
+
+            .videos {
+                width: 100%;
+                
+                video {
+                    width: 100%;
+                    max-height: 80px;
+                    object-fit: contain;
+                }
+            }
+        }
+
+        .viewer {
+            .video-controls-row {
+                flex-wrap: nowrap;
+                gap: 4px;
+                padding: 4px 0;
+            }
+
+            .video-controls-row .time-input-wrap {
+                width: 64px;
+                min-width: 64px;
+                max-width: 64px;
+                flex: 0 0 64px;
+            }
+
+            .video-controls-row .slider-wrap {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+        }
+    }
+
+    /* Reduce speed control size on mobile */
+    .video-player .right .speed-control-button {
+        min-width: 60px;
+        font-size: 0.75rem;
+        padding: 0 8px;
+
+        .v-icon {
+            font-size: 16px;
         }
     }
 }

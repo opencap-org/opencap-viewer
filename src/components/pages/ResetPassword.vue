@@ -93,15 +93,34 @@ export default {
 <style lang="scss">
 .login-main {
   button {
-    width: 200px;
+    width: 100%;
+    max-width: 260px;
   }
+
   .wrapper-box {
-    max-height: calc(100vh - 90px);
+    max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+    max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
     overflow-y: scroll;
     -ms-overflow-style: none;
     scrollbar-width: none;
+
     &::-webkit-scrollbar {
       display: none;
+    }
+  }
+
+  @media (max-width: 599px) {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+
+    .wrapper-box {
+      max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    button {
+      max-width: none;
     }
   }
 }

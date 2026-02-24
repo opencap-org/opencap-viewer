@@ -1,7 +1,7 @@
 <template>
   
       <div id="container" class="container d-flex justify-content-center text-center">
-        <div class="w-50 p-3 mx-auto">
+        <div class="register-card p-3 mx-auto">
           <h1 class="white--text text-center col-md-12">Register</h1>
 
             <ValidationObserver
@@ -398,17 +398,24 @@ export default {
 </script>
 
 <style lang="scss">
-.container {
+#container {
   overflow-y: scroll;
-  max-height: calc(100vh - 90px);
-  -ms-overflow-style: none; // /hide in Internet Explorer.
-  scrollbar-width: none; // Hide in Firefox.
+  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-.container::-webkit-scrollbar{
+#container::-webkit-scrollbar{
   display: none; // Hide in chrome, safari and edge.
 }
-button {
-  width: 200px;
+#container button {
+  width: 100%;
+  max-width: 260px;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 960px;
 }
 
 .vue-country-select .country-name {
@@ -454,5 +461,35 @@ li.dropdown-item > span {
 }
 .show-pass-icon {
   width: auto;
+}
+
+@media (max-width: 959px) {
+  #container {
+    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .register-card {
+    max-width: 100%;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+@media (max-width: 599px) {
+  #container button {
+    max-width: none;
+  }
+
+  #container .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  #container [class*='col-'] {
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 </style>

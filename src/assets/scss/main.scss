@@ -62,10 +62,153 @@
   cursor: pointer;
 }
 
+:root {
+  --page-navigation-gap: 12px;
+}
+
+// Vuetify 2 default toolbar heights: 56px for smAndDown, 64px for mdAndUp.
+// Defined statically in CSS so the value is available on first paint (no JS measurement race).
+.v-application {
+  --app-bar-height: 64px;
+  --app-bar-top-offset: calc(var(--app-bar-height) + env(safe-area-inset-top, 0px));
+  --bottom-toolbar-bg: rgba(18, 18, 18, 0.98);
+
+  @media (max-width: 959px) {
+    --app-bar-height: 56px;
+  }
+}
+
+// Vuetify sets backface-visibility:hidden on .v-application--wrap which creates
+// a new containing block for position:fixed children in WebKit (Safari/iOS).
+// This breaks fixed positioning for page layouts. Override it.
+.v-application--wrap {
+  backface-visibility: visible !important;
+}
+
+.page-navigation {
+  margin-top: var(--page-navigation-gap) !important;
+}
+
 html {
   overflow-y: hidden;
+  overflow-x: hidden;
+  cursor: default;
+  background-color: #000;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  background-color: #000;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+body,
+#app,
+.v-application {
+  cursor: default;
+}
+
+#app {
+  background-color: #000;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+// Override Vuetify's inline padding-top on v-main (which can be 0 on first render).
+// --app-bar-top-offset (defined above) = static bar height + env(safe-area-inset-top).
+.v-application .v-main {
+  padding-top: var(--app-bar-top-offset, 64px) !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  height: 100vh;
+  height: 100dvh;
+  background-color: #000;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: none !important;
+}
+
+// v-main__wrap must fill the content area so children with height:100% / fill-height resolve correctly.
+.v-application .v-main > .v-main__wrap {
+  height: 100%;
+}
+
+// Session page: disable scrolling — the 3D viewer manages its own fixed layout.
+.v-application .v-main:has(.step-5) {
+  overflow: hidden !important;
+}
+
+// Disabled buttons: show default cursor, not pointer
+.v-btn.v-btn--disabled {
+  cursor: default;
 }
 
 .warning-toast {
   background-color: darkorange !important;
+}
+
+.compact-rename-dialog {
+  .v-card {
+    width: fit-content;
+    min-width: min(320px, calc(100vw - 48px));
+    max-width: min(420px, calc(100vw - 48px));
+    margin: 0 auto;
+  }
+}
+
+// Mobile safe area for Safari bottom bar
+@media (max-width: 599px) {
+  .v-application .v-main > .container,
+  .v-application .v-main > .container-fluid {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  // Keep default touch target size accessible throughout the app.
+  .v-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  // Prevent common mobile overflow from dialogs/menus.
+  .v-dialog {
+    margin: 12px;
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .v-menu__content {
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  // Table content should scroll horizontally instead of clipping.
+  .v-data-table > .v-data-table__wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .v-data-table table {
+    min-width: 560px;
+  }
+
+  // Ensure data table footers are never hidden behind Safari's bottom bar
+  .v-data-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  // Keep long text from forcing horizontal scroll.
+  p,
+  span,
+  .v-list-item__title,
+  .v-list-item__subtitle {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 }
