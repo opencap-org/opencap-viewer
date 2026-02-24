@@ -26,14 +26,13 @@
             label="Enter Subject ID/Name"
             dense
             hide-details
-            @keyup.enter="handleSearch"
           ></v-text-field>
         </div>
-        <div>
+        <div v-if="searchText">
           <v-btn
             class="subjects-submit-btn"
-            @click="searchText ? onClearSearch() : handleSearch()">
-            {{ searchText ? 'Clear' : 'Search' }}
+            @click="onClearSearch()">
+            Clear
           </v-btn>
         </div>
       </div>
@@ -694,7 +693,8 @@ export default {
 .subjects-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(100vh - var(--app-bar-top-offset, 64px));
+  height: calc(100dvh - var(--app-bar-top-offset, 64px));
   overflow: hidden;
   padding: 16px 0;
   box-sizing: border-box;

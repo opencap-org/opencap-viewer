@@ -32,11 +32,11 @@
           </div>
 
           <div class="d-flex flex-column flex-grow-1 justify-space-between my-1 instructions-wrapper">
-            <h1 class="my-4">1. Open the OpenCap app on your phone</h1>
-            <h1 class="my-4">2. Scan the QR code</h1>
+            <h1 class="my-4">1. Install or update to OpenCap app version 2.0+ from the App Store</h1>
+            <h1 class="my-4">2. Open the app and scan the QR code</h1>
             <div v-if="showOpenInAppButton" class="open-in-app-block my-2">
-              <p class="mb-2">On this device?</p>
-              <v-btn block @click="openInApp">Open app with this session</v-btn>
+              <p class="mb-2">On this device? Open in App deeplink also requires app version 2.0+.</p>
+              <v-btn block @click="openInApp">Open app with this session (v2.0+)</v-btn>
             </div>
             <h1 class="my-4">3. Mount your phone vertically or horizontally (unlock portrait orientation) on a tripod</h1>
             <h1 class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>
@@ -75,7 +75,7 @@ export default {
   },
   async mounted () {
     if (!localStorage.getItem('iosAppNotificationShown')) {
-      apiInfo("The iOS app is now available on the App Store.", 20000, {text : "Go to App Store", onClick : () => {window.open("https://apps.apple.com/us/app/opencap/id1630513242", "_blank");}, position: 'top-center'});
+      apiInfo("The new iOS app (2.0) is available on the App Store.", 20000, {text : "Go to App Store", onClick : () => {window.open("https://apps.apple.com/us/app/opencap/id1630513242", "_blank");}, position: 'top-center'});
       localStorage.setItem('iosAppNotificationShown', 'true');
     }
     if (this.$router.params != undefined) {

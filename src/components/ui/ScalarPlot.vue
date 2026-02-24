@@ -146,4 +146,11 @@ export default {
   word-break: break-word;
   line-height: 1.35;
 }
+
+/* Hide help icon on mobile */
+@media (max-width: 960px) {
+  .metric-help-icon {
+    display: none;
+  }
+}
 </style>

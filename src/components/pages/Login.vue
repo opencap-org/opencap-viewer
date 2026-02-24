@@ -184,7 +184,8 @@ export default {
   }
 
   .wrapper-box {
-    max-height: calc(100vh - 90px);
+    max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+    max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
     overflow-y: scroll;
     -ms-overflow-style: none;
     scrollbar-width: none;

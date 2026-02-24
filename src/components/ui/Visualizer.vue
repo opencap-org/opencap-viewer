@@ -587,4 +587,56 @@ export default {
     flex: 1;
     min-width: 120px;
 }
+
+/* Mobile optimizations */
+@media (max-width: 960px) {
+    .video-player {
+        .right {
+            flex: 0 0 120px;
+            width: 120px;
+            max-width: 30%;
+
+            .videos {
+                width: 100%;
+                
+                video {
+                    width: 100%;
+                    max-height: 80px;
+                    object-fit: contain;
+                }
+            }
+        }
+
+        .viewer {
+            .video-controls-row {
+                flex-wrap: nowrap;
+                gap: 4px;
+                padding: 4px 0;
+            }
+
+            .video-controls-row .time-input-wrap {
+                width: 64px;
+                min-width: 64px;
+                max-width: 64px;
+                flex: 0 0 64px;
+            }
+
+            .video-controls-row .slider-wrap {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+        }
+    }
+
+    /* Reduce speed control size on mobile */
+    .video-player .right .speed-control-button {
+        min-width: 60px;
+        font-size: 0.75rem;
+        padding: 0 8px;
+
+        .v-icon {
+            font-size: 16px;
+        }
+    }
+}
 </style>

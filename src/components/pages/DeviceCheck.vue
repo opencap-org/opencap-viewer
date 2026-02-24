@@ -7,6 +7,23 @@
 
     <div class="device-check-wrapper d-flex flex-column align-center justify-center">
       <h1 class="mb-6 text-center">Are you on the device you'll use to record?</h1>
+      <v-alert
+        type="warning"
+        outlined
+        dense
+        class="mb-6 requirement-alert">
+        <div class="d-flex flex-column">
+          <span>Monocular recording requires the OpenCap App Store app version 2.0 or newer.</span>
+          <v-btn
+            color="warning"
+            class="mt-3 app-store-btn"
+            href="https://apps.apple.com/us/app/opencap/id1630513242"
+            target="_blank"
+            rel="noopener noreferrer">
+            OpenCap on App Store
+          </v-btn>
+        </div>
+      </v-alert>
       
 
       <div class="options-container">
@@ -113,6 +130,15 @@ export default {
   margin: 0 auto;
   min-height: 60vh;
   padding: 12px 16px 24px 16px;
+}
+
+.requirement-alert {
+  width: 100%;
+  max-width: 920px;
+}
+
+.app-store-btn {
+  align-self: flex-start;
 }
 
 .subtitle-text {

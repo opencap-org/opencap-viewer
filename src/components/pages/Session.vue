@@ -37,6 +37,9 @@
                 <v-icon left>mdi-cellphone-arrow-down</v-icon>
                 Open in App
             </v-btn>
+            <p v-if="showOpenInAppButton" class="open-in-app-requirement mb-4">
+              Monocular requires OpenCap app version 2.0+.
+            </p>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
@@ -304,7 +307,7 @@
         <div v-if="showOpenInAppButton && !trial" class="open-in-app-center d-flex flex-column align-center justify-center">
             <v-icon size="80" color="primary-dark" class="mb-4">mdi-cellphone-arrow-down</v-icon>
             <h2 class="white--text mb-4 text-center">Ready to Record</h2>
-            <p class="white--text text-center mb-6 px-4">Open the OpenCap app on this device to start recording motion capture trials.</p>
+            <p class="white--text text-center mb-6 px-4">Click the button below to start recording from the mobile app. Make sure you have the latest version of the OpenCap app (2.0+) installed. <a class="open-in-app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.</p>
             <v-btn
                 color="primary-dark"
                 x-large
@@ -321,13 +324,13 @@
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
   
   
-                  <div v-if="!videoControlsDisabled" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
+                  <div v-if="!videoControlsDisabled && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
                           :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"/>
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
                           class="mb-2 flex-grow-1 timeline-slider" />
 
-                      <div v-if="!isMobileOrTablet" class="playback-controls-inline d-flex align-center">
+                      <div class="playback-controls-inline d-flex align-center">
                         <VideoNavigation
                             :playing="playing"
                             :value="frame"
@@ -383,6 +386,25 @@
             <div v-if="isMobileOrTablet" class="right-spacer" />
 
             <div v-if="isMobileOrTablet" class="playback-controls ui-no-zoom">
+              <div class="playback-timeline-mobile d-flex align-center px-1">
+                <v-text-field
+                    label="Time (s)"
+                    type="number"
+                    :step="0.01"
+                    :value="time"
+                    :disabled="state !== 'ready'"
+                    dark
+                    class="time-input mr-2"
+                    @input="onChangeTime" />
+                <v-slider
+                    :value="frame"
+                    :min="0"
+                    :max="frames.length - 1"
+                    @input="onNavigate"
+                    hide-details
+                    class="flex-grow-1 timeline-slider" />
+              </div>
+
               <div class="playback-controls-row">
                 <VideoNavigation
                     :playing="playing"
@@ -924,7 +946,10 @@
           return getSessionDeepLink(this.session.id, token, subjectName)
         },
         isSameDevice() {
-          return this.$route.query.sameDevice === 'true'
+          if (this.$route.query.sameDevice === 'true') {
+            return true
+          }
+          return this.isSessionMarkedSameDevice(this.session?.id)
         },
         showOpenInAppButton() {
           return this.isMobileOrTablet && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
@@ -953,6 +978,7 @@
       },
     async mounted() {
       await this.loadSession(this.$route.params.id)
+      this.persistSameDeviceSessionFlag()
 
       this.loadTrialTags()
 
@@ -1332,6 +1358,32 @@
         if (this.sessionDeepLinkUrl) {
           window.location.href = this.sessionDeepLinkUrl
         }
+      },
+      getSameDeviceSessionStore() {
+        if (typeof localStorage === 'undefined') return {}
+        try {
+          const raw = localStorage.getItem('opencap_same_device_sessions')
+          if (!raw) return {}
+          const parsed = JSON.parse(raw)
+          return parsed && typeof parsed === 'object' ? parsed : {}
+        } catch (error) {
+          return {}
+        }
+      },
+      setSameDeviceSessionStore(store) {
+        if (typeof localStorage === 'undefined') return
+        localStorage.setItem('opencap_same_device_sessions', JSON.stringify(store))
+      },
+      isSessionMarkedSameDevice(sessionId) {
+        if (!sessionId) return false
+        const store = this.getSameDeviceSessionStore()
+        return store[sessionId] === true
+      },
+      persistSameDeviceSessionFlag() {
+        if (this.$route.query.sameDevice !== 'true' || !this.session?.id) return
+        const store = this.getSameDeviceSessionStore()
+        store[this.session.id] = true
+        this.setSameDeviceSessionStore(store)
       },
       setPublic(p) {
         console.log(p)
@@ -2032,47 +2084,30 @@
     user-select: none;
   }
   
-  // Session page uses full v-main height with fixed playback controls on mobile.
-  // Remove default v-main padding since Session handles its own layout.
-  .v-main:has(.step-5) {
-    padding-top: var(--app-bar-top-offset, 64px) !important;
-    padding-bottom: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-
   .step-5 {
+    position: fixed;
+    top: var(--app-bar-height, 64px);
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
-    height: 100%;
-    min-height: 0;
     flex-direction: row;
     overflow: hidden;
-  
-    @media (max-width: 959px) {
-      flex-direction: row;
-    }
-  
-    @media (min-width: 960px) {
-      flex-direction: row;
-    }
+    z-index: 1;
+    background-color: #000;
     
-    .main-content {
+.main-content {
       min-width: 0;
       flex: 1 1 auto;
       display: flex;
       flex-direction: row;
       overflow: hidden;
       position: relative;
-
-      @media (max-width: 959px) {
-        // Reserve space for fixed playback controls at bottom
-        padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-      }
     }
   
     .mobile-menu-toggle {
       position: fixed;
-      top: calc(var(--app-bar-top-offset, 56px) + 8px);
+      top: calc(var(--app-bar-height, 56px) + 8px);
       left: 8px;
       z-index: 100;
       background-color: rgba(0, 0, 0, 0.8) !important;
@@ -2098,41 +2133,36 @@
     }
     
     .left {
-      width: 100%;
       min-width: 0;
-      max-height: 40vh;
       overflow: hidden;
       flex-shrink: 0;
       position: relative;
       z-index: 99;
-      background-color: #000000; // Black background on desktop
-      
+      display: flex;
+      flex-direction: column;
+
+      @media (min-width: 960px) {
+        width: 250px;
+        height: 100%;
+        background-color: #000000;
+      }
+
       @media (max-width: 959px) {
         position: fixed;
-        top: var(--app-bar-top-offset, 56px);
+        top: var(--app-bar-height, 56px);
         left: 0;
+        bottom: 0;
         width: 280px;
         max-width: 85vw;
-        height: calc(100% - var(--app-bar-top-offset, 56px));
-        max-height: calc(100% - var(--app-bar-top-offset, 56px));
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
         padding-top: 48px;
         background-color: rgb(18, 18, 18);
+
         &.mobile-open {
           transform: translateX(0);
         }
-      }
-  
-      @media (min-width: 960px) {
-        width: 250px;
-        max-height: none;
-        height: 100%;
-        flex-shrink: 0;
-        position: relative;
-        transform: none;
-        background-color: #000000;
       }
 
       .left-scroll {
@@ -2210,11 +2240,6 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-  
-      @media (max-width: 959px) {
-        min-height: 250px;
-        flex: 1 1 50vh;
-      }
   
       #mocap {
         width: 100%;
@@ -2356,9 +2381,25 @@
           min-width: 0;
         }
 
-        .playback-speed {
-          flex: 0 0 auto;
+      .playback-speed {
+        flex: 0 0 auto;
+      }
+
+      .playback-timeline-mobile {
+        margin-top: 4px;
+
+        .time-input {
+          flex: 0 0 70px !important;
+          width: 70px !important;
+          max-width: 70px !important;
+          min-width: 70px !important;
         }
+
+        .timeline-slider {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+      }
 
         .playback-video-size {
           flex: 0 0 auto;
@@ -2373,10 +2414,10 @@
           right: 0;
           bottom: 0;
           z-index: 50;
-          background-color: rgba(18, 18, 18, 0.98);
+          background-color: var(--bottom-toolbar-bg);
           border-top: 1px solid rgba(255, 255, 255, 0.15);
-          padding: 8px;
-          padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+          padding: 6px 8px;
+          padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
         }
       }
     }
@@ -2386,6 +2427,12 @@
       gap: 8px;
       position: relative;
       z-index: 2;
+      flex-shrink: 0;
+
+      @media (max-width: 959px) {
+        /* Hide desktop controls on mobile - they duplicate the mobile fixed bar */
+        display: none !important;
+      }
 
       @media (min-width: 960px) {
         gap: 12px;
@@ -2406,8 +2453,8 @@
         
         @media (max-width: 599px) {
           min-width: 0;
-          width: 72px;
-          max-width: 72px;
+          width: 48px;
+          max-width: 48px;
           margin-right: 8px;
           margin-bottom: 0;
         }
@@ -2461,7 +2508,20 @@
         /* Make only the button clickable */
         pointer-events: auto;
       }
+
+      .open-in-app-store-link {
+        color: #ffcc80;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        pointer-events: auto;
+      }
     }
+  }
+
+  .open-in-app-requirement {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.85);
   }
   </style>
   

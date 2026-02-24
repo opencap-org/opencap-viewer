@@ -9,6 +9,9 @@
  *   display the subject name.
  * - api_server (from VUE_APP_API_SERVER) is always appended so the app knows which backend
  *   to use (e.g. dev.opencap.ai vs opencap.ai).
+ * - web_app (from window.location.origin) is always appended so the app knows which web app
+ *   instance is running (e.g. localhost, dev, or prod). This allows the app to work when
+ *   the web app and API server are on different hosts.
  * @param {string} sessionId - Current session ID
  * @param {string|null} [token] - Optional auth token (e.g. from localStorage auth_token)
  * @param {string|null} [subjectName] - Optional subject name to pass to the app
@@ -28,6 +31,8 @@ export function getSessionDeepLink(sessionId, token = null, subjectName = null) 
   let url = pattern.replace('SESSION_ID', String(sessionId))
   const apiServer = process.env.VUE_APP_API_SERVER || ''
   url = appendParam(url, 'api_server', apiServer.replace(/\/$/, ''))
+  const webAppUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  url = appendParam(url, 'web_app', webAppUrl)
   url = appendParam(url, 'token', token)
   url = appendParam(url, 'subject_name', subjectName)
   return url

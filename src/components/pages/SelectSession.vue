@@ -51,18 +51,17 @@
         <div class="flex-grow-1 mr-2">
           <v-text-field
             v-model="searchText"
-            label="Enter Session ID/Name"
+            label="Search Session ID/Name"
             dense
             hide-details
-            @keyup.enter="handleSearch"
           ></v-text-field>
         </div>
 
-        <div>
+        <div v-if="searchText">
           <v-btn
             class="submit-btn"
-            @click="searchText ? onClearSearch() : handleSearch()">
-            {{ searchText ? 'Clear' : 'Search' }}
+            @click="onClearSearch()">
+            Clear
           </v-btn>
         </div>
       </div>
@@ -804,15 +803,21 @@ export default {
 }
 
 .select-session {
+  position: fixed;
+  top: var(--app-bar-top-offset, 64px);
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
   overflow: hidden;
-  padding: 16px 0;
+  padding: 16px 8px;
   box-sizing: border-box;
+  z-index: 1;
+  background-color: #000;
 
   @media (max-width: 599px) {
-    padding: 8px 0;
+    padding: 8px 4px;
   }
 
   .sessions-table {

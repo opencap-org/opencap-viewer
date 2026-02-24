@@ -55,4 +55,11 @@ export default {
 .tooltip-icon {
   cursor: pointer;
 }
+
+/* Hide tooltip on mobile */
+@media (max-width: 960px) {
+  .tooltip-container {
+    display: none;
+  }
+}
 </style>

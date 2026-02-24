@@ -400,9 +400,10 @@ export default {
 <style lang="scss">
 #container {
   overflow-y: scroll;
-  max-height: calc(100vh - 90px);
-  -ms-overflow-style: none; // /hide in Internet Explorer.
-  scrollbar-width: none; // Hide in Firefox.
+  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 #container::-webkit-scrollbar{
   display: none; // Hide in chrome, safari and edge.

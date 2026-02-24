@@ -112,14 +112,14 @@ export default {
 
 <style lang="scss" scoped>
 .main-layout {
-  min-height: calc(100vh - var(--app-bar-height, 64px));
-  min-height: calc(100dvh - var(--app-bar-height, 64px));
+  min-height: calc(100vh - var(--app-bar-top-offset, 64px));
+  min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
 
   &.fixed-height {
-    height: calc(100vh - var(--app-bar-height, 64px));
-    height: calc(100dvh - var(--app-bar-height, 64px));
-    max-height: calc(100vh - var(--app-bar-height, 64px));
-    max-height: calc(100dvh - var(--app-bar-height, 64px));
+    height: calc(100vh - var(--app-bar-top-offset, 64px));
+    height: calc(100dvh - var(--app-bar-top-offset, 64px));
+    max-height: calc(100vh - var(--app-bar-top-offset, 64px));
+    max-height: calc(100dvh - var(--app-bar-top-offset, 64px));
   }
 
   .content-wrapper {

@@ -1,5 +1,14 @@
 <template>
   <v-app :style="appStyle">
+    <!-- Landscape orientation blocker for mobile -->
+    <div v-if="showLandscapeBlocker" class="landscape-blocker">
+      <div class="landscape-blocker-content">
+        <v-icon size="64" color="white">mdi-rotate-right</v-icon>
+        <h2>Please rotate your device</h2>
+        <p>This app is designed for portrait mode</p>
+      </div>
+    </div>
+
     <v-app-bar
       ref="appBar"
       app
@@ -21,7 +30,7 @@
     </v-app-bar>
 
     <v-main>      
-      <router-view/>
+      <router-view :key="$route.fullPath"/>
     </v-main>
   </v-app>
 </template>
@@ -38,14 +47,22 @@ export default {
     'profile-dropdown': ProfileDropdown},
   data () {
     return {
-      logoutTimer: null
+      logoutTimer: null,
+      showLandscapeBlocker: false
     }
   },
   created () {
     this.startTimer()
+    this.checkOrientation()
+  },
+  mounted () {
+    window.addEventListener('resize', this.checkOrientation)
+    window.addEventListener('orientationchange', this.checkOrientation)
   },
   beforeDestroy () {
     this.cancelTimer()
+    window.removeEventListener('resize', this.checkOrientation)
+    window.removeEventListener('orientationchange', this.checkOrientation)
   },
   methods: {
     ...mapActions('auth', ['logout']),
@@ -64,6 +81,12 @@ export default {
     resetMainScroll () {
       const vMain = this.$el && this.$el.querySelector('.v-main')
       if (vMain) vMain.scrollTop = 0
+    },
+    checkOrientation () {
+      // Check if mobile device (max-width 959px) and in landscape mode
+      const isMobile = window.innerWidth <= 959
+      const isLandscape = window.innerWidth > window.innerHeight
+      this.showLandscapeBlocker = isMobile && isLandscape
     }
   },
   computed: {
@@ -81,13 +104,65 @@ export default {
     $route () {
       this.cancelTimer()
       this.startTimer()
-      this.$nextTick(() => this.resetMainScroll())
+      this.resetMainScroll()
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.landscape-blocker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.98);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.landscape-blocker-content {
+  text-align: center;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 400px;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  p {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0;
+  }
+
+  .v-icon {
+    animation: rotate-bounce 2s ease-in-out infinite;
+  }
+}
+
+@keyframes rotate-bounce {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
 .logo-link {
   display: flex;
   align-items: center;

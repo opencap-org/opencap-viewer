@@ -1133,16 +1133,18 @@ export default {
     width: 100%;
     height: auto;
     min-height: auto;
-    padding: 12px 8px 0;
+    padding: 8px 0 0;
     align-items: flex-start;
     justify-content: flex-start;
   }
 
   .chart-resizable {
-    width: calc(100vw - 16px) !important;
+    width: 100vw !important;
     max-width: 100%;
     min-width: 0;
-    height: clamp(280px, 55vh, 480px) !important;
+    height: calc(100vh - var(--app-bar-top-offset, 64px) - 120px) !important;
+    max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 120px) !important;
+    min-height: 280px !important;
     resize: vertical;
   }
 
@@ -1292,11 +1294,12 @@ export default {
   overflow-y: visible;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  padding-top: var(--app-bar-top-offset, 64px);
 }
 
 /* Override Vuetify layout padding that reserves left/right space (v-main is parent of this page) */
 .v-main:has(.chart-page-wrapper) {
-  padding-top: var(--app-bar-top-offset, 64px) !important;
+  padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
   padding-bottom: 0 !important;

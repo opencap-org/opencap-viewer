@@ -70,4 +70,17 @@ export default {
     font-weight: 600;
   }
 }
+
+/* Mobile: make speed control more compact */
+@media (max-width: 960px) {
+  .speed-control-button {
+    min-width: 60px;
+    font-size: 0.75rem;
+    padding: 0 6px;
+
+    .v-icon {
+      font-size: 14px;
+    }
+  }
+}
 </style>

@@ -23,6 +23,14 @@
         </div>
     </div>
 
+    <div v-if="!show_dashboard" class="empty-state">
+      <div class="empty-state-content">
+        <v-icon size="64" color="grey lighten-1">mdi-chart-box-outline</v-icon>
+        <h2 class="mt-4 mb-2">No Data Selected</h2>
+        <p class="text-body-1">Please select a subject, session, and trial from the Data menu to view the analysis dashboard.</p>
+      </div>
+    </div>
+
     <div id="button-left" class="pa-2 fixed-button fixed-button-to-left" v-show="leftMenuClosed">
       <v-btn @click="leftMenu">
         Data
@@ -678,6 +686,31 @@ export default {
   height: 50vh;
 }
 
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--app-bar-top-offset, 64px));
+  width: 100%;
+  padding: 2rem;
+}
+
+.empty-state-content {
+  text-align: center;
+  max-width: 500px;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.empty-state-content h2 {
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.empty-state-content p {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .dashboard-body {
   margin-left: 0;
   margin-right: 10px;
@@ -878,6 +911,58 @@ export default {
   .dashboard-body .scalar-value-wrapper .label-text {
     font-size: 0.8125rem;
   }
+
+  /* Mobile optimizations for Visualizer component */
+  .video-player {
+    .right {
+      flex: 0 0 100px !important;
+      width: 100px !important;
+      max-width: 28% !important;
+      position: absolute;
+      right: 0;
+      top: 0;
+
+      .videos {
+        width: 100%;
+        
+        video {
+          width: 100%;
+          max-height: 70px !important;
+          object-fit: contain;
+        }
+      }
+
+      .speed-control-button {
+        min-width: 56px !important;
+        font-size: 0.7rem !important;
+        padding: 0 6px !important;
+
+        .v-icon {
+          font-size: 14px !important;
+        }
+      }
+    }
+
+    .viewer {
+      .video-controls-row {
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        padding: 4px 0 !important;
+      }
+
+      .video-controls-row .time-input-wrap {
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+        flex: 0 0 60px !important;
+      }
+
+      .video-controls-row .slider-wrap {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+      }
+    }
+  }
 }
 </style>
 
@@ -890,12 +975,15 @@ export default {
   -webkit-overflow-scrolling: touch;
   overflow-x: hidden;
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  padding-top: var(--app-bar-top-offset, 64px);
   box-sizing: border-box;
 }
 
 .v-main:has(.analysis-dashboard-wrapper) {
+  padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+  padding-bottom: 0 !important;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;

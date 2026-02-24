@@ -27,12 +27,15 @@
                         :src="session.qrcode">
                 </v-card-text>
                 <v-card-actions class="qr-dialog-actions">
+                    <p v-if="showOpenInAppButton" class="qr-dialog-note mb-2">
+                        Monocular access via QR code or Open in app deeplink requires OpenCap App Store version 2.0+.
+                    </p>
                     <v-btn
                         v-if="showOpenInAppButton"
                         block
                         class="qr-dialog-btn"
                         @click="openInApp">
-                        Open in app
+                        Open in app (v2.0+)
                     </v-btn>
                     <v-btn block class="qr-dialog-btn" @click="dialog = false">Close</v-btn>
                 </v-card-actions>
@@ -138,6 +141,12 @@ export default {
   flex-direction: column;
   align-items: stretch;
   padding: 16px 24px 24px;
+
+  .qr-dialog-note {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    text-align: left;
+  }
 
   .qr-dialog-btn {
     flex: none;

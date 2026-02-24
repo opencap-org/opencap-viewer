@@ -432,6 +432,7 @@ export default {
   margin-bottom: 0;
   z-index: 1;
   background: black;
+  position: relative;
 }
 
 .linear-chart-toolbar .toolbar-btn {
@@ -480,18 +481,23 @@ export default {
   background: rgba(89, 163, 255, 0.08) !important;
 }
 
-@media (max-width: 600px) {
+/* Mobile and tablet optimizations */
+@media (max-width: 960px) {
   .linear-chart-toolbar {
     align-items: stretch;
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    z-index: 10;
   }
 
   .linear-chart-toolbar .toolbar-btn {
-    width: auto;
+    flex: 1 1 auto;
     min-width: 0;
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 0.8rem;
   }
 
   /* Y Quantities on its own row below when not enough space */
@@ -501,6 +507,5 @@ export default {
     max-width: 100%;
     order: 10;
   }
-
 }
 </style>

@@ -27,7 +27,7 @@
             </v-chip>
           </div>
           <p class="text-center option-description">
-            Record with a single phone. Simplified setup, no calibration needed.
+            Record with a single phone. Simplified setup, no calibration needed. <strong>Requires OpenCap app 2.0+ from the App Store.</strong>
           </p>
           <a
             class="best-practices-link mt-2"
