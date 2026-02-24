@@ -29,6 +29,9 @@
           <p class="text-center option-description">
             Record with a single phone. Simplified setup, no calibration needed. <strong>Requires OpenCap app 2.0+ from the App Store.</strong>
           </p>
+          <p class="text-center monocular-warning mb-0">
+            Monocular does not support jumping activities yet.
+          </p>
           <a
             class="best-practices-link mt-2"
             href="https://www.opencap.ai/best-practices?variant=monocular"
@@ -150,6 +153,13 @@ export default {
 .option-description {
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.85);
+  max-width: 320px;
+  width: 100%;
+}
+
+.monocular-warning {
+  font-size: 0.9rem;
+  color: #ffb74d;
   max-width: 320px;
   width: 100%;
 }

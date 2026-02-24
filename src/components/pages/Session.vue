@@ -40,6 +40,9 @@
             <p v-if="showOpenInAppButton" class="open-in-app-requirement mb-4">
               Monocular requires OpenCap app version 2.0+.
             </p>
+            <p v-if="isMonocularSession && show_controls" class="monocular-jump-warning mb-4">
+              Monocular does not support jumping activities yet.
+            </p>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
@@ -2519,6 +2522,12 @@
     font-size: 0.85rem;
     line-height: 1.4;
     color: rgba(255, 255, 255, 0.85);
+  }
+
+  .monocular-jump-warning {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #ffb74d;
   }
   </style>
   
