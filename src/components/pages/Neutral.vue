@@ -531,7 +531,7 @@ export default {
         return 'Back';
       }
       if (this.isMonocularMode) {
-        return 'Back to connect devices';
+        return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to connect devices';
       }
       return 'Back to calibration';
     },

@@ -354,8 +354,8 @@
             </div>
             <div v-else class="session-empty-state d-flex flex-column align-center justify-center text-center">
                 <v-icon size="56" color="grey lighten-1" class="mb-3">mdi-chart-box-outline</v-icon>
-                <h3 class="mb-2">No data selected</h3>
-                <p v-if="show_controls" class="mb-0 px-4">Type a trial name on the left and click Start recording.</p>
+                <h3 class="mb-2">No data selected/recorded</h3>
+                <p v-if="show_controls" class="mb-0 px-4">Type a trial name on the left and click Start recording or select a trial from the list.</p>
                 <p v-else class="mb-0 px-4">Select a trial from the list to view motion data.</p>
             </div>
         </div>

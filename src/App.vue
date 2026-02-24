@@ -58,6 +58,9 @@ export default {
   mounted () {
     window.addEventListener('resize', this.checkOrientation)
     window.addEventListener('orientationchange', this.checkOrientation)
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
   },
   beforeDestroy () {
     this.cancelTimer()
@@ -79,8 +82,26 @@ export default {
       this.logout()
     },
     resetMainScroll () {
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+
       const vMain = this.$el && this.$el.querySelector('.v-main')
-      if (vMain) vMain.scrollTop = 0
+      if (vMain) {
+        vMain.scrollTop = 0
+      }
+
+      // Mobile Safari can apply scroll restoration after the route render.
+      // Repeat reset on next frames so the new page always starts below navbar.
+      this.$nextTick(() => {
+        window.requestAnimationFrame(() => {
+          window.scrollTo(0, 0)
+          document.documentElement.scrollTop = 0
+          document.body.scrollTop = 0
+          const nextVMain = this.$el && this.$el.querySelector('.v-main')
+          if (nextVMain) nextVMain.scrollTop = 0
+        })
+      })
     },
     checkOrientation () {
       // Check if mobile device (max-width 959px) and in landscape mode

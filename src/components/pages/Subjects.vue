@@ -11,6 +11,7 @@
       <v-btn
         class="subjects-toolbar__btn"
         @click="$refs.dialogRef.addSubject()">
+        <v-icon left>mdi-plus</v-icon>
         New Subject
       </v-btn>
       <v-checkbox

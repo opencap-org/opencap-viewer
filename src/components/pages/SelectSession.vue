@@ -4,7 +4,7 @@
       <v-btn
         @click="$router.push({ name: 'RecordingMode' })"
         class="toolbar-button">
-        <v-icon left>mdi-plus-circle-outline</v-icon>
+        <v-icon left>mdi-plus</v-icon>
         New session
       </v-btn>
 

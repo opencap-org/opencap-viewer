@@ -109,7 +109,10 @@ export default {
       return this.$route.query.fromDeviceCheck === 'true'
     },
     backLabel() {
-      return this.cameFromDeviceCheck ? 'Back' : 'Back to recording mode'
+      if (this.cameFromDeviceCheck || this.$vuetify.breakpoint.smAndDown) {
+        return 'Back'
+      }
+      return 'Back to recording mode'
     },
     showOpenInAppButton() {
       return this.isMobileOrTablet && this.isMonocularMode && this.$route.query.fromDevice === 'true' && this.session?.id && this.sessionDeepLinkUrl

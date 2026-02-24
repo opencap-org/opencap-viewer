@@ -101,7 +101,7 @@
     <div class="navigation page-navigation d-flex justify-space-between align-center w-100 flex-nowrap">
       <v-btn text @click="$router.push(`/${session.id}/connect-devices`)">
         <v-icon left>mdi-arrow-left</v-icon>
-        Back to connect devices
+        {{ backLabel }}
       </v-btn>
       <v-btn class="calibration-nav-btn" :disabled="busy" @click="onNext">Calibrate</v-btn>
     </div>
@@ -144,7 +144,10 @@ export default {
     ...mapState({ 
       session: state => state.data.session,
       trialId: state => state.data.trialId
-    })
+    }),
+    backLabel() {
+      return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to connect devices'
+    }
   },
   mounted () {
       this.loadSession(this.$route.params.id)

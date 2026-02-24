@@ -12,17 +12,7 @@
         outlined
         dense
         class="mb-6 requirement-alert">
-        <div class="d-flex flex-column">
-          <span>Monocular recording requires the OpenCap App Store app version 2.0 or newer.</span>
-          <v-btn
-            color="warning"
-            class="mt-3 app-store-btn"
-            href="https://apps.apple.com/us/app/opencap/id1630513242"
-            target="_blank"
-            rel="noopener noreferrer">
-            OpenCap on App Store
-          </v-btn>
-        </div>
+        Monocular recording requires the OpenCap App Store app version 2.0 or newer. <a class="app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.
       </v-alert>
       
 
@@ -65,7 +55,7 @@
       <div class="mt-6">
         <v-btn text @click="$router.push({ name: 'RecordingMode' })">
           <v-icon left>mdi-arrow-left</v-icon>
-          Back to recording mode
+          {{ backLabel }}
         </v-btn>
       </div>
     </div>
@@ -90,7 +80,10 @@ export default {
   computed: {
     ...mapState({
       session: state => state.data.session
-    })
+    }),
+    backLabel() {
+      return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to recording mode'
+    }
   },
   methods: {
     ...mapMutations('data', ['clearAll']),
@@ -137,8 +130,10 @@ export default {
   max-width: 920px;
 }
 
-.app-store-btn {
-  align-self: flex-start;
+.app-store-link {
+  color: #ffcc80;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .subtitle-text {
