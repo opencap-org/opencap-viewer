@@ -921,14 +921,15 @@ export default {
         align-items: center;
         gap: 6px;
         min-width: 0;
-        width: 100%;
+        width: fit-content;
+        max-width: 100%;
       }
 
       .session-id-preview {
         font-family: inherit;
         font-size: 0.8rem;
-        flex: 1 1 auto;
-        min-width: 0;
+        flex: 0 0 10ch;
+        width: 10ch;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

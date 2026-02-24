@@ -164,7 +164,7 @@
                   </v-btn>
   
                   <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">
-                      <v-icon left small>mdi-plus-circle-outline</v-icon>
+                      <v-icon left small>mdi-plus</v-icon>
                       New session
                   </v-btn>
   

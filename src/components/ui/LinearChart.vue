@@ -453,6 +453,10 @@ export default {
   max-width: 320px;
 }
 
+.content-chart {
+  margin-top: 10px;
+}
+
 .chart-empty-state {
   position: absolute;
   inset: 0;

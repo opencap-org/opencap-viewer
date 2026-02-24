@@ -664,7 +664,7 @@ export default {
 }
 
 .content-chart {
-  margin: auto;
+  margin: 12px auto 0;
   width: 60%;
   height: 80%;
 }
