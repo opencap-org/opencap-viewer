@@ -130,27 +130,57 @@
                 <v-sheet class="text-center trial-menu-sheet" color="blue-grey darken-1">
                   <v-list v-if="selectedTrialForMenu">
                     <v-list-item link v-if="selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndRename(selectedTrialForMenu)">
-                      <v-list-item-title>Rename</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-pencil</v-icon>
+                          <span>Rename</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
                     <v-divider v-if="selectedTrialForMenu.name !== 'neutral'"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed && selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndAnalysis(selectedTrialForMenu)">
-                      <v-list-item-title>Analysis</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-chart-box</v-icon>
+                          <span>Analysis</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
                     <v-divider></v-divider>
                     <v-list-item link @click="closeSheetAndEditTags(selectedTrialForMenu)">
-                      <v-list-item-title>Edit Tags</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-tag-multiple</v-icon>
+                          <span>Edit Tags</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
                     <v-divider v-if="!selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenTrashDialog(selectedTrialForMenu)">
-                      <v-list-item-title>Trash</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-delete-outline</v-icon>
+                          <span>Trash</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
                     <v-divider v-if="selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="selectedTrialForMenu.trashed" @click="closeSheetAndOpenRestoreDialog(selectedTrialForMenu)">
-                      <v-list-item-title>Restore</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-restore</v-icon>
+                          <span>Restore</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
                     <v-divider v-if="!selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
-                      <v-list-item-title>Delete</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-delete-forever</v-icon>
+                          <span>Delete</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
                   </v-list>
                 </v-sheet>
@@ -2085,6 +2115,13 @@
   }
   .trial-menu-sheet .v-list {
     background-color: transparent !important;
+  }
+  .trial-menu-sheet .v-list-item {
+    justify-content: center !important;
+  }
+  .trial-menu-sheet .v-list-item__content {
+    flex: 0 0 auto !important;
+    flex-direction: row !important;
   }
   
   .text-orange {

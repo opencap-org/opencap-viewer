@@ -208,23 +208,48 @@
       <v-sheet class="text-center session-menu-sheet" color="blue-grey darken-1">
         <v-list v-if="selectedSessionForMenu">
           <v-list-item link @click="closeSheetAndLoad(selectedSessionForMenu)">
-            <v-list-item-title>Load</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-play</v-icon>
+                <span>Load</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
           <v-divider></v-divider>
           <v-list-item link @click="closeSheetAndDashboard(selectedSessionForMenu)">
-            <v-list-item-title>Dashboard kinematics</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-chart-line</v-icon>
+                <span>Dashboard kinematics</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
           <v-divider></v-divider>
           <v-list-item link @click="closeSheetAndRename(selectedSessionForMenu)">
-            <v-list-item-title>Rename</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-pencil</v-icon>
+                <span>Rename</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
           <v-divider v-if="!selectedSessionForMenu.trashed"></v-divider>
           <v-list-item link v-if="!selectedSessionForMenu.trashed" @click="closeSheetAndTrash(selectedSessionForMenu)">
-            <v-list-item-title>Trash</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-delete-outline</v-icon>
+                <span>Trash</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
           <v-divider v-if="selectedSessionForMenu.trashed"></v-divider>
           <v-list-item link v-if="selectedSessionForMenu.trashed" @click="closeSheetAndRestore(selectedSessionForMenu)">
-            <v-list-item-title>Restore</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-restore</v-icon>
+                <span>Restore</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
         </v-list>
       </v-sheet>
@@ -1010,11 +1035,11 @@ export default {
 
       // Percentage widths so columns always fit (sum 100%). Session ID wide enough for preview + copy button (no overflow).
       th:nth-child(1), td:nth-child(1) { width: 15%; } /* Session Name */
-      th:nth-child(2), td:nth-child(2) { width: 12%; } /* Date */
+      th:nth-child(2), td:nth-child(2) { width: 13%; } /* Date */
       th:nth-child(3), td:nth-child(3) { width: 8%; }  /* Actions (burger on sm) */
       th:nth-child(4), td:nth-child(4) { width: 22%; } /* Session ID (preview + copy button) */
       th:nth-child(5), td:nth-child(5) { width: 17%; } /* Subject Name */
-      th:nth-child(6), td:nth-child(6) { width: 14%; } /* # trials */
+      th:nth-child(6), td:nth-child(6) { width: 9%; } /* # trials */
       th:nth-child(7), td:nth-child(7) { width: 12%; } /* Monocular */
     }
   }
@@ -1149,6 +1174,13 @@ export default {
 }
 .session-menu-sheet .v-list {
   background-color: transparent !important;
+}
+.session-menu-sheet .v-list-item {
+  justify-content: center !important;
+}
+.session-menu-sheet .v-list-item__content {
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
 }
 
 .search-section {
