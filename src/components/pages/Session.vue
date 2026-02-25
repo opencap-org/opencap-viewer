@@ -413,14 +413,13 @@
                   class="video-element" />
             </div>
 
-            <div v-if="isMobileOrTablet && !videoControlsDisabled" class="mobile-video-toolbar ui-no-zoom d-flex justify-end">
-              <v-btn
-                  small
-                  class="playback-video-size speed-control-button"
-                  @click="cycleMobileVideoSize">
-                Cam {{ mobileVideoSizeLabel }}
-              </v-btn>
-            </div>
+            <v-btn
+                v-if="showCamSizeButton && !videoControlsDisabled"
+                x-small
+                class="cam-size-overlay ui-no-zoom"
+                @click="cycleMobileVideoSize">
+              Cam {{ mobileVideoSizeLabel }}
+            </v-btn>
 
             <div v-if="isMobileOrTablet" class="right-spacer" />
 
@@ -975,6 +974,9 @@
         isMobileOrTablet() {
           return this.$vuetify.breakpoint.smAndDown
         },
+        showCamSizeButton() {
+          return this.$vuetify.breakpoint.mdAndDown
+        },
         isMonocularSession() {
           return !!this.session?.isMono
         },
@@ -997,7 +999,7 @@
           return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
         },
         mobileVideoPanelStyle() {
-          if (!this.isMobileOrTablet) {
+          if (!this.showCamSizeButton) {
             return {}
           }
 
@@ -2233,7 +2235,8 @@
 
       .session-action-btn {
         width: 100%;
-        height: 40px !important;
+        height: 32px !important;
+        min-height: 32px !important;
       }
 
       @media (max-width: 959px) {
@@ -2333,11 +2336,32 @@
         padding: 0;
         margin-top: 8px;
       }
+
+      .cam-size-overlay {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        z-index: 10;
+        text-transform: none;
+        min-width: 60px;
+        height: 24px !important;
+        min-height: 24px !important;
+        font-size: 0.7rem;
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        backdrop-filter: blur(4px);
+        padding: 0 8px;
+
+        @media (max-width: 959px) {
+          bottom: calc(142px + env(safe-area-inset-bottom, 0px));
+          padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+        }
+      }
   
       @media (max-width: 959px) {
         position: absolute;
         right: 0;
         top: 0;
+        bottom: 0;
         width: 120px;
         min-width: 100px;
         max-width: 35%;
@@ -2349,11 +2373,11 @@
         position: absolute;
         right: 0;
         top: 0;
-        bottom: 0;
+        bottom: var(--video-controls-height, 90px);
         flex: none;
         width: 200px;
         max-height: none;
-        height: 100%;
+        height: auto;
         z-index: 1;
       }
   
@@ -2366,7 +2390,7 @@
         padding: 0;
         margin: 0;
         min-height: 0;
-        flex: 0 0 auto;
+        flex: 1 1 0;
         
         @media (min-width: 960px) {
           width: 200px;
@@ -2376,6 +2400,7 @@
 
         @media (max-width: 959px) {
           align-items: flex-end;
+          padding-bottom: 120px;
         }
       }
 
@@ -2391,6 +2416,7 @@
         }
 
         @media (min-width: 960px) {
+          flex: 0 0 0;
           background: transparent;
         }
       }
@@ -2478,6 +2504,7 @@
       position: relative;
       z-index: 2;
       flex-shrink: 0;
+      min-height: 86px;
 
       @media (max-width: 959px) {
         /* Hide desktop controls on mobile - they duplicate the mobile fixed bar */
