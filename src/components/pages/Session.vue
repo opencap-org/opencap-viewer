@@ -413,7 +413,7 @@
                   class="video-element" />
             </div>
 
-            <div v-if="isMobileOrTablet" class="mobile-video-toolbar ui-no-zoom d-flex justify-end">
+            <div v-if="isMobileOrTablet && !videoControlsDisabled" class="mobile-video-toolbar ui-no-zoom d-flex justify-end">
               <v-btn
                   small
                   class="playback-video-size speed-control-button"
@@ -424,7 +424,7 @@
 
             <div v-if="isMobileOrTablet" class="right-spacer" />
 
-            <div v-if="isMobileOrTablet" class="playback-controls ui-no-zoom">
+            <div v-if="isMobileOrTablet && !videoControlsDisabled" class="playback-controls ui-no-zoom">
               <div class="playback-timeline-mobile d-flex align-center px-1">
                 <v-text-field
                     label="Time (s)"
