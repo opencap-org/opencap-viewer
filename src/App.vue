@@ -213,4 +213,20 @@ export default {
   border-radius: 16px 16px 0 0 !important;
   overflow: hidden;
 }
+
+/* Make all dialogs visually distinct from the page background */
+.v-dialog {
+  .v-card,
+  .v-sheet {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* Slightly stronger scrim so overlay is clearly visible */
+.v-overlay__scrim {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+}
 </style>

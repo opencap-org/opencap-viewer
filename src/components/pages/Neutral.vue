@@ -154,7 +154,8 @@
                     content-class="advanced-settings-dialog"
                   >
                     <v-card class="advanced-settings-card">
-                      <v-card-actions class="justify-end">
+                      <v-card-actions class="advanced-settings-header justify-space-between align-center">
+                        <v-card-title class="advanced-settings-title">Advanced Settings</v-card-title>
                         <v-btn color="primary-dark" @click="advancedSettingsDialog = false">✖</v-btn>
                       </v-card-actions>
 
@@ -532,7 +533,7 @@ export default {
       if (this.isMonocularMode) {
         return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to connect devices';
       }
-      return 'Back to calibration';
+      return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to calibration';
     },
     subject_search: {
       get() {
@@ -1344,15 +1345,15 @@ export default {
     display: flex;
     flex-direction: column;
     padding-bottom: 48px;
-    padding-top: 48px;
+    padding-top: 0;
     min-height: auto;
-    background-color: #1e1e1e !important;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    background-color: #252525 !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     
     &::before,
     &::after {
-      background-color: #1e1e1e !important;
+      background-color: #252525 !important;
     }
     
     ::v-deep .v-card__title,
@@ -1360,7 +1361,7 @@ export default {
     ::v-deep .v-card__actions,
     ::v-deep .data-title,
     ::v-deep .checkbox-wrapper {
-      background-color: #1e1e1e !important;
+      background-color: #252525 !important;
       color: #ffffff !important;
     }
     
@@ -1371,7 +1372,7 @@ export default {
     }
     
     ::v-deep .v-input {
-      background-color: #1e1e1e !important;
+      background-color: #252525 !important;
     }
     
     ::v-deep .v-input__slot {
@@ -1427,7 +1428,7 @@ export default {
     min-height: auto;
     overflow: visible;
     position: relative;
-    background-color: #1e1e1e !important;
+    background-color: #252525 !important;
     
     @media (max-width: 599px) {
       padding: 6px 12px 16px 12px !important;
@@ -1508,21 +1509,34 @@ export default {
     }
   }
   
-  .v-card__actions {
-    padding: 12px 16px 8px 16px;
+  .v-card__actions.advanced-settings-header {
+    padding: 12px 16px 12px 16px;
     flex-shrink: 0;
     z-index: 30;
     margin-top: 0;
     margin-bottom: 0;
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: transparent;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #252525 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
     
     @media (max-width: 599px) {
-      padding: 10px 12px 6px 12px;
+      padding: 10px 12px 10px 12px;
     }
-    
+  }
+  
+  .advanced-settings-title {
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 1.25rem !important;
+    font-weight: 600;
+    color: #ffffff !important;
+    background: transparent !important;
+  }
+  
+  .v-card__actions {
     .v-btn {
       min-width: 40px;
       width: 40px;
