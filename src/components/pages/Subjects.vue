@@ -199,22 +199,27 @@
 
     <!-- Subject menu bottom sheet (mobile) -->
     <v-bottom-sheet
+      content-class="bottom-sheet-rounded"
       v-model="showSubjectMenuSheet"
       @input="val => !val && (selectedSubjectForMenu = null)">
-      <v-sheet class="text-center subject-menu-sheet">
+      <v-sheet class="text-center subject-menu-sheet" color="blue-grey darken-1">
         <v-list v-if="selectedSubjectForMenu">
           <v-list-item link v-if="!selectedSubjectForMenu.trashed" @click="closeSheetAndEdit(selectedSubjectForMenu)">
             <v-list-item-title>Edit</v-list-item-title>
           </v-list-item>
+          <v-divider v-if="!selectedSubjectForMenu.trashed"></v-divider>
           <v-list-item link v-show="!selectedSubjectForMenu.trashed" @click="closeSheetAndTrash(selectedSubjectForMenu)">
             <v-list-item-title>Trash</v-list-item-title>
           </v-list-item>
+          <v-divider v-if="selectedSubjectForMenu.trashed"></v-divider>
           <v-list-item link v-show="selectedSubjectForMenu.trashed" @click="closeSheetAndRestore(selectedSubjectForMenu)">
             <v-list-item-title>Restore</v-list-item-title>
           </v-list-item>
+          <v-divider v-if="selectedSubjectForMenu.trashed"></v-divider>
           <v-list-item link v-show="selectedSubjectForMenu.trashed" @click="closeSheetAndPermanentDelete(selectedSubjectForMenu)">
             <v-list-item-title>Delete permanently</v-list-item-title>
           </v-list-item>
+          <v-divider v-if="!selectedSubjectForMenu.trashed && isSyncDownloadAllowed"></v-divider>
           <v-list-item link v-show="!selectedSubjectForMenu.trashed && isSyncDownloadAllowed" @click="closeSheetAndDownload(selectedSubjectForMenu)">
             <v-list-item-title>Download data (old)</v-list-item-title>
           </v-list-item>
@@ -1129,5 +1134,12 @@ export default {
 
 .subject-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
+  background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  overflow: hidden;
+}
+.subject-menu-sheet .v-list {
+  background-color: transparent !important;
 }
 </style>

@@ -153,12 +153,13 @@
     </v-row>
 
     <!-- Session menu bottom sheet (mobile) -->
-    <v-bottom-sheet v-model="showSessionMenuSheet" @input="val => !val && (selectedSessionForMenu = null)">
-      <v-sheet class="text-center recycle-menu-sheet">
+    <v-bottom-sheet content-class="bottom-sheet-rounded" v-model="showSessionMenuSheet" @input="val => !val && (selectedSessionForMenu = null)">
+      <v-sheet class="text-center recycle-menu-sheet" color="blue-grey darken-1">
         <v-list v-if="selectedSessionForMenu">
           <v-list-item link @click="closeSheetAndRestoreSession(selectedSessionForMenu)">
             <v-list-item-title>Restore</v-list-item-title>
           </v-list-item>
+          <v-divider></v-divider>
           <v-list-item link @click="closeSheetAndPermanentDeleteSession(selectedSessionForMenu)">
             <v-list-item-title>Delete permanently</v-list-item-title>
           </v-list-item>
@@ -167,12 +168,13 @@
     </v-bottom-sheet>
 
     <!-- Trial menu bottom sheet (mobile) -->
-    <v-bottom-sheet v-model="showTrialMenuSheet" @input="val => !val && (selectedTrialForMenu = null)">
-      <v-sheet class="text-center recycle-menu-sheet">
+    <v-bottom-sheet content-class="bottom-sheet-rounded" v-model="showTrialMenuSheet" @input="val => !val && (selectedTrialForMenu = null)">
+      <v-sheet class="text-center recycle-menu-sheet" color="blue-grey darken-1">
         <v-list v-if="selectedTrialForMenu">
           <v-list-item link @click="closeSheetAndRestoreTrial(selectedTrialForMenu)">
             <v-list-item-title>Restore</v-list-item-title>
           </v-list-item>
+          <v-divider></v-divider>
           <v-list-item link @click="closeSheetAndPermanentDeleteTrial(selectedTrialForMenu)">
             <v-list-item-title>Delete permanently</v-list-item-title>
           </v-list-item>
@@ -348,7 +350,7 @@ export default {
           value: 'id',
         },
         { text: 'Subject Name', value: 'name' },
-        { text: 'Number of trials', align: 'center', value: 'trials_count' }
+        { text: '# trials', align: 'center', value: 'trials_count' }
       ],
       selected: null,
     }
@@ -764,5 +766,12 @@ export default {
 
 .recycle-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
+  background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  overflow: hidden;
+}
+.recycle-menu-sheet .v-list {
+  background-color: transparent !important;
 }
 </style>

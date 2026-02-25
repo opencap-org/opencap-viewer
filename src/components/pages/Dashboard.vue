@@ -19,6 +19,7 @@
       <div
         ref="chartBox"
         class="chart-resizable"
+        :class="{ 'chart-resizable--no-data': showEmptyStateMessage }"
         :style="chartContainerStyle"
         @pointerdown="onChartBoxPointerDown"
       >
@@ -32,6 +33,7 @@
         </div>
 
         <LineChartGenerator
+          v-show="!showEmptyStateMessage"
           id="chart"
           ref="chartRef"
           :chart-options="chartOptions"
@@ -47,6 +49,7 @@
       <v-btn
         small
         class="chart-reset-zoom-btn"
+        v-show="!showEmptyStateMessage"
         @click="onResetZoom"
       >
         Reset Zoom
@@ -60,7 +63,7 @@
       </v-btn>
     </div>
 
-    <div class="fixed-button fixed-button-to-right" v-show="rightMenuClosed">
+    <div class="fixed-button fixed-button-to-right" v-show="rightMenuClosed && !showEmptyStateMessage">
       <v-btn @click="toggleRightMenu">
         Settings
       </v-btn>
@@ -607,43 +610,16 @@ export default {
     applyChartData (nextChartData) {
       const labels = Array.isArray(nextChartData?.labels) ? nextChartData.labels : []
       const datasets = Array.isArray(nextChartData?.datasets) ? nextChartData.datasets : []
-      const hasPoints = datasets.some(dataset =>
-        Array.isArray(dataset?.data) && dataset.data.some(point =>
-          Number.isFinite(point?.x) && Number.isFinite(point?.y)
-        )
-      )
-      const renderDatasets = hasPoints
-        ? datasets
-        : [{
-            label: 'No data selected',
-            data: [
-              { x: 0, y: 0.5 },
-              { x: 1, y: 0.5 }
-            ],
-            borderColor: 'rgba(255,255,255,0.45)',
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            borderWidth: 2,
-            borderDash: [8, 6],
-            pointRadius: 0
-          }]
 
       this.chartData.labels = labels
-      this.chartData.datasets = renderDatasets
+      this.chartData.datasets = datasets
 
       this.$nextTick(() => {
         const chart = this.$refs.chartRef?.getCurrentChart?.()
         if (!chart) {
           return
         }
-        // Keep axes visible when there are no plottable points.
-        chart.options.scales.x.min = hasPoints ? undefined : 0
-        chart.options.scales.x.max = hasPoints ? undefined : 1
-        chart.options.scales.y.min = hasPoints ? undefined : 0
-        chart.options.scales.y.max = hasPoints ? undefined : 1
-        chart.data = {
-          labels,
-          datasets: renderDatasets
-        }
+        chart.data = { labels, datasets }
         chart.update('none')
       })
     },
@@ -1052,6 +1028,11 @@ export default {
   overflow: hidden;
   background-color: #000;
   border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.chart-resizable--no-data {
+  border-color: transparent;
+  resize: none !important;
 }
 
 .chart-canvas {

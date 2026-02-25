@@ -124,25 +124,31 @@
 
               <!-- Mobile: trial options bottom sheet -->
               <v-bottom-sheet
+                content-class="bottom-sheet-rounded"
                 v-model="showTrialMenuSheet"
                 @input="val => !val && (selectedTrialForMenu = null)">
-                <v-sheet class="text-center trial-menu-sheet">
+                <v-sheet class="text-center trial-menu-sheet" color="blue-grey darken-1">
                   <v-list v-if="selectedTrialForMenu">
                     <v-list-item link v-if="selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndRename(selectedTrialForMenu)">
                       <v-list-item-title>Rename</v-list-item-title>
                     </v-list-item>
+                    <v-divider v-if="selectedTrialForMenu.name !== 'neutral'"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed && selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndAnalysis(selectedTrialForMenu)">
                       <v-list-item-title>Analysis</v-list-item-title>
                     </v-list-item>
+                    <v-divider></v-divider>
                     <v-list-item link @click="closeSheetAndEditTags(selectedTrialForMenu)">
                       <v-list-item-title>Edit Tags</v-list-item-title>
                     </v-list-item>
+                    <v-divider v-if="!selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenTrashDialog(selectedTrialForMenu)">
                       <v-list-item-title>Trash</v-list-item-title>
                     </v-list-item>
+                    <v-divider v-if="selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="selectedTrialForMenu.trashed" @click="closeSheetAndOpenRestoreDialog(selectedTrialForMenu)">
                       <v-list-item-title>Restore</v-list-item-title>
                     </v-list-item>
+                    <v-divider v-if="!selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
                       <v-list-item-title>Delete</v-list-item-title>
                     </v-list-item>
@@ -2072,6 +2078,13 @@
   /* Trial menu bottom sheet - safe area for notched phones */
   .trial-menu-sheet {
     padding-bottom: env(safe-area-inset-bottom, 0);
+    background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    overflow: hidden;
+  }
+  .trial-menu-sheet .v-list {
+    background-color: transparent !important;
   }
   
   .text-orange {
