@@ -10,62 +10,66 @@
       
 
       <div class="options-container">
-        <v-card
-          class="option-card pa-6 d-flex flex-column align-center"
-          outlined
-          hover
-          @click="selectMonocular">
-          <v-icon size="64" color="primary" class="mb-4">mdi-cellphone</v-icon>
-          <div class="title-row mb-2">
-            <h2 class="option-title mb-0">Monocular</h2>
-            <v-chip
-              x-small
-              color="warning"
-              text-color="black"
-              class="beta-chip ml-2">
-              Beta
-            </v-chip>
-          </div>
-          <p class="text-center option-description">
-            Record with a single phone. Simplified setup, no calibration needed. <strong>Requires OpenCap app 2.0+ from the App Store.</strong>
-          </p>
-          <p class="text-center monocular-warning mb-0">
-            Monocular does not support jumping activities yet.
-          </p>
+        <div class="card-wrapper">
+          <v-card
+            class="option-card pa-6 d-flex flex-column align-center"
+            outlined
+            hover
+            @click="selectMonocular">
+            <v-icon size="64" color="primary" class="mb-4">mdi-cellphone</v-icon>
+            <div class="title-row mb-2">
+              <h2 class="option-title mb-0">Monocular</h2>
+              <v-chip
+                x-small
+                color="warning"
+                text-color="black"
+                class="beta-chip ml-2">
+                Beta
+              </v-chip>
+            </div>
+            <p class="text-center option-description">
+              Record with a single phone. Simplified setup, no calibration needed. <strong>Requires OpenCap app 2.0+ from the App Store.</strong>
+            </p>
+            <p class="text-center monocular-warning mb-0">
+              Monocular does not support jumping activities yet.
+            </p>
+            <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
+          </v-card>
           <a
-            class="best-practices-link mt-2"
+            class="best-practices-link"
             href="https://www.opencap.ai/best-practices?variant=monocular"
             target="_blank"
-            rel="noopener noreferrer"
-            @click.stop>
+            rel="noopener noreferrer">
             Read monocular best practices
           </a>
-          <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
-        </v-card>
+        </div>
 
-        <v-card
-          class="option-card pa-6 d-flex flex-column align-center"
-          outlined
-          hover
-          @click="selectMultiPhone">
-          <div class="d-flex justify-center align-center mb-4">
-            <v-icon size="64" color="primary" class="mr-2">mdi-cellphone</v-icon>
-            <v-icon size="64" color="primary">mdi-cellphone</v-icon>
-          </div>
-          <h2 class="mb-2 option-title">2+ phones</h2>
-          <p class="text-center option-description">
-            Record with multiple phones for higher accuracy. Requires calibration.
-          </p>
+        <div class="card-wrapper">
+          <v-card
+            class="option-card pa-6 d-flex flex-column align-center"
+            outlined
+            hover
+            @click="selectMultiPhone">
+            <div class="d-flex justify-center align-center mb-4 icon-container">
+              <v-icon size="64" color="primary" class="mr-2">mdi-cellphone</v-icon>
+              <v-icon size="64" color="primary">mdi-cellphone</v-icon>
+            </div>
+            <div class="title-row mb-2">
+              <h2 class="option-title mb-0">2+ phones</h2>
+            </div>
+            <p class="text-center option-description">
+              Record with multiple phones for higher accuracy. Requires calibration.
+            </p>
+            <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
+          </v-card>
           <a
-            class="best-practices-link mt-2"
+            class="best-practices-link"
             href="https://www.opencap.ai/best-practices"
             target="_blank"
-            rel="noopener noreferrer"
-            @click.stop>
+            rel="noopener noreferrer">
             Read 2+ phones best practices
           </a>
-          <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
-        </v-card>
+        </div>
       </div>
 
       <div class="mt-6">
@@ -135,11 +139,23 @@ export default {
   align-items: stretch;
 }
 
+.card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-wrapper > .best-practices-link {
+  text-align: center;
+  margin-top: 8px;
+}
+
 .option-card {
   width: 100%;
   min-height: 280px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  flex: 1;
 
   display: flex;
   flex-direction: column;
@@ -168,6 +184,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 36px;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.icon-container {
+  height: 64px;
 }
 
 .option-card,
@@ -177,10 +201,16 @@ export default {
   text-align: center;
 }
 
+.option-title {
+  word-break: break-word;
+  max-width: 100%;
+}
+
 .beta-chip {
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .option-card .v-icon {
@@ -192,6 +222,7 @@ export default {
   font-size: 0.9rem;
   text-decoration: underline;
   text-underline-offset: 2px;
+  display: block;
 }
 
 .select-button {
@@ -217,6 +248,14 @@ export default {
 
   .option-card .option-title {
     font-size: 1.05rem;
+  }
+
+  .title-row {
+    gap: 6px;
+  }
+
+  .beta-chip {
+    font-size: 0.65rem;
   }
 
   .option-description {
