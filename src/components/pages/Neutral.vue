@@ -139,7 +139,7 @@
             <div class="advanced-settings-row d-flex justify-center" v-if="!isMonocularMode">
                 <v-btn
                   color="primary-dark"
-                  class="mt-4 mb-4"
+                  class="mt-4 mb-2"
                   x-large
                   @click="openAdvancedSettings"
                 >
@@ -318,8 +318,8 @@
               Record neutral pose
             </v-card-title>
             
-            <v-card-text class="d-flex justify-center align-center record-pose-content">
-              <div class="d-flex flex-column mr-4 record-pose-instructions">
+            <v-card-text class="d-flex align-start record-pose-content">
+              <div class="d-flex flex-column record-pose-instructions">
                 <ul>
                   <li>
                     The subject should adopt the example neutral pose
@@ -332,18 +332,17 @@
                   <li class="space-above-small">
                     The subject should be visible by all cameras 
                     <ul>
-                      <li class="space-above-small">Nothing in the way
-                        of cameras view when hitting Record</li>
+                      <li class="space-above-small">Nothing in the way of cameras view when hitting Record</li>
                     </ul>
                   </li>
                 </ul>
               </div>
-              <div class="d-flex flex-column align-center ">
-                <span class="sub-header" style="font-size: 18px;">Example neutral pose</span>
+              <div class="d-flex flex-column align-center record-pose-image">
+                <span class="sub-header" style="font-size: 15px;">Example neutral pose</span>
                 <ExampleImage
                   image="/images/step-4/big_good_triangle.jpg"
-                  :width="256"
-                  :height="341"
+                  :width="160"
+                  :height="213"
                   good
                 />
               </div>
@@ -947,10 +946,7 @@ export default {
   display: flex;
   flex-direction: column;
   width: calc(100% + 16px);
-  min-height: 0;
   overflow-x: hidden;
-  /* Use min-height like MainLayout when fixedHeight=false - allows natural growth */
-  min-height: calc(100vh - var(--app-bar-height, 64px) - 32px);
   /* Counteract half of MainLayout's pa-4 padding (16px) to get 8px total */
   margin-left: -8px;
   margin-right: -8px;
@@ -961,12 +957,8 @@ export default {
 }
 
 .neutral-content {
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: calc(100vh - var(--app-bar-height, 64px) - 32px - 68px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  overflow: visible;
   padding-bottom: 0;
   padding-left: 0;
   padding-right: 0;
@@ -978,11 +970,9 @@ export default {
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0;
-  margin-top: 0;
+  margin-top: 8px;
   padding-top: 0;
   padding-bottom: 8px;
-  background-color: transparent; 
-  z-index: 10;
   flex-wrap: nowrap;
   gap: 8px;
   justify-content: space-between;
@@ -1146,8 +1136,9 @@ export default {
   .advanced-settings-row {
     width: 100%;
     margin-top: 0;
+    margin-bottom: 0;
     flex-shrink: 0;
-    min-height: 52px;
+    min-height: auto;
   }
 }
 
@@ -1159,7 +1150,7 @@ export default {
     flex: 1;
     max-width: 100%;
     margin-left: 0 !important; 
-    margin-top: 16px;
+    margin-top: 8px;
     padding-left: 0 !important;
     padding-right: 0 !important;
     
@@ -1270,17 +1261,22 @@ export default {
   }
   
   .record-pose-content {
-    flex-wrap: wrap;
-    
-    @media (max-width: 959px) {
-      flex-direction: column;
-      align-items: center;
-    }
+    flex-wrap: nowrap;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
   }
   
   .record-pose-instructions {
+    flex: 1 1 auto;
     min-width: 0;
-    max-width: 100%;
+    text-align: left;
+  }
+  
+  .record-pose-image {
+    flex: 0 0 auto;
+    align-items: center;
+    text-align: center;
   }
 }
 
@@ -1343,7 +1339,8 @@ export default {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    overflow: visible !important;
+    overflow: hidden !important;
+    overflow-y: auto !important;
     display: flex;
     flex-direction: column;
     padding-bottom: 48px;
@@ -1352,10 +1349,6 @@ export default {
     background-color: #1e1e1e !important;
     box-shadow: 0 12px 30px rgba(0,0,0,0.6);
     border-radius: 8px;
-    
-    * {
-      background-color: transparent;
-    }
     
     &::before,
     &::after {
@@ -1432,8 +1425,9 @@ export default {
     align-items: flex-start !important;
     flex-shrink: 0;
     min-height: auto;
-    overflow: visible !important;
+    overflow: visible;
     position: relative;
+    background-color: #1e1e1e !important;
     
     @media (max-width: 599px) {
       padding: 6px 12px 16px 12px !important;
@@ -1538,8 +1532,12 @@ export default {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.08);
-      color: #ffffff;
+      background: rgba(255,255,255,0.08) !important;
+      color: #ffffff !important;
+      
+      .v-btn__content {
+        color: #ffffff !important;
+      }
     }
   }
   
@@ -1590,7 +1588,6 @@ export default {
   /* Ensure dropdown menus are visible */
   ::v-deep .v-menu__content {
     z-index: 1000 !important;
-    overflow: visible !important;
   }
   
   ::v-deep .v-select__menu {
