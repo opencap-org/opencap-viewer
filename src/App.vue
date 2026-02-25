@@ -104,10 +104,16 @@ export default {
       })
     },
     checkOrientation () {
-      // Check if mobile device (max-width 959px) and in landscape mode
-      const isMobile = window.innerWidth <= 959
+      // Only show landscape blocker on phones (not desktops/tablets)
+      if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+        this.showLandscapeBlocker = false
+        return
+      }
+
+      const ua = navigator.userAgent || ''
+      const isPhone = /Android.+Mobile|iPhone|iPod|Windows Phone|Mobi/i.test(ua)
       const isLandscape = window.innerWidth > window.innerHeight
-      this.showLandscapeBlocker = isMobile && isLandscape
+      this.showLandscapeBlocker = isPhone && isLandscape
     }
   },
   computed: {

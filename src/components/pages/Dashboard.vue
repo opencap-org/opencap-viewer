@@ -55,14 +55,14 @@
 
     <!-- Floating buttons (mobile); hide when corresponding sidebar is open -->
     <div class="fixed-button fixed-button-to-left" v-show="leftMenuClosed">
-      <v-btn icon @click="toggleLeftMenu">
-        <v-icon>mdi-database</v-icon>
+      <v-btn @click="toggleLeftMenu">
+        Data
       </v-btn>
     </div>
 
     <div class="fixed-button fixed-button-to-right" v-show="rightMenuClosed">
-      <v-btn icon @click="toggleRightMenu">
-        <v-icon>mdi-tune</v-icon>
+      <v-btn @click="toggleRightMenu">
+        Settings
       </v-btn>
     </div>
 
@@ -1019,6 +1019,18 @@ export default {
   width: 100%;
   overflow: visible;
   background-color: black;
+  transition: padding 0.3s ease;
+}
+
+/* Desktop: adjust padding when sidebars are open to prevent occlusion */
+@media (min-width: 961px) {
+  #body.chart-page:not(.left-menu-closed) {
+    padding-left: 300px;
+  }
+
+  #body.chart-page:not(.right-menu-closed) {
+    padding-right: 300px;
+  }
 }
 
 /* ===== CHART ===== */
