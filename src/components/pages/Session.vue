@@ -2426,7 +2426,7 @@
         flex: 1 1 0;
         
         @media (min-width: 960px) {
-          width: 200px;
+          width: 100%;
           padding: 0;
           margin: 0;
         }
