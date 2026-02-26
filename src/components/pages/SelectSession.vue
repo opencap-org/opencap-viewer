@@ -997,11 +997,16 @@ export default {
         }
       }
       
+      .session-name-column {
+        padding-left: 12px !important;
+      }
+
       .session-name-text {
         font-weight: 500;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        padding-left: 12px;
       }
       
       .date-column {
