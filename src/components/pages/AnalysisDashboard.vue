@@ -5,7 +5,7 @@
       class="analysis-dashboard-overlay"
       @click="leftMenuClosed = true"
     />
-    <div id="body" class="chart-page d-flex flex-column" :class="{ 'left-menu-closed': leftMenuClosed }">
+    <div id="body" class="chart-page d-flex flex-column right-menu-closed" :class="{ 'left-menu-closed': leftMenuClosed }">
       <div class="dashboard-body" :class="{ 'has-metrics': hasMetricsColumn }" v-if="show_dashboard">
         <div
           v-for="(column, column_name, column_idx) in dashboard.layout"

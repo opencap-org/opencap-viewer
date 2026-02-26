@@ -148,15 +148,13 @@
 
                   <v-dialog
                     v-model="advancedSettingsDialog"
-                    scrollable
                     :width="$vuetify.breakpoint.smAndDown ? '95%' : '700px'"
-                    :max-height="$vuetify.breakpoint.smAndDown ? '90vh' : '90vh'"
                     content-class="advanced-settings-dialog"
                   >
                     <v-card class="advanced-settings-card">
                       <v-card-actions class="advanced-settings-header justify-space-between align-center">
                         <v-card-title class="advanced-settings-title">Advanced Settings</v-card-title>
-                        <v-btn color="primary-dark" @click="advancedSettingsDialog = false">✖</v-btn>
+                        <v-btn @click="advancedSettingsDialog = false">✖</v-btn>
                       </v-card-actions>
 
                       <v-card-title class="justify-center data-title">
@@ -1330,18 +1328,13 @@ export default {
 .advanced-settings-dialog {
   z-index: 200 !important;
   
-  ::v-deep .v-dialog__content {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    max-height: 90vh;
-  }
-  
   .v-card.advanced-settings-card {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
     overflow-y: auto !important;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
     padding-bottom: 48px;
@@ -1548,10 +1541,12 @@ export default {
       justify-content: center;
       background: rgba(255,255,255,0.08) !important;
       color: #ffffff !important;
-      
-      .v-btn__content {
-        color: #ffffff !important;
-      }
+    }
+    
+    .v-btn .v-btn__content,
+    .v-btn::before,
+    .v-btn .v-ripple__container {
+      color: #ffffff !important;
     }
   }
   
