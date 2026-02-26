@@ -35,7 +35,7 @@
                         block
                         class="qr-dialog-btn"
                         @click="openInApp">
-                        Open in app (v2.0+)
+                        Open in app
                     </v-btn>
                     <v-btn block class="qr-dialog-btn" @click="dialog = false">Close</v-btn>
                 </v-card-actions>
