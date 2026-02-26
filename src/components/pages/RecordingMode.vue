@@ -91,19 +91,26 @@ export default {
     MainLayout
   },
   methods: {
-    isMobileOrTablet() {
-      // Use user agent to detect iPhone, iPad, Android, or touch device
+    isIosDevice() {
+      // Detect if the current device is an iPhone or iPad
       const ua = navigator.userAgent || navigator.vendor || window.opera;
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      
       // iPadOS 13+ identifies as Mac, so check for touch support
-      const isIpad = (/iPad/.test(ua)) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      const isIphone = /iPhone/.test(ua);
-      const isAndroid = /Android/.test(ua);
-      return isIpad || isIphone || isAndroid;
+      const isIPadOS =
+        !isIOS &&
+        navigator.platform === 'MacIntel' &&
+        typeof navigator.maxTouchPoints === 'number' &&
+        navigator.maxTouchPoints > 1;
+      
+      return isIOS || isIPadOS;
     },
     selectMonocular() {
-      if (this.isMobileOrTablet()) {
+      if (this.isIosDevice()) {
+        // On iOS: go to DeviceCheck to ask if they're on the recording device
         this.$router.push({ name: 'DeviceCheck' })
       } else {
+        // On desktop/computer: go directly to ConnectDevices to show QR code
         this.$router.push({ name: 'ConnectDevices', query: { isMono: 'true' } })
       }
     },
