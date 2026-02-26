@@ -560,10 +560,16 @@ export default {
     .right {
         flex: 0 0 200px;
         height: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
 
         .videos {
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             width: 200px;
+            min-height: 0;
+            flex: 1 1 0;
         }
     }
 }
@@ -595,9 +601,16 @@ export default {
             flex: 0 0 120px;
             width: 120px;
             max-width: 30%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
 
             .videos {
                 width: 100%;
+                overflow-y: auto;
+                overflow-x: hidden;
+                min-height: 0;
+                flex: 1 1 0;
                 
                 video {
                     width: 100%;
