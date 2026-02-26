@@ -199,7 +199,7 @@
                       <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
                   </div>
   
-                  <v-btn small class="w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'"
+                  <v-btn small class="w-100 session-action-btn" v-show="show_controls && !isMonocularSession" :disabled="busy || state !== 'ready'"
                       @click="newSessionSameSetup">
                       <v-icon left small>mdi-plus-box-multiple</v-icon>
                       New session, same setup
