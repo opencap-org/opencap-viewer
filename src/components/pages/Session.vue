@@ -2,7 +2,7 @@
     <div class="step-5 d-flex">
         <!-- Mobile menu button -->
         <v-btn
-            v-if="!leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+            v-if="!leftMenuOpen && $vuetify.breakpoint.mdAndDown"
             class="mobile-menu-toggle ui-no-zoom"
             icon
             @click="leftMenuOpen = true">
@@ -11,7 +11,7 @@
         
         <!-- Overlay for mobile -->
         <div 
-            v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+            v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
             class="mobile-overlay"
             @click="leftMenuOpen = false">
         </div>
@@ -19,7 +19,7 @@
         <div class="left ui-no-zoom d-flex flex-column pa-2" :class="{ 'mobile-open': leftMenuOpen }">
             <!-- Mobile close button -->
             <v-btn
-                v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
+                v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
                 class="mobile-close-btn ui-no-zoom"
                 icon
                 small
@@ -1025,7 +1025,7 @@
           return this.isSessionMarkedSameDevice(this.session?.id)
         },
         showOpenInAppButton() {
-          return this.isMobileOrTablet && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
+          return this.$vuetify.breakpoint.mdAndDown && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
         },
         mobileVideoSizeLabel() {
           return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
@@ -2197,7 +2197,7 @@
       background-color: rgba(0, 0, 0, 0.8) !important;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       
-      @media (min-width: 960px) {
+      @media (min-width: 1280px) {
         display: none !important;
       }
     }
@@ -2211,7 +2211,7 @@
       background-color: rgba(0, 0, 0, 0.5);
       z-index: 98;
       
-      @media (min-width: 960px) {
+      @media (min-width: 1280px) {
         display: none !important;
       }
     }
@@ -2225,13 +2225,13 @@
       display: flex;
       flex-direction: column;
 
-      @media (min-width: 960px) {
+      @media (min-width: 1280px) {
         width: 250px;
         height: 100%;
         background-color: #000000;
       }
 
-      @media (max-width: 959px) {
+      @media (max-width: 1279px) {
         position: fixed;
         top: var(--app-bar-height, 56px);
         left: 0;

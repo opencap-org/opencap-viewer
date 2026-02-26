@@ -12,7 +12,7 @@
         outlined
         dense
         class="mb-6 requirement-alert">
-        Monocular recording requires the OpenCap App Store app version 2.0 or newer. <a class="app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.
+        Monocular recording using a single device requires the OpenCap App Store app version 2.0 or newer. <a class="app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.
       </v-alert>
       
 
