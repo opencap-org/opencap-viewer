@@ -6,7 +6,6 @@
         v-on="on"
         small
         class="speed-control-button">
-        <v-icon small left>mdi-speedometer</v-icon>
         {{ selectedSpeedLabel }}
         <v-icon small right>mdi-menu-down</v-icon>
       </v-btn>

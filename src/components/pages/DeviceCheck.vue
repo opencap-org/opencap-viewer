@@ -16,7 +16,9 @@
       </v-alert>
       
 
-      <div class="options-container">
+      <div
+        v-if="isIosDevice"
+        class="options-container">
         <v-card
           class="option-card pa-6 d-flex flex-column align-center"
           outlined
@@ -52,6 +54,18 @@
         </v-card>
       </div>
 
+      <div
+        v-else
+        class="non-ios-message mt-6">
+        <v-alert
+          type="info"
+          outlined
+          dense
+          class="mb-4 non-ios-alert">
+          Monocular recording is currently supported on iPhone and iPad using the OpenCap app. Please open this page on a compatible iOS device to continue, or use the multi-camera workflow on desktop.
+        </v-alert>
+      </div>
+
       <div class="mt-6">
         <v-btn text @click="$router.push({ name: 'RecordingMode' })">
           <v-icon left>mdi-arrow-left</v-icon>
@@ -83,6 +97,23 @@ export default {
     }),
     backLabel() {
       return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to recording mode'
+    },
+    isIosDevice() {
+      if (typeof navigator === 'undefined') {
+        return false
+      }
+
+      const ua = navigator.userAgent || ''
+      const isIOS = /iPhone|iPad|iPod/i.test(ua)
+
+      // iPadOS 13+ reports itself as Mac; detect via touch support
+      const isIPadOS =
+        !isIOS &&
+        navigator.platform === 'MacIntel' &&
+        typeof navigator.maxTouchPoints === 'number' &&
+        navigator.maxTouchPoints > 1
+
+      return isIOS || isIPadOS
     }
   },
   methods: {

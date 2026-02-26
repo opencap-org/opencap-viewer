@@ -32,7 +32,7 @@
           </div>
 
           <div class="d-flex flex-column flex-grow-1 justify-space-between my-1 instructions-wrapper">
-            <h1 class="my-4">1. Install or update to OpenCap app version 2.0+ from the App Store</h1>
+            <h1 class="my-4">1. Install or update to <a href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer" class="app-store-link">OpenCap app<span v-if="isMonocularMode"> version 2.0+</span></a> from the App Store</h1>
             <h1 class="my-4">2. Open the app and scan the QR code</h1>
             <div v-if="showOpenInAppButton" class="open-in-app-block my-2">
               <p class="mb-2">On this device? Open in App deeplink also requires app version 2.0+.</p>
@@ -40,8 +40,27 @@
             </div>
             <h1 class="my-4">3. Mount your phone vertically or horizontally (unlock portrait orientation) on a tripod</h1>
             <h1 class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>
-            <h1 class="my-4">5. Repeat 1-4 for all phones you want to connect</h1>
-            <h1 class="my-4">6. Have the person practice the activity and verify that they are fully in view of at least 2 cameras</h1>
+            <h1
+              v-if="!isMonocularMode"
+              class="my-4">
+              5. Repeat 1-4 for all phones you want to connect
+            </h1>
+            <h1 class="my-4">
+              6. Have the person practice the activity and verify that they are fully in view of
+              <span v-if="isMonocularMode"> the camera</span>
+              <span v-else> at least 2 cameras</span>
+            </h1>
+            <p
+              v-if="isMonocularMode"
+              class="my-2">
+              <a
+                href="https://www.opencap.ai/best-practices?variant=monocular"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="app-store-link">
+                Read monocular best practices
+              </a>
+            </p>
           </div>
         </div>
 
@@ -236,6 +255,16 @@ export default {
       line-height: 1.4;
       margin-top: 6px !important;
       margin-bottom: 6px !important;
+    }
+  }
+  
+  .app-store-link {
+    color: #64b5f6;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    
+    &:hover {
+      color: #90caf9;
     }
   }
 }

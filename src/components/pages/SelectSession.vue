@@ -13,7 +13,7 @@
           <v-btn dark v-bind="attrs" v-on="on" class="toolbar-button">
             <span class="dashboards-text d-none d-sm-inline mr-2">Dashboards</span>
             <span class="dashboards-text-mobile d-sm-none">Dashboards</span>
-            <v-icon class="d-none d-sm-inline">mdi-menu</v-icon>
+            <v-icon>mdi-menu</v-icon>
           </v-btn>
         </template>
         <v-list>
@@ -202,24 +202,54 @@
 
     <!-- Session menu bottom sheet (mobile) -->
     <v-bottom-sheet
+      content-class="bottom-sheet-rounded"
       v-model="showSessionMenuSheet"
       @input="val => !val && (selectedSessionForMenu = null)">
-      <v-sheet class="text-center session-menu-sheet">
+      <v-sheet class="text-center session-menu-sheet" color="blue-grey darken-1">
         <v-list v-if="selectedSessionForMenu">
           <v-list-item link @click="closeSheetAndLoad(selectedSessionForMenu)">
-            <v-list-item-title>Load</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-play</v-icon>
+                <span>Load</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider></v-divider>
           <v-list-item link @click="closeSheetAndDashboard(selectedSessionForMenu)">
-            <v-list-item-title>Dashboard kinematics</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-chart-line</v-icon>
+                <span>Dashboard kinematics</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider></v-divider>
           <v-list-item link @click="closeSheetAndRename(selectedSessionForMenu)">
-            <v-list-item-title>Rename</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-pencil</v-icon>
+                <span>Rename</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider v-if="!selectedSessionForMenu.trashed"></v-divider>
           <v-list-item link v-if="!selectedSessionForMenu.trashed" @click="closeSheetAndTrash(selectedSessionForMenu)">
-            <v-list-item-title>Trash</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-delete-outline</v-icon>
+                <span>Trash</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider v-if="selectedSessionForMenu.trashed"></v-divider>
           <v-list-item link v-if="selectedSessionForMenu.trashed" @click="closeSheetAndRestore(selectedSessionForMenu)">
-            <v-list-item-title>Restore</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-restore</v-icon>
+                <span>Restore</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
         </v-list>
       </v-sheet>
@@ -397,7 +427,7 @@ export default {
           text: 'Session Name', 
           value: 'sessionName',
           class: 'session-name-column',
-          width: '180px'
+          width: '120px'
         },
         { 
           text: 'Date', 
@@ -410,7 +440,7 @@ export default {
           value: 'controls',
           sortable: false,
           class: 'controls-column',
-          width: '150px'
+          width: '56px'
         },
         {
           text: 'Session ID',
@@ -426,7 +456,7 @@ export default {
           width: '140px'
         },
         { 
-          text: 'Number of trials', 
+          text: '# trials', 
           value: 'trials_count',
           width: '110px'
         },
@@ -477,21 +507,25 @@ export default {
     ...mapState({
       analysis_dashboards: state => state.data.analysis_dashboards
     }),
+    // Only use compact 3-column layout on small phones; tablets and up get full columns.
     isPhone () {
       return this.$vuetify.breakpoint.xsOnly
     },
     displayHeaders () {
-      if (!this.isPhone) {
+      if (this.isPhone) {
         return this.headers
+          .filter(({ value }) => ['sessionName', 'created_at', 'controls'].includes(value))
+          .map(header => {
+            const { width, ...rest } = header
+            if (header.value === 'controls') {
+              return { ...rest, align: 'start', sortable: false, width: 72 }
+            }
+            return { ...rest, align: 'start', sortable: false }
+          })
       }
-
-      return this.headers
-        .filter(({ value }) => ['sessionName', 'created_at', 'controls'].includes(value))
-        .map(header => ({
-          ...header,
-          align: 'start',
-          sortable: false
-        }))
+      // Tablet/desktop: omit width so Vuetify doesn't set inline styles;
+      // our CSS media queries control column widths (%, min-width) instead.
+      return this.headers.map(({ width, ...rest }) => rest)
     }
   },
   methods: {
@@ -844,11 +878,6 @@ export default {
       min-height: 0;
       position: relative;
       -webkit-overflow-scrolling: touch;
-      
-      @media (max-width: 599px) {
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.02);
-      }
 
       table {
         width: 100%;
@@ -871,10 +900,6 @@ export default {
         tbody td {
           padding-left: 6px !important;
           padding-right: 6px !important;
-
-          @media (max-width: 599px) {
-            padding: 8px 4px !important;
-          }
         }
       }
       
@@ -882,8 +907,9 @@ export default {
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        gap: 8px;
+        gap: 4px;
         min-width: 0;
+        overflow: visible;
       }
 
       .copy-session-id-btn {
@@ -952,11 +978,14 @@ export default {
       .action-buttons-desktop {
         gap: 4px;
         flex-shrink: 0;
+        flex-wrap: nowrap;
+        white-space: nowrap;
 
         .action-btn {
           background-color: rgba(255, 255, 255, 0.1) !important;
           border-radius: 4px;
           margin: 0 2px;
+          flex-shrink: 0;
 
           &:hover {
             background-color: rgba(255, 255, 255, 0.2) !important;
@@ -981,67 +1010,147 @@ export default {
         }
       }
       
-      // Compact phone table with consistent desktop-style columns.
-      @media (max-width: 599px) {
-        ::v-deep .v-data-table {
-          font-size: 0.875rem;
+    }    
+  }
+
+  // Full table (600px+): no horizontal scroll; table fits viewport so no half-visible column.
+  @media (min-width: 600px) {
+    .sessions-table .v-data-table__wrapper {
+      overflow-x: hidden !important;
+
+      table {
+        table-layout: fixed;
+        width: 100%;
+      }
+
+      th, td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      th:nth-child(3), td:nth-child(3) {
+        overflow: visible;
+      }
+
+      // Percentage widths so columns always fit (sum 100%). Session ID wide enough for preview + copy button (no overflow).
+      th:nth-child(1), td:nth-child(1) { width: 15%; } /* Session Name */
+      th:nth-child(2), td:nth-child(2) { width: 13%; } /* Date */
+      th:nth-child(3), td:nth-child(3) { width: 8%; }  /* Actions (burger on sm) */
+      th:nth-child(4), td:nth-child(4) { width: 22%; } /* Session ID (preview + copy button) */
+      th:nth-child(5), td:nth-child(5) { width: 17%; } /* Subject Name */
+      th:nth-child(6), td:nth-child(6) { width: 9%; } /* # trials */
+      th:nth-child(7), td:nth-child(7) { width: 12%; } /* Monocular */
+    }
+  }
+
+  // Desktop (960px+): Actions enough for buttons; Session ID close to Actions; Date full; !important overrides Vuetify.
+  @media (min-width: 960px) {
+    .sessions-table .v-data-table__wrapper {
+      th:nth-child(1), td:nth-child(1) { width: 12% !important; }
+      th:nth-child(2), td:nth-child(2) { width: 11% !important; } /* Date: full "Feb. 24, 2026" */
+      th:nth-child(3), td:nth-child(3) { 
+        width: 26% !important; 
+        min-width: 200px !important;
+        overflow: visible !important;
+      } /* Actions: no huge gap before Session ID */
+      th:nth-child(4), td:nth-child(4) { width: 21% !important; } /* Session ID: closer to Actions */
+      th:nth-child(5), td:nth-child(5) { width: 12% !important; }
+      th:nth-child(6), td:nth-child(6) { width: 9% !important; }
+      th:nth-child(7), td:nth-child(7) { width: 9% !important; }
+    }
+    
+    .sessions-table .session-controls-cell {
+      overflow: visible !important;
+      min-width: 0;
+    }
+    
+    .sessions-table .action-buttons-desktop {
+      min-width: max-content;
+    }
+  }
+
+  // Compact table layout for small phones only (< 600px).
+  // Keeps 3 columns: Session Name / Date / Actions (burger only).
+  @media (max-width: 599px) {
+    .sessions-table .v-data-table__wrapper {
+      overflow-x: hidden !important;
+
+      table {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: auto;
+      }
+
+      tbody td {
+        vertical-align: middle;
+      }
+
+      tbody tr {
+        height: 44px;
+      }
+
+      // Clip text overflow in all cells by default
+      th,
+      td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      // Actions column: keep burger visible; header and buttons left-aligned so they line up
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 1%;
+        min-width: 48px;
+        white-space: nowrap;
+        overflow: visible;
+        text-align: left !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+      }
+
+      // "Actions" header: left-align to match the buttons in the column
+      thead th:nth-child(3) {
+        ::v-deep .v-data-table-header__content {
+          justify-content: flex-start;
+          padding: 0;
           width: 100%;
         }
+      }
+    }
 
-        ::v-deep .v-data-table__wrapper {
-          overflow-x: hidden !important;
-        }
+    .sessions-table .session-controls-cell {
+      justify-content: flex-start;
+      width: 100%;
+    }
 
-        ::v-deep .v-data-table__wrapper table {
-          min-width: 0 !important;
-          width: 100% !important;
-          table-layout: fixed;
-        }
+    .sessions-table {
+      .v-data-table {
+        font-size: 0.875rem;
+        width: 100%;
+      }
 
-        ::v-deep .v-data-table__wrapper thead th {
-          padding: 6px 6px !important;
+      .v-data-table__wrapper {
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.02);
+
+        thead th {
+          padding: 6px 4px !important;
           font-size: 0.72rem !important;
         }
 
-        ::v-deep .v-data-table__wrapper tbody td {
-          padding: 7px 6px !important;
-          vertical-align: middle;
-        }
-
-        ::v-deep .v-data-table__wrapper tbody tr {
-          height: 44px;
-        }
-
-        ::v-deep .v-data-table__wrapper th,
-        ::v-deep .v-data-table__wrapper td {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          text-align: left !important;
-        }
-
-        ::v-deep .v-data-table__wrapper th:nth-child(1),
-        ::v-deep .v-data-table__wrapper td:nth-child(1) {
-          width: 36%;
-        }
-
-        ::v-deep .v-data-table__wrapper th:nth-child(2),
-        ::v-deep .v-data-table__wrapper td:nth-child(2) {
-          width: 28%;
-        }
-
-        ::v-deep .v-data-table__wrapper th:nth-child(3),
-        ::v-deep .v-data-table__wrapper td:nth-child(3) {
-          width: 36%;
-        }
-
-        ::v-deep .v-data-footer {
-          justify-content: center;
-          padding-top: 8px;
-          font-size: 0.78rem;
+        tbody td {
+          padding: 7px 4px !important;
         }
       }
-    }    
+
+      ::v-deep .v-data-footer {
+        justify-content: center;
+        padding-top: 8px;
+        font-size: 0.78rem;
+      }
+    }
   }
   .table-info-footer {
     margin-left: auto;
@@ -1058,6 +1167,20 @@ export default {
 
 .session-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
+  background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  overflow: hidden;
+}
+.session-menu-sheet .v-list {
+  background-color: transparent !important;
+}
+.session-menu-sheet .v-list-item {
+  justify-content: center !important;
+}
+.session-menu-sheet .v-list-item__content {
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
 }
 
 .search-section {

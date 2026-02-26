@@ -22,6 +22,7 @@
                 v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
                 class="mobile-close-btn ui-no-zoom"
                 icon
+                small
                 @click="leftMenuOpen = false">
                 <v-icon>mdi-close</v-icon>
             </v-btn>
@@ -39,6 +40,9 @@
             </v-btn>
             <p v-if="showOpenInAppButton" class="open-in-app-requirement mb-4">
               Monocular requires OpenCap app version 2.0+.
+            </p>
+            <p v-if="isMonocularSession && show_controls" class="monocular-jump-warning mb-4">
+              Monocular does not support jumping activities yet.
             </p>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
@@ -121,43 +125,81 @@
 
               <!-- Mobile: trial options bottom sheet -->
               <v-bottom-sheet
+                content-class="bottom-sheet-rounded"
                 v-model="showTrialMenuSheet"
                 @input="val => !val && (selectedTrialForMenu = null)">
-                <v-sheet class="text-center trial-menu-sheet">
+                <v-sheet class="text-center trial-menu-sheet" color="blue-grey darken-1">
                   <v-list v-if="selectedTrialForMenu">
                     <v-list-item link v-if="selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndRename(selectedTrialForMenu)">
-                      <v-list-item-title>Rename</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-pencil</v-icon>
+                          <span>Rename</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
+                    <v-divider v-if="selectedTrialForMenu.name !== 'neutral'"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed && selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndAnalysis(selectedTrialForMenu)">
-                      <v-list-item-title>Analysis</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-chart-box</v-icon>
+                          <span>Analysis</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
+                    <v-divider></v-divider>
                     <v-list-item link @click="closeSheetAndEditTags(selectedTrialForMenu)">
-                      <v-list-item-title>Edit Tags</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-tag-multiple</v-icon>
+                          <span>Edit Tags</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
+                    <v-divider v-if="!selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenTrashDialog(selectedTrialForMenu)">
-                      <v-list-item-title>Trash</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-delete-outline</v-icon>
+                          <span>Trash</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
+                    <v-divider v-if="selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="selectedTrialForMenu.trashed" @click="closeSheetAndOpenRestoreDialog(selectedTrialForMenu)">
-                      <v-list-item-title>Restore</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-restore</v-icon>
+                          <span>Restore</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
+                    <v-divider v-if="!selectedTrialForMenu.trashed"></v-divider>
                     <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
-                      <v-list-item-title>Delete</v-list-item-title>
+                      <v-list-item-content>
+                        <div class="d-flex flex-row align-center justify-center">
+                          <v-icon class="mr-3">mdi-delete-forever</v-icon>
+                          <span>Delete</span>
+                        </div>
+                      </v-list-item-content>
                     </v-list-item>
                   </v-list>
                 </v-sheet>
               </v-bottom-sheet>
 
-              <v-btn class="session-actions-toggle w-100" @click="toggleSessionMenuButtons()">
-                  <v-icon v-if="showSessionMenuButtons">mdi-menu-down</v-icon>
-                  <v-icon v-else>mdi-menu-up</v-icon>
-              </v-btn>
+            </div><!-- end left-scroll -->
 
-              <div v-if="showSessionMenuButtons">
+            <v-btn class="session-actions-toggle w-100" @click="toggleSessionMenuButtons()">
+                <v-icon v-if="showSessionMenuButtons">mdi-menu-down</v-icon>
+                <v-icon v-else>mdi-menu-up</v-icon>
+            </v-btn>
+
+            <div v-if="showSessionMenuButtons" class="session-actions-panel">
                   <div>
                       <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
                   </div>
   
-                  <v-btn small class="w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'"
+                  <v-btn small class="w-100 session-action-btn" v-show="show_controls && !isMonocularSession" :disabled="busy || state !== 'ready'"
                       @click="newSessionSameSetup">
                       <v-icon left small>mdi-plus-box-multiple</v-icon>
                       New session, same setup
@@ -298,10 +340,9 @@
                       <v-icon left small>mdi-arrow-left</v-icon>
                       Back to session list
                   </v-btn>
-              </div>
             </div>
           </div>
-  
+
         <div class="main-content d-flex flex-grow-1">
         <!-- Centered Open in App prompt for monocular mobile sessions -->
         <div v-if="showOpenInAppButton && !trial" class="open-in-app-center d-flex flex-column align-center justify-center">
@@ -374,18 +415,17 @@
                   class="video-element" />
             </div>
 
-            <div v-if="isMobileOrTablet" class="mobile-video-toolbar ui-no-zoom d-flex justify-end">
-              <v-btn
-                  small
-                  class="playback-video-size speed-control-button"
-                  @click="cycleMobileVideoSize">
-                Cam {{ mobileVideoSizeLabel }}
-              </v-btn>
-            </div>
+            <v-btn
+                v-if="showCamSizeButton && !videoControlsDisabled"
+                x-small
+                class="cam-size-overlay ui-no-zoom"
+                @click="cycleMobileVideoSize">
+              Cam {{ mobileVideoSizeLabel }}
+            </v-btn>
 
             <div v-if="isMobileOrTablet" class="right-spacer" />
 
-            <div v-if="isMobileOrTablet" class="playback-controls ui-no-zoom">
+            <div v-if="isMobileOrTablet && !videoControlsDisabled" class="playback-controls ui-no-zoom">
               <div class="playback-timeline-mobile d-flex align-center px-1">
                 <v-text-field
                     label="Time (s)"
@@ -631,89 +671,118 @@
     <v-dialog
         v-model="showAnalysisDialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
-        :max-width="$vuetify.breakpoint.smAndDown ? '100%' : '800'"
+        max-width="fit-content"
         :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
-          <v-card-title>Advanced Analysis</v-card-title>
-          <v-card-text v-if="analysisFunctions.length > 0">
-  
-                  <v-row v-for="(func, index) in analysisFunctions"
+          <v-card-title class="text-h5 font-weight-bold pb-2">
+            <v-icon left>mdi-chart-box-outline</v-icon>
+            Advanced Analysis
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text v-if="analysisFunctions.length > 0" class="pt-4">
+                  <div v-for="(func, index) in analysisFunctions"
                       v-bind:item="func"
                       v-bind:index="index"
                       v-bind:key="func.id"
                       :ref="func.id">
-                  <v-col cols="12" sm="3">
-                    {{ func.title }}
-  
+                    
+                  <v-row class="align-center mb-2">
+                  <v-col cols="12" sm="3" class="py-2">
+                    <div class="font-weight-bold text-subtitle-1">
+                      {{ func.title }}
+                    </div>
                     <v-tooltip bottom v-if="func.info.length > 0">
                       <template v-slot:activator="{ on }">
-                        <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                        <v-icon v-on="on" small color="grey" class="ml-1"> mdi-help-circle-outline </v-icon>
                       </template>
                       <p v-html="func.info.replace(/\n/g, '<br>')" />
                     </v-tooltip>
-  
+
                   </v-col>
-                  <v-col cols="12" sm="5">{{ func.description }}</v-col>
-                  <v-col cols="12" sm="4">
-                    <v-btn small v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
+                  <v-col cols="12" sm="5" class="py-2">
+                    <div class="text-body-2 grey--text text--darken-2">{{ func.description }}</div>
+                  </v-col>
+                  <v-col cols="12" sm="4" class="py-2 text-right">
+                    <v-btn small color="grey darken-3" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                             Calculating...
                         </span>
                     </v-btn>
-  
+
                     <v-btn
                         small
+                        elevation="2"
+                        color="grey darken-2"
+                        dark
                         v-if="!func.trials.includes(session.trials[trial_analysis_index].id) && !(session.trials[trial_analysis_index].id in func.states)"
                         @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                         >
+                        <v-icon left small>mdi-play</v-icon>
                         Run
                     </v-btn>
                       <v-btn
                         small
+                        elevation="2"
+                        color="grey darken-3"
+                        dark
                         v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
                         @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
                       >
-                          <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:green'">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
+                          <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:lightgreen'" class="font-weight-bold">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
                           <v-menu offset-y left close-on-content-click content-class="analysis-submenu">
                               <template v-slot:activator="{ on, attrs }">
                               <v-btn icon dark v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
                                   <v-icon>mdi-menu</v-icon>
                               </v-btn>
                               </template>
-  
+
                               <v-list class="analysis-submenu-list">
                                   <v-list-item link
                                       @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                                       :disabled="trial_analysis_index in func.trials">
+                                      <v-icon left small>mdi-refresh</v-icon>
                                       Re-run
                                   </v-list-item>
                                   <v-list-item
                                       @click="goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
                                       v-if="func.states[session.trials[trial_analysis_index].id].dashboard_id != null && func.states[session.trials[trial_analysis_index].id].state == 'successfull'"
-                                      >Analysis Dashboard</v-list-item>
+                                      >
+                                      <v-icon left small>mdi-view-dashboard</v-icon>
+                                      Analysis Dashboard
+                                    </v-list-item>
                                    <v-list-item
                                      v-for="menu_item in func.states[session.trials[trial_analysis_index].id].menu"
                                      @click="requestDownloadMenuItem(session.trials[trial_analysis_index], menu_item)" :key="menu_item.label"
-                                      >{{ menu_item.label }}</v-list-item>
+                                      >
+                                      <v-icon left small>mdi-download</v-icon>
+                                      {{ menu_item.label }}
+                                    </v-list-item>
                               </v-list>
-  
+
                           </v-menu>
                       </v-btn>
-  
+
                   </v-col>
               </v-row>
+              
+              <v-divider v-if="index < analysisFunctions.length - 1" class="my-3"></v-divider>
+              </div>
           </v-card-text>
-          <v-card-text v-else>
-              <p>Sorry, there are no available functions.</p>
+          <v-card-text v-else class="text-center py-8">
+              <v-icon size="64" color="grey lighten-1">mdi-function-variant</v-icon>
+              <p class="text-h6 grey--text mt-4">No available functions</p>
+              <p class="grey--text text--lighten-1">There are no analysis functions available for this session.</p>
           </v-card-text>
-          <v-card-actions>
+          <v-divider></v-divider>
+          <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
           <v-btn
           color="blue darken-1"
           text
           v-if="analysisFunctions.length > 0"
         >
+          <v-icon left small>mdi-restore</v-icon>
           Reset results
         </v-btn>
         <v-btn
@@ -721,6 +790,7 @@
           text
           @click="showTrialMenuSheet = false; selectedTrialForMenu = null; (session.trials[trial_analysis_index] || {}).isMenuOpen = false; showAnalysisDialog = false;"
         >
+          <v-icon left small>mdi-close</v-icon>
           Close
         </v-btn>
           </v-card-actions>
@@ -936,6 +1006,9 @@
         isMobileOrTablet() {
           return this.$vuetify.breakpoint.smAndDown
         },
+        showCamSizeButton() {
+          return this.$vuetify.breakpoint.mdAndDown
+        },
         isMonocularSession() {
           return !!this.session?.isMono
         },
@@ -958,7 +1031,7 @@
           return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
         },
         mobileVideoPanelStyle() {
-          if (!this.isMobileOrTablet) {
+          if (!this.showCamSizeButton) {
             return {}
           }
 
@@ -2069,6 +2142,20 @@
   /* Trial menu bottom sheet - safe area for notched phones */
   .trial-menu-sheet {
     padding-bottom: env(safe-area-inset-bottom, 0);
+    background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    overflow: hidden;
+  }
+  .trial-menu-sheet .v-list {
+    background-color: transparent !important;
+  }
+  .trial-menu-sheet .v-list-item {
+    justify-content: center !important;
+  }
+  .trial-menu-sheet .v-list-item__content {
+    flex: 0 0 auto !important;
+    flex-direction: row !important;
   }
   
   .text-orange {
@@ -2171,36 +2258,23 @@
       }
 
       .session-actions-toggle {
-        margin-top: 16px;
-        position: sticky;
-        bottom: 0;
-        z-index: 3;
-        background-color: inherit !important;
+        margin-top: 8px;
+        flex-shrink: 0;
+        width: 100% !important;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .session-actions-panel {
+        flex-shrink: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
 
       .session-action-btn {
         width: 100%;
-        height: 40px !important;
-      }
-
-      @media (max-width: 959px) {
-        .left-scroll {
-          padding-bottom: 64px;
-        }
-
-        .session-actions-toggle {
-          margin-top: 0;
-          position: fixed;
-          left: 0;
-          bottom: max(8px, env(safe-area-inset-bottom, 0));
-          width: 280px !important;
-          max-width: 85vw;
-          z-index: 102;
-        }
-
-        &:not(.mobile-open) .session-actions-toggle {
-          display: none;
-        }
+        height: 32px !important;
+        min-height: 32px !important;
       }
   
       .trials {
@@ -2222,8 +2296,23 @@
         position: absolute;
         top: 8px;
         right: 8px;
-        z-index: 101;
-        
+        z-index: 103;
+        background-color: #424242 !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        min-width: 32px !important;
+        max-width: 32px !important;
+        width: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        aspect-ratio: 1;
+
+        .v-icon {
+          font-size: 20px !important;
+        }
+
         @media (min-width: 960px) {
           display: none !important;
         }
@@ -2280,11 +2369,32 @@
         padding: 0;
         margin-top: 8px;
       }
+
+      .cam-size-overlay {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        z-index: 10;
+        text-transform: none;
+        min-width: 60px;
+        height: 24px !important;
+        min-height: 24px !important;
+        font-size: 0.7rem;
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        backdrop-filter: blur(4px);
+        padding: 0 8px;
+
+        @media (max-width: 959px) {
+          bottom: calc(142px + env(safe-area-inset-bottom, 0px));
+          padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+        }
+      }
   
       @media (max-width: 959px) {
         position: absolute;
         right: 0;
         top: 0;
+        bottom: 0;
         width: 120px;
         min-width: 100px;
         max-width: 35%;
@@ -2296,11 +2406,11 @@
         position: absolute;
         right: 0;
         top: 0;
-        bottom: 0;
+        bottom: var(--video-controls-height, 90px);
         flex: none;
         width: 200px;
         max-height: none;
-        height: 100%;
+        height: auto;
         z-index: 1;
       }
   
@@ -2313,7 +2423,7 @@
         padding: 0;
         margin: 0;
         min-height: 0;
-        flex: 0 0 auto;
+        flex: 1 1 0;
         
         @media (min-width: 960px) {
           width: 200px;
@@ -2323,6 +2433,7 @@
 
         @media (max-width: 959px) {
           align-items: flex-end;
+          padding-bottom: 120px;
         }
       }
 
@@ -2338,6 +2449,7 @@
         }
 
         @media (min-width: 960px) {
+          flex: 0 0 0;
           background: transparent;
         }
       }
@@ -2425,6 +2537,7 @@
       position: relative;
       z-index: 2;
       flex-shrink: 0;
+      min-height: 86px;
 
       @media (max-width: 959px) {
         /* Hide desktop controls on mobile - they duplicate the mobile fixed bar */
@@ -2519,6 +2632,12 @@
     font-size: 0.85rem;
     line-height: 1.4;
     color: rgba(255, 255, 255, 0.85);
+  }
+
+  .monocular-jump-warning {
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: #ffb74d;
   }
   </style>
   

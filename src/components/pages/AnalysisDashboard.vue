@@ -405,7 +405,7 @@ export default {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 100vw;
+  max-width: 100%;
   min-height: 100%;
   max-height: none;
   overflow: visible;
@@ -469,21 +469,23 @@ export default {
   box-sizing: border-box;
 }
 
-/* Keep metrics on the right in both sidebar states on desktop */
+/* Keep metrics on the right in both sidebar states on desktop; use all available width */
 .dashboard-body.has-metrics {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   column-gap: 8px;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
 }
 
-/* Keep metrics on the right but in normal flow so page scroll handles overflow */
+/* Keep metrics on the right but in normal flow so page scroll handles overflow; fill grid cell */
 .dashboard-body .metrics-column {
   position: static;
   width: 100%;
-  min-width: 280px;
+  min-width: 0;
   flex: initial;
-  max-width: 42vw;
+  max-width: none;
   overflow: visible;
   background: black;
   z-index: 10;
@@ -495,9 +497,9 @@ export default {
 .dashboard-body > div:last-child {
   position: static;
   width: 100%;
-  min-width: 280px;
+  min-width: 0;
   flex: initial;
-  max-width: 42vw;
+  max-width: none;
   overflow: visible;
   background: black;
   z-index: 10;
@@ -713,27 +715,34 @@ export default {
 
 .dashboard-body {
   margin-left: 0;
-  margin-right: 10px;
+  margin-right: 0;
   min-width: 0;
   flex: 1;
   padding-left: 1rem;
+  padding-right: 1rem;
   padding-bottom: 24px;
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* Re-assert desktop metrics rail after base dashboard-body flex styles. */
+/* Re-assert desktop metrics rail after base dashboard-body flex styles; use full width. */
 @media (min-width: 961px) {
   .dashboard-body.has-metrics {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
     column-gap: 8px;
     align-items: start;
+    width: 100%;
+    max-width: 100%;
   }
 }
 
 #body {
   padding-left: 320px;
+  padding-right: 0;
 }
 
 .left-menu-closed#body {

@@ -199,24 +199,54 @@
 
     <!-- Subject menu bottom sheet (mobile) -->
     <v-bottom-sheet
+      content-class="bottom-sheet-rounded"
       v-model="showSubjectMenuSheet"
       @input="val => !val && (selectedSubjectForMenu = null)">
-      <v-sheet class="text-center subject-menu-sheet">
+      <v-sheet class="text-center subject-menu-sheet" color="blue-grey darken-1">
         <v-list v-if="selectedSubjectForMenu">
           <v-list-item link v-if="!selectedSubjectForMenu.trashed" @click="closeSheetAndEdit(selectedSubjectForMenu)">
-            <v-list-item-title>Edit</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-pencil</v-icon>
+                <span>Edit</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider v-if="!selectedSubjectForMenu.trashed"></v-divider>
           <v-list-item link v-show="!selectedSubjectForMenu.trashed" @click="closeSheetAndTrash(selectedSubjectForMenu)">
-            <v-list-item-title>Trash</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-delete-outline</v-icon>
+                <span>Trash</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider v-if="selectedSubjectForMenu.trashed"></v-divider>
           <v-list-item link v-show="selectedSubjectForMenu.trashed" @click="closeSheetAndRestore(selectedSubjectForMenu)">
-            <v-list-item-title>Restore</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-restore</v-icon>
+                <span>Restore</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider v-if="selectedSubjectForMenu.trashed"></v-divider>
           <v-list-item link v-show="selectedSubjectForMenu.trashed" @click="closeSheetAndPermanentDelete(selectedSubjectForMenu)">
-            <v-list-item-title>Delete permanently</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-delete-forever</v-icon>
+                <span>Delete permanently</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
+          <v-divider v-if="!selectedSubjectForMenu.trashed && isSyncDownloadAllowed"></v-divider>
           <v-list-item link v-show="!selectedSubjectForMenu.trashed && isSyncDownloadAllowed" @click="closeSheetAndDownload(selectedSubjectForMenu)">
-            <v-list-item-title>Download data (old)</v-list-item-title>
+            <v-list-item-content>
+              <div class="d-flex flex-row align-center justify-center">
+                <v-icon class="mr-3">mdi-download</v-icon>
+                <span>Download data (old)</span>
+              </div>
+            </v-list-item-content>
           </v-list-item>
         </v-list>
       </v-sheet>
@@ -1053,7 +1083,8 @@ export default {
 .sessions-table {
   ::v-deep .v-data-table__wrapper th:nth-child(1),
   ::v-deep .v-data-table__wrapper td:nth-child(1) {
-    min-width: 180px;
+    min-width: 100px;
+    width: 120px;
   }
 
   ::v-deep .v-data-table__wrapper th:nth-child(2),
@@ -1070,8 +1101,8 @@ export default {
 
   ::v-deep .v-data-table__wrapper th:nth-child(4),
   ::v-deep .v-data-table__wrapper td:nth-child(4) {
-    min-width: 112px;
-    width: 112px;
+    min-width: 130px;
+    width: 130px;
   }
 
   ::v-deep .v-data-table__wrapper th:nth-child(5),
@@ -1129,5 +1160,19 @@ export default {
 
 .subject-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
+  background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  overflow: hidden;
+}
+.subject-menu-sheet .v-list {
+  background-color: transparent !important;
+}
+.subject-menu-sheet .v-list-item {
+  justify-content: center !important;
+}
+.subject-menu-sheet .v-list-item__content {
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
 }
 </style>
