@@ -8,7 +8,7 @@
       <router-link
         :to="{ path: '/sessions' }"
         class="logo-link">
-        <img height="54px" class="logo" src="/images/opencap-logo-dark.png"/>
+        <img class="logo" src="/images/opencap-logo-dark.png" alt="OpenCap"/>
       </router-link>
       
       <v-spacer class="navbar-spacer"></v-spacer>
@@ -128,15 +128,18 @@ export default {
   margin-top: 10px;
   margin-bottom: 10px;
   height: 54px;
-  max-width: 100%;
   width: auto;
-  
+  max-width: 100%;
+  aspect-ratio: 5; /* logo intrinsic ratio (width/height) */
+  object-fit: contain;
+  object-position: left center;
+
   @media (max-width: 599px) {
     height: 33px;
     margin-top: 5px;
     margin-bottom: 5px;
   }
-  
+
   @media (min-width: 600px) and (max-width: 959px) {
     height: 42px;
     margin-top: 7px;

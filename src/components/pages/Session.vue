@@ -22,6 +22,7 @@
                 v-if="leftMenuOpen && ($vuetify.breakpoint.xsOnly || $vuetify.breakpoint.smOnly)"
                 class="mobile-close-btn ui-no-zoom"
                 icon
+                small
                 @click="leftMenuOpen = false">
                 <v-icon>mdi-close</v-icon>
             </v-btn>
@@ -186,12 +187,14 @@
                 </v-sheet>
               </v-bottom-sheet>
 
-              <v-btn class="session-actions-toggle w-100" @click="toggleSessionMenuButtons()">
-                  <v-icon v-if="showSessionMenuButtons">mdi-menu-down</v-icon>
-                  <v-icon v-else>mdi-menu-up</v-icon>
-              </v-btn>
+            </div><!-- end left-scroll -->
 
-              <div v-if="showSessionMenuButtons">
+            <v-btn class="session-actions-toggle w-100" @click="toggleSessionMenuButtons()">
+                <v-icon v-if="showSessionMenuButtons">mdi-menu-down</v-icon>
+                <v-icon v-else>mdi-menu-up</v-icon>
+            </v-btn>
+
+            <div v-if="showSessionMenuButtons" class="session-actions-panel">
                   <div>
                       <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
                   </div>
@@ -337,10 +340,9 @@
                       <v-icon left small>mdi-arrow-left</v-icon>
                       Back to session list
                   </v-btn>
-              </div>
             </div>
           </div>
-  
+
         <div class="main-content d-flex flex-grow-1">
         <!-- Centered Open in App prompt for monocular mobile sessions -->
         <div v-if="showOpenInAppButton && !trial" class="open-in-app-center d-flex flex-column align-center justify-center">
@@ -669,89 +671,118 @@
     <v-dialog
         v-model="showAnalysisDialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
-        :max-width="$vuetify.breakpoint.smAndDown ? '100%' : '800'"
+        max-width="fit-content"
         :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
-          <v-card-title>Advanced Analysis</v-card-title>
-          <v-card-text v-if="analysisFunctions.length > 0">
-  
-                  <v-row v-for="(func, index) in analysisFunctions"
+          <v-card-title class="text-h5 font-weight-bold pb-2">
+            <v-icon left>mdi-chart-box-outline</v-icon>
+            Advanced Analysis
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text v-if="analysisFunctions.length > 0" class="pt-4">
+                  <div v-for="(func, index) in analysisFunctions"
                       v-bind:item="func"
                       v-bind:index="index"
                       v-bind:key="func.id"
                       :ref="func.id">
-                  <v-col cols="12" sm="3">
-                    {{ func.title }}
-  
+                    
+                  <v-row class="align-center mb-2">
+                  <v-col cols="12" sm="3" class="py-2">
+                    <div class="font-weight-bold text-subtitle-1">
+                      {{ func.title }}
+                    </div>
                     <v-tooltip bottom v-if="func.info.length > 0">
                       <template v-slot:activator="{ on }">
-                        <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                        <v-icon v-on="on" small color="grey" class="ml-1"> mdi-help-circle-outline </v-icon>
                       </template>
                       <p v-html="func.info.replace(/\n/g, '<br>')" />
                     </v-tooltip>
-  
+
                   </v-col>
-                  <v-col cols="12" sm="5">{{ func.description }}</v-col>
-                  <v-col cols="12" sm="4">
-                    <v-btn small v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
+                  <v-col cols="12" sm="5" class="py-2">
+                    <div class="text-body-2 grey--text text--darken-2">{{ func.description }}</div>
+                  </v-col>
+                  <v-col cols="12" sm="4" class="py-2 text-right">
+                    <v-btn small color="grey darken-3" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                             Calculating...
                         </span>
                     </v-btn>
-  
+
                     <v-btn
                         small
+                        elevation="2"
+                        color="grey darken-2"
+                        dark
                         v-if="!func.trials.includes(session.trials[trial_analysis_index].id) && !(session.trials[trial_analysis_index].id in func.states)"
                         @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                         >
+                        <v-icon left small>mdi-play</v-icon>
                         Run
                     </v-btn>
                       <v-btn
                         small
+                        elevation="2"
+                        color="grey darken-3"
+                        dark
                         v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
                         @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
                       >
-                          <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:green'">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
+                          <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:lightgreen'" class="font-weight-bold">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
                           <v-menu offset-y left close-on-content-click content-class="analysis-submenu">
                               <template v-slot:activator="{ on, attrs }">
                               <v-btn icon dark v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
                                   <v-icon>mdi-menu</v-icon>
                               </v-btn>
                               </template>
-  
+
                               <v-list class="analysis-submenu-list">
                                   <v-list-item link
                                       @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                                       :disabled="trial_analysis_index in func.trials">
+                                      <v-icon left small>mdi-refresh</v-icon>
                                       Re-run
                                   </v-list-item>
                                   <v-list-item
                                       @click="goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
                                       v-if="func.states[session.trials[trial_analysis_index].id].dashboard_id != null && func.states[session.trials[trial_analysis_index].id].state == 'successfull'"
-                                      >Analysis Dashboard</v-list-item>
+                                      >
+                                      <v-icon left small>mdi-view-dashboard</v-icon>
+                                      Analysis Dashboard
+                                    </v-list-item>
                                    <v-list-item
                                      v-for="menu_item in func.states[session.trials[trial_analysis_index].id].menu"
                                      @click="requestDownloadMenuItem(session.trials[trial_analysis_index], menu_item)" :key="menu_item.label"
-                                      >{{ menu_item.label }}</v-list-item>
+                                      >
+                                      <v-icon left small>mdi-download</v-icon>
+                                      {{ menu_item.label }}
+                                    </v-list-item>
                               </v-list>
-  
+
                           </v-menu>
                       </v-btn>
-  
+
                   </v-col>
               </v-row>
+              
+              <v-divider v-if="index < analysisFunctions.length - 1" class="my-3"></v-divider>
+              </div>
           </v-card-text>
-          <v-card-text v-else>
-              <p>Sorry, there are no available functions.</p>
+          <v-card-text v-else class="text-center py-8">
+              <v-icon size="64" color="grey lighten-1">mdi-function-variant</v-icon>
+              <p class="text-h6 grey--text mt-4">No available functions</p>
+              <p class="grey--text text--lighten-1">There are no analysis functions available for this session.</p>
           </v-card-text>
-          <v-card-actions>
+          <v-divider></v-divider>
+          <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
           <v-btn
           color="blue darken-1"
           text
           v-if="analysisFunctions.length > 0"
         >
+          <v-icon left small>mdi-restore</v-icon>
           Reset results
         </v-btn>
         <v-btn
@@ -759,6 +790,7 @@
           text
           @click="showTrialMenuSheet = false; selectedTrialForMenu = null; (session.trials[trial_analysis_index] || {}).isMenuOpen = false; showAnalysisDialog = false;"
         >
+          <v-icon left small>mdi-close</v-icon>
           Close
         </v-btn>
           </v-card-actions>
@@ -2226,37 +2258,23 @@
       }
 
       .session-actions-toggle {
-        margin-top: 16px;
-        position: sticky;
-        bottom: 0;
-        z-index: 3;
-        background-color: inherit !important;
+        margin-top: 8px;
+        flex-shrink: 0;
+        width: 100% !important;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      .session-actions-panel {
+        flex-shrink: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
 
       .session-action-btn {
         width: 100%;
         height: 32px !important;
         min-height: 32px !important;
-      }
-
-      @media (max-width: 959px) {
-        .left-scroll {
-          padding-bottom: 64px;
-        }
-
-        .session-actions-toggle {
-          margin-top: 0;
-          position: fixed;
-          left: 0;
-          bottom: max(8px, env(safe-area-inset-bottom, 0));
-          width: 280px !important;
-          max-width: 85vw;
-          z-index: 102;
-        }
-
-        &:not(.mobile-open) .session-actions-toggle {
-          display: none;
-        }
       }
   
       .trials {
@@ -2278,8 +2296,23 @@
         position: absolute;
         top: 8px;
         right: 8px;
-        z-index: 101;
-        
+        z-index: 103;
+        background-color: #424242 !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        min-width: 32px !important;
+        max-width: 32px !important;
+        width: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        aspect-ratio: 1;
+
+        .v-icon {
+          font-size: 20px !important;
+        }
+
         @media (min-width: 960px) {
           display: none !important;
         }
