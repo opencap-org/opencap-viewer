@@ -2376,13 +2376,15 @@
         right: 8px;
         z-index: 10;
         text-transform: none;
-        min-width: 60px;
-        height: 24px !important;
-        min-height: 24px !important;
+        min-width: unset !important;
+        width: auto !important;
+        height: auto !important;
+        min-height: unset !important;
         font-size: 0.7rem;
+        white-space: nowrap;
         background-color: rgba(0, 0, 0, 0.7) !important;
         backdrop-filter: blur(4px);
-        padding: 0 8px;
+        padding: 4px 10px !important;
 
         @media (max-width: 959px) {
           bottom: calc(142px + env(safe-area-inset-bottom, 0px));
