@@ -360,7 +360,10 @@
               <v-icon left>mdi-arrow-left</v-icon>
               {{ backButtonLabel }}
             </v-btn>
-            <v-btn class="same-width"
+            <v-btn
+              color="grey darken-4"
+              dark
+              class="same-width"
               :disabled="busy || disabledNextButton"
               :loading="busy && !imgs"
               @click="isMonocularMode ? skipProcessingToMonocular() : onNext()">

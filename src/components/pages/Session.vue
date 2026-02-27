@@ -29,26 +29,47 @@
                 <v-icon left>mdi-cellphone-arrow-down</v-icon>
                 Open in App
             </v-btn>
-            <p v-if="isMonocularSession && show_controls" class="monocular-jump-warning mb-4">
-              Monocular does not support jumping activities yet.
-            </p>
+            <!-- Monocular beta notification banner -->
+            <v-alert
+                v-if="isMonocularSession"
+                type="info"
+                dense
+                outlined
+                class="monocular-beta-alert mb-4"
+                border="left">
+              <div class="monocular-beta-content">
+                <strong>Monocular mode is in beta.</strong>
+                <a href="https://www.opencap.ai/best-practices?variant=Monocular" target="_blank" rel="noopener noreferrer">Best practices</a>
+                ·
+                <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.
+                Jumping is not supported yet. Camera must be static at 45° angle.
+              </div>
+            </v-alert>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
-                <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
+                <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
+                  <div class="flex-grow-1 min-width-0">
+                    <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
+                      <v-text-field v-show="show_controls && !showOpenInAppButton" v-model="trialName" label="Trial name" class="flex-grow-0"
+                          :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]" />
+                    </ValidationProvider>
+                  </div>
+                </div>
   
-                    <v-text-field v-show="show_controls && !showOpenInAppButton" v-model="trialName" label="Trial name" class="flex-grow-0"
-                        :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]" />
-                </ValidationProvider>
-  
-                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="busy || invalid" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
                   <p v-if="state === 'recording'">{{ n_cameras_connected }} devices are recording, do not refresh</p>
                   <p v-if="state === 'processing'">{{ n_videos_uploaded  }} of {{ n_cameras_connected }} videos uploaded, do not refresh.</p>
               </ValidationObserver>
 
-              <div class="trials flex-grow-1">
+              <div class="show-removed-trials-sidebar mb-2">
+                <v-checkbox v-model="show_trashed" label="Show removed trials" hide-details dense class="toolbar-checkbox"></v-checkbox>
+              </div>
+
+              <div class="trials-wrapper flex-grow-1">
+                  <div class="trials">
                   <div v-for="(t, index) in filteredTrialsWithMenu"
                       v-bind:item="t"
                       v-bind:index="index"
@@ -109,6 +130,7 @@
                           </div>
                       </div>
                       <v-divider v-if="index < filteredTrialsWithMenu.length - 1" class="mx-0 my-1" />
+                  </div>
                   </div>
               </div>
 
@@ -184,10 +206,6 @@
             </v-btn>
 
             <div v-if="showSessionMenuButtons" class="session-actions-panel">
-                  <div>
-                      <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
-                  </div>
-  
                   <v-btn small class="w-100 session-action-btn" v-show="show_controls && !isMonocularSession" :disabled="busy || state !== 'ready'"
                       @click="newSessionSameSetup">
                       <v-icon left small>mdi-plus-box-multiple</v-icon>
@@ -358,6 +376,21 @@
                 <v-icon left>mdi-launch</v-icon>
                 Open in App
             </v-btn>
+            <v-alert
+                type="info"
+                dense
+                outlined
+                class="monocular-beta-alert mt-6 mx-4"
+                border="left">
+              <div class="monocular-beta-content">
+                <strong>Monocular mode is in beta.</strong>
+                Jumping is not supported yet. Camera must be static at 45° angle.
+                <div class="d-flex flex-wrap mt-2">
+                  <v-btn x-small outlined class="mr-2 mb-1" @click="window.open('https://www.opencap.ai/best-practices?variant=Monocular', '_blank')">Best practices</v-btn>
+                  <v-btn x-small outlined class="mb-1" @click="window.open('https://www.opencap.ai/get-started?variant=monocular', '_blank')">Get started</v-btn>
+                </div>
+              </div>
+            </v-alert>
         </div>
 
         <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
@@ -707,7 +740,7 @@
                     <div class="text-body-2 grey--text text--darken-2">{{ func.description }}</div>
                   </v-col>
                   <v-col cols="12" sm="4" class="py-2 text-right">
-                    <v-btn small color="grey darken-3" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
+                    <v-btn small color="grey darken-4" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                             Calculating...
@@ -717,7 +750,7 @@
                     <v-btn
                         small
                         elevation="2"
-                        color="grey darken-2"
+                        color="grey darken-4"
                         dark
                         v-if="!func.trials.includes(session.trials[trial_analysis_index].id) && !(session.trials[trial_analysis_index].id in func.states)"
                         @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
@@ -728,7 +761,7 @@
                       <v-btn
                         small
                         elevation="2"
-                        color="grey darken-3"
+                        color="grey darken-4"
                         dark
                         v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
                         @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
@@ -1017,7 +1050,7 @@
           return this.$vuetify.breakpoint.mdAndDown
         },
         isMonocularSession() {
-          return !!this.session?.isMono
+          return !!(this.session?.isMono ?? this.session?.is_mono)
         },
         sessionDeepLinkUrl() {
           if (!this.session?.id) return null
@@ -2292,6 +2325,7 @@
 
     .left {
       min-width: 0;
+      min-height: 0;
       overflow: hidden;
       flex: 1;
       display: flex;
@@ -2325,6 +2359,13 @@
         width: 100% !important;
         min-width: 0;
         box-sizing: border-box;
+        height: 36px !important;
+        min-height: 36px !important;
+
+        @media (max-width: 599px) {
+          height: 44px !important;
+          min-height: 44px !important;
+        }
       }
 
       .session-actions-panel {
@@ -2333,12 +2374,46 @@
         overflow-x: hidden;
       }
 
+      .trials-wrapper {
+        min-height: 0;
+        overflow: visible;
+      }
+
+      .trial-name-row {
+        gap: 8px;
+      }
+
+      .show-removed-trials-sidebar {
+        flex-shrink: 0;
+      }
+
+      .toolbar-checkbox {
+        flex-shrink: 0;
+
+        ::v-deep .v-input {
+          margin-top: 0;
+          padding-top: 0;
+        }
+        ::v-deep .v-input__control {
+          align-items: center;
+        }
+        ::v-deep .v-messages {
+          display: none;
+        }
+      }
+
       .session-action-btn {
         width: 100%;
-        height: 32px !important;
-        min-height: 32px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        font-size: 0.9375rem !important;
+
+        @media (max-width: 599px) {
+          height: 44px !important;
+          min-height: 44px !important;
+        }
       }
-  
+
       .trials {
         overflow-y: visible;
         flex-grow: 0;
@@ -2694,10 +2769,15 @@
     }
   }
 
-  .monocular-jump-warning {
+  .monocular-beta-alert {
     font-size: 0.85rem;
-    line-height: 1.4;
-    color: #ffb74d;
+  }
+  .monocular-beta-alert a {
+    color: #64b5f6;
+    text-decoration: underline;
+  }
+  .monocular-beta-alert a:hover {
+    color: #90caf9;
   }
   </style>
   

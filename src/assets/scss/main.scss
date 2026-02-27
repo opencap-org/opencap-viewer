@@ -60,8 +60,78 @@
 }
 
 /* ==========================================================================
-   Toast notifications – refined, dark-theme-friendly styling
+   Alerts – match card theme
    ========================================================================== */
+
+.v-alert {
+  background: rgba(30, 30, 30, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.v-alert.v-alert--outlined {
+  background: rgba(30, 30, 30, 0.6) !important;
+}
+
+.v-alert[type="warning"] {
+  border-color: rgba(255, 183, 77, 0.4) !important;
+}
+
+.v-alert[type="info"] {
+  border-color: rgba(144, 202, 249, 0.3) !important;
+}
+
+.v-alert[type="error"] {
+  border-color: rgba(239, 154, 154, 0.4) !important;
+}
+
+/* ==========================================================================
+   App cards – unified styling for all v-card components
+   Consistent dark theme: background, border, radius, shadow
+   ========================================================================== */
+
+.v-card {
+  background: rgba(30, 30, 30, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dialogs: opaque background, no transparency; stronger shadow for overlay distinction */
+.v-dialog .v-card,
+.v-dialog .v-sheet {
+  background: rgb(30, 30, 30) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ==========================================================================
+   Toast notifications – refined, dark-theme-friendly styling
+   Responsive sizing for all screen sizes
+   ========================================================================== */
+
+/* Toast container – constrain width and add safe margins */
+.toasted-container {
+  width: 100% !important;
+  max-width: 100vw !important;
+  padding-left: max(16px, env(safe-area-inset-left)) !important;
+  padding-right: max(16px, env(safe-area-inset-right)) !important;
+  box-sizing: border-box !important;
+}
+
+.toasted-container.top-center {
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.toasted-container.top-right {
+  top: calc(var(--app-bar-top-offset, 64px) + 16px + env(safe-area-inset-top, 0px)) !important;
+  right: max(16px, env(safe-area-inset-right)) !important;
+}
 
 .toasted {
   font-family: Roboto, -apple-system, BlinkMacSystemFont, sans-serif !important;
@@ -77,6 +147,13 @@
     0 0 0 1px rgba(255, 255, 255, 0.08) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  max-width: min(420px, calc(100vw - 32px)) !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
 }
 
 /* Base primary theme – dark, elevated */
@@ -120,6 +197,7 @@
   text-transform: none !important;
   letter-spacing: 0.02em;
   transition: background 0.2s ease;
+  flex-shrink: 0 !important;
 }
 
 .toasted-container .toasted .action:hover {
@@ -127,21 +205,42 @@
   text-decoration: none !important;
 }
 
-/* Container – offset below app bar on top-center */
+/* Container – offset below app bar on top-center, safe area for notched devices */
 .toasted-container.top-center {
-  top: calc(var(--app-bar-top-offset, 64px) + 16px) !important;
+  top: calc(var(--app-bar-top-offset, 64px) + 16px + env(safe-area-inset-top, 0px)) !important;
 }
 
-/* Mobile: full-width toasts with safe spacing */
+/* Mobile: responsive toast sizing and safe spacing */
 @media only screen and (max-width: 600px) {
   .toasted-container.top-center {
-    top: calc(var(--app-bar-top-offset, 56px) + 12px) !important;
+    top: calc(var(--app-bar-top-offset, 56px) + 12px + env(safe-area-inset-top, 0px)) !important;
+    padding-left: max(12px, env(safe-area-inset-left)) !important;
+    padding-right: max(12px, env(safe-area-inset-right)) !important;
   }
 
   .toasted {
     border-radius: 10px !important;
     padding: 14px 16px !important;
     font-size: 0.875rem !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .toasted-container .toasted .action {
+    padding: 6px 10px !important;
+    margin-left: 10px !important;
+    font-size: 0.8125rem !important;
+  }
+
+  .toasted-container.top-right {
+    top: calc(var(--app-bar-top-offset, 56px) + 12px + env(safe-area-inset-top, 0px)) !important;
+    right: max(12px, env(safe-area-inset-right)) !important;
+  }
+}
+
+/* Tablet: slightly constrained for medium screens */
+@media only screen and (min-width: 601px) and (max-width: 960px) {
+  .toasted {
+    max-width: min(380px, calc(100vw - 48px)) !important;
   }
 }
 
@@ -245,6 +344,255 @@ body,
 // Disabled buttons: show default cursor, not pointer
 .v-btn.v-btn--disabled {
   cursor: default;
+}
+
+/* Form inputs and labels – larger text across app */
+.v-input input,
+.v-input textarea,
+.v-text-field input,
+.v-text-field textarea {
+  font-size: 1rem !important;
+}
+
+.v-label {
+  font-size: 0.9375rem !important;
+}
+
+.v-list-item__title,
+.v-list-item__subtitle {
+  font-size: 0.9375rem !important;
+}
+
+/* ==========================================================================
+   Buttons – unified styling across main pages
+   ========================================================================== */
+
+// Base: no uppercase, consistent typography, larger text
+.v-btn {
+  text-transform: none !important;
+  letter-spacing: 0.02em;
+}
+
+.v-btn:not(.v-btn--icon):not(.v-btn--fab) {
+  font-weight: 500;
+  font-size: 0.9375rem !important;
+}
+
+// Toolbar buttons (SelectSession, Subjects, RecycleBin)
+.toolbar-container .v-btn,
+.subjects-toolbar .v-btn,
+.recycle-toolbar .v-btn {
+  @media (min-width: 600px) {
+    min-height: 48px !important;
+  }
+
+  @media (max-width: 599px) {
+    min-height: 44px !important;
+  }
+}
+
+// Search Clear / Submit buttons
+.submit-btn,
+.subjects-submit-btn {
+  min-height: 44px !important;
+  font-weight: 500 !important;
+}
+
+// Page navigation (MainLayout – Calibration, Neutral, ConnectDevices)
+.page-navigation .v-btn {
+  min-height: 48px !important;
+  font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   Data tables – refined dark-theme styling
+   ========================================================================== */
+
+.v-data-table {
+  background: rgba(30, 30, 30, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.v-data-table > .v-data-table__wrapper > table {
+  border-collapse: collapse;
+}
+
+.v-data-table > .v-data-table__wrapper > table > thead > tr > th {
+  background: rgb(45, 45, 45) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  height: auto !important;
+}
+
+.v-data-table > .v-data-table__wrapper > table > tbody > tr > td {
+  padding: 12px 16px !important;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9375rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.15s ease;
+}
+
+.v-data-table > .v-data-table__wrapper > table > tbody > tr:hover > td {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.v-data-table > .v-data-table__wrapper > table > tbody > tr.v-data-table__selected > td {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.v-data-table > .v-data-table__wrapper > table > tbody > tr.v-data-table__selected:hover > td {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.v-data-footer {
+  background: rgba(40, 40, 40, 0.8) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8125rem;
+  width: 100% !important;
+  min-width: 100% !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box;
+  /* Match parent's bottom corners so footer fills to edges */
+  border-radius: 0 0 12px 12px;
+  /* Consistent height across all table pages */
+  min-height: 40px;
+  padding: 8px 16px !important;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+}
+
+.v-data-table__mobile-table-row {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  background: rgba(35, 35, 35, 0.8);
+}
+
+/* Data table empty state – styled to match app theme */
+.v-data-table .v-data-table__empty-wrapper {
+  padding: 48px 24px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 0.9375rem !important;
+}
+
+.v-data-table .v-data-table__empty-wrapper .v-icon {
+  color: rgba(255, 255, 255, 0.4) !important;
+  margin-bottom: 12px;
+}
+
+/* Custom no-data slot content – icon + message layout */
+.table-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9375rem;
+  text-align: center;
+
+  .v-icon {
+    color: rgba(255, 255, 255, 0.4) !important;
+  }
+
+  .text-caption {
+    color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+/* v-simple-table – match v-data-table styling */
+.v-simple-table {
+  background: rgba(30, 30, 30, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.v-simple-table table {
+  border-collapse: collapse;
+}
+
+.v-simple-table thead th {
+  background: rgb(45, 45, 45) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.v-simple-table tbody td {
+  padding: 12px 16px !important;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9375rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.v-simple-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table action buttons – slightly larger for better touch/click */
+.v-data-table .subject-action-btn,
+.v-data-table .subject-actions-cell .v-btn,
+.v-data-table .action-btn,
+.v-data-table .menu-button,
+.v-data-table .session-controls-cell .v-btn.v-btn--icon {
+  min-width: 36px !important;
+  min-height: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.v-data-table .copy-session-id-btn {
+  min-width: 36px !important;
+  min-height: 36px !important;
+  width: 36px !important;
+  height: 36px !important;
+}
+
+@media (max-width: 959px) {
+  .v-data-table .copy-session-id-btn {
+    min-width: 32px !important;
+    min-height: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+@media (max-width: 599px) {
+  .v-data-table .subject-action-btn,
+  .v-data-table .subject-actions-cell .v-btn,
+  .v-data-table .action-btn,
+  .v-data-table .menu-button,
+  .v-data-table .session-controls-cell .v-btn.v-btn--icon {
+    min-width: 32px !important;
+    min-height: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .v-data-table .copy-session-id-btn {
+    min-width: 30px !important;
+    min-height: 30px !important;
+    width: 30px !important;
+    height: 30px !important;
+  }
 }
 
 /* Warning toast – amber/orange gradient */
@@ -370,11 +718,35 @@ body,
     min-width: 560px;
   }
 
-  // Ensure data table footers are never hidden behind Safari's bottom bar
+  // Increase table header height on mobile for better tap targets and readability
+  .v-data-table > .v-data-table__wrapper > table > thead > tr > th {
+    padding: 12px 8px !important;
+    min-height: 44px !important;
+    font-size: 0.75rem !important;
+  }
+
+  // Compact table footer on mobile – reduce height
   .v-data-footer {
-    flex-wrap: wrap;
-    gap: 8px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    min-height: 32px !important;
+    padding: 4px 12px !important;
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px)) !important;
+    font-size: 0.75rem !important;
+
+    .v-btn {
+      min-height: 32px !important;
+      min-width: 32px !important;
+      width: 32px !important;
+      height: 32px !important;
+    }
+
+    .v-select {
+      margin-top: 0;
+      padding-top: 0;
+    }
+
+    .v-input__control {
+      min-height: 32px !important;
+    }
   }
 
   // Keep long text from forcing horizontal scroll.

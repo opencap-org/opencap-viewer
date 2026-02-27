@@ -34,12 +34,14 @@
                     </p>
                     <v-btn
                         v-if="showOpenInAppButton"
+                        color="grey darken-4"
+                        dark
                         block
                         class="qr-dialog-btn"
                         @click="openInApp">
                         Open in app
                     </v-btn>
-                    <v-btn block class="qr-dialog-btn" @click="dialog = false">Close</v-btn>
+                    <v-btn text block class="qr-dialog-btn" @click="dialog = false">Close</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

@@ -36,7 +36,7 @@
             <h1 class="my-4">2. Open the app and scan the QR code</h1>
             <div v-if="showOpenInAppButton" class="open-in-app-block my-2">
               <p class="mb-2">On this device? Open in App deeplink also requires app version 2.0+.</p>
-              <v-btn block @click="openInApp">Open app with this session (v2.0+)</v-btn>
+              <v-btn color="grey darken-4" dark block @click="openInApp">Open app with this session (v2.0+)</v-btn>
             </div>
             <h1 class="my-4">3. Mount your phone vertically or horizontally (unlock portrait orientation) on a tripod</h1>
             <h1 class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>

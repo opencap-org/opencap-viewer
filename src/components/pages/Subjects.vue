@@ -11,16 +11,17 @@
         Back to Sessions
       </v-btn>
       <v-btn
+        color="grey darken-4"
+        dark
         class="subjects-toolbar__btn"
         @click="$refs.dialogRef.addSubject()">
         <v-icon left>mdi-plus</v-icon>
         New Subject
       </v-btn>
-      <v-checkbox
-        v-model="show_trashed"
-        class="subjects-toolbar__checkbox"
-        label="Show removed subjects"
-        hide-details></v-checkbox>
+
+      <div class="show-removed-checkbox toolbar-checkbox">
+        <v-checkbox v-model="show_trashed" label="Show removed subjects" hide-details dense></v-checkbox>
+      </div>
 
       <div class="d-flex align-center flex-grow-1 flex-md-grow-0 ml-0 ml-md-auto mt-2 mt-md-0 subjects-search-section">
         <div class="flex-grow-1 mr-2">
@@ -34,6 +35,8 @@
         </div>
         <div v-if="searchText">
           <v-btn
+            color="grey darken-4"
+            dark
             class="subjects-submit-btn"
             @click="onClearSearch()">
             Clear
@@ -46,6 +49,7 @@
     <v-row class="subjects-page-row" no-gutters>
       <v-col cols="12" :md="selected ? 7 : 12" class="subjects-table-col">
 
+            <div class="subjects-table-wrapper">
             <v-data-table
               :headers="displayHeaders"
               :items="valid_subjects"
@@ -60,72 +64,81 @@
                 disableItemsPerPage: true,
                 itemsPerPageOptions: [40]
               }"
-              :height="$vuetify.breakpoint.smAndDown ? '50vh' : '70vh'"
+              :height="tableHeightSubjects"
               fixed-header
               single-select
               class="subjects-table flex-grow-1"
               @item-selected="onSelect"
               @click:row="onRowClick">
+              <template v-slot:no-data>
+                <div class="table-empty-state">
+                  <v-icon size="48" color="grey" class="mb-3">mdi-account-group-outline</v-icon>
+                  <p class="mb-0">No subjects yet</p>
+                  <p class="text-caption mb-0 mt-1">Create a new subject to get started</p>
+                </div>
+              </template>
               <template v-slot:item.name="{ item }">
                 <div class="subject-name-cell">
                   <div class="subject-name-text cursor-pointer">{{ item.name }}</div>
-                  <div class="subject-name-actions">
-                    <template v-if="$vuetify.breakpoint.smAndDown">
-                      <v-btn icon dark @click="openSubjectMenuSheet(item)">
-                        <v-icon>mdi-menu</v-icon>
-                      </v-btn>
-                    </template>
-                    <div v-else class="subject-action-buttons">
-                      <v-btn
-                        v-if="!item.trashed"
-                        icon
-                        small
-                        dark
-                        class="subject-action-btn"
-                        title="Edit subject"
-                        @click.stop="editSubject(item)">
-                        <v-icon small>mdi-pencil</v-icon>
-                      </v-btn>
-                      <v-btn
-                        v-if="!item.trashed"
-                        icon
-                        small
-                        dark
-                        class="subject-action-btn"
-                        title="Trash subject"
-                        @click.stop="selectedSubjectForTrash = item; remove_dialog = true">
-                        <v-icon small>mdi-delete</v-icon>
-                      </v-btn>
-                      <v-btn
-                        v-if="item.trashed"
-                        icon
-                        small
-                        dark
-                        class="subject-action-btn"
-                        title="Restore subject"
-                        @click.stop="selectedSubjectForRestore = item; restore_dialog = true">
-                        <v-icon small>mdi-restore</v-icon>
-                      </v-btn>
-                      <v-btn
-                        v-if="item.trashed"
-                        icon
-                        small
-                        dark
-                        class="subject-action-btn"
-                        title="Delete permanently"
-                        @click.stop="selectedSubjectForPermanentDelete = item; remove_permanently_dialog = true">
-                        <v-icon small>mdi-delete-forever</v-icon>
-                      </v-btn>
-                    </div>
+                </div>
+              </template>
+              <template v-slot:item.controls="{ item }">
+                <div class="subject-actions-cell">
+                  <template v-if="$vuetify.breakpoint.smAndDown">
+                    <v-btn icon dark @click="openSubjectMenuSheet(item)">
+                      <v-icon>mdi-menu</v-icon>
+                    </v-btn>
+                  </template>
+                  <div v-else class="subject-action-buttons">
+                    <v-btn
+                      v-if="!item.trashed"
+                      icon
+                      small
+                      dark
+                      class="subject-action-btn"
+                      title="Edit subject"
+                      @click.stop="editSubject(item)">
+                      <v-icon small>mdi-pencil</v-icon>
+                    </v-btn>
+                    <v-btn
+                      v-if="!item.trashed"
+                      icon
+                      small
+                      dark
+                      class="subject-action-btn"
+                      title="Trash subject"
+                      @click.stop="selectedSubjectForTrash = item; remove_dialog = true">
+                      <v-icon small>mdi-delete</v-icon>
+                    </v-btn>
+                    <v-btn
+                      v-if="item.trashed"
+                      icon
+                      small
+                      dark
+                      class="subject-action-btn"
+                      title="Restore subject"
+                      @click.stop="selectedSubjectForRestore = item; restore_dialog = true">
+                      <v-icon small>mdi-restore</v-icon>
+                    </v-btn>
+                    <v-btn
+                      v-if="item.trashed"
+                      icon
+                      small
+                      dark
+                      class="subject-action-btn"
+                      title="Delete permanently"
+                      @click.stop="selectedSubjectForPermanentDelete = item; remove_permanently_dialog = true">
+                      <v-icon small>mdi-delete-forever</v-icon>
+                    </v-btn>
                   </div>
                 </div>
               </template>
             </v-data-table>
-
+            </div>
 
       </v-col>
       <v-col v-if="selected" cols="12" md="5" class="sessions-table-col">
-
+        <div class="sessions-table-wrapper">
             <v-data-table
               v-if="selected"
               :headers="sessionDisplayHeaders"
@@ -142,10 +155,16 @@
                 itemsPerPageOptions: [40]
               }"
               fixed-header
-              :height="$vuetify.breakpoint.smAndDown ? '50vh' : '80vh'"
+              :height="tableHeightSessions"
               single-select
               class="sessions-table flex-grow-1"
               @click:row="onRowSessionClick">
+              <template v-slot:no-data>
+                <div class="table-empty-state">
+                  <v-icon size="48" color="grey" class="mb-3">mdi-folder-outline</v-icon>
+                  <p class="mb-0">No sessions for this subject</p>
+                </div>
+              </template>
               <template v-slot:item.sessionName="{ item }">
                 <div class="session-name-cell">
                   <div class="session-name-text">{{ item.sessionName || 'Untitled' }}</div>
@@ -197,6 +216,7 @@
                 </div>
               </template>
         </v-data-table>
+        </div>
       </v-col>
     </v-row>
 
@@ -205,7 +225,7 @@
       content-class="bottom-sheet-rounded"
       v-model="showSubjectMenuSheet"
       @input="val => !val && (selectedSubjectForMenu = null)">
-      <v-sheet class="text-center subject-menu-sheet" color="blue-grey darken-1">
+      <v-sheet class="text-center subject-menu-sheet">
         <v-list v-if="selectedSubjectForMenu">
           <v-list-item link v-if="!selectedSubjectForMenu.trashed" @click="closeSheetAndEdit(selectedSubjectForMenu)">
             <v-list-item-content>
@@ -395,6 +415,7 @@ export default {
       timer: null,
       headers: [
         { text: 'Name', value: 'name' },
+        { text: 'Actions', value: 'controls', sortable: false, width: '90px' },
         { text: 'Weight', value: 'weight' },
         { text: 'Height', value: 'height' },
         { text: 'Birth year', value: 'birth_year' },
@@ -430,13 +451,24 @@ export default {
     isPhone () {
       return this.$vuetify.breakpoint.xsOnly
     },
+    tableHeightSubjects () {
+      const isMobile = this.$vuetify.breakpoint.smAndDown
+      if (this.selected) {
+        return isMobile ? '40vh' : '44vh'
+      }
+      return isMobile ? '50vh' : '70vh'
+    },
+    tableHeightSessions () {
+      const isMobile = this.$vuetify.breakpoint.smAndDown
+      return isMobile ? '40vh' : '44vh'
+    },
     displayHeaders () {
       if (!this.isPhone) {
         return this.headers
       }
 
       return this.headers
-        .filter(({ value }) => ['name', 'weight', 'height', 'birth_year'].includes(value))
+        .filter(({ value }) => ['name', 'controls', 'weight', 'height', 'birth_year'].includes(value))
         .map(header => ({
           ...header,
           align: 'start',
@@ -771,6 +803,10 @@ export default {
   margin: 0 !important;
   flex-shrink: 0;
 
+  @media (min-width: 600px) {
+    min-height: 48px !important;
+  }
+
   @media (max-width: 599px) {
     flex: 1 1 calc(50% - 3px);
     width: calc(50% - 3px);
@@ -804,11 +840,6 @@ export default {
 }
 
 .subjects-search-section {
-  ::v-deep .v-text-field input,
-  ::v-deep .v-text-field .v-label {
-    font-size: 0.8rem;
-  }
-
   @media (max-width: 599px) {
     flex: 1 1 100% !important;
     max-width: 100%;
@@ -856,6 +887,44 @@ export default {
   display: flex;
 }
 
+.subjects-table-wrapper,
+.sessions-table-wrapper {
+  position: relative;
+  margin: 0 8px 16px 8px;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  @media (max-width: 599px) {
+    margin: 0 4px 8px 4px;
+  }
+}
+
+.sessions-table-wrapper .sessions-table {
+  margin: 0;
+}
+
+.subjects-toolbar .toolbar-checkbox {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+
+  ::v-deep .v-input {
+    margin-top: 0;
+    padding-top: 0;
+  }
+  ::v-deep .v-input__control {
+    align-items: center;
+  }
+  ::v-deep .v-messages {
+    display: none;
+  }
+}
+
 .subjects-table,
 .sessions-table {
   margin: 0 8px 16px 8px;
@@ -870,7 +939,14 @@ export default {
   @media (max-width: 599px) {
     margin: 0 4px 8px 4px;
   }
+}
 
+.subjects-table-wrapper .subjects-table {
+  margin: 0;
+}
+
+.subjects-table,
+.sessions-table {
   ::v-deep .v-data-table {
     display: flex;
     flex-direction: column;
@@ -880,7 +956,6 @@ export default {
 
   ::v-deep .v-data-footer {
     flex: 0 0 auto;
-    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   }
 
   ::v-deep .v-data-table__wrapper {
@@ -929,9 +1004,7 @@ export default {
     }
 
     ::v-deep .v-data-footer {
-      padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
       justify-content: center;
-      padding-top: 8px;
       font-size: 0.78rem;
     }
 
@@ -947,8 +1020,9 @@ export default {
     }
 
     ::v-deep .v-data-table__wrapper thead th {
-      padding: 6px 4px !important;
-      font-size: 0.72rem !important;
+      padding: 12px 8px !important;
+      min-height: 44px !important;
+      font-size: 0.75rem !important;
     }
 
     ::v-deep .v-data-table__wrapper tbody td {
@@ -977,10 +1051,12 @@ export default {
     width: 300px;
   }
 
-  ::v-deep .v-data-table__wrapper th:nth-child(5),
-  ::v-deep .v-data-table__wrapper td:nth-child(5),
+  ::v-deep .v-data-table__wrapper th:nth-child(2),
+  ::v-deep .v-data-table__wrapper td:nth-child(2),
   ::v-deep .v-data-table__wrapper th:nth-child(6),
-  ::v-deep .v-data-table__wrapper td:nth-child(6) {
+  ::v-deep .v-data-table__wrapper td:nth-child(6),
+  ::v-deep .v-data-table__wrapper th:nth-child(7),
+  ::v-deep .v-data-table__wrapper td:nth-child(7) {
     min-width: 90px;
     width: 90px;
     max-width: 90px;
@@ -989,25 +1065,31 @@ export default {
   @media (max-width: 599px) {
     ::v-deep .v-data-table__wrapper th:nth-child(1),
     ::v-deep .v-data-table__wrapper td:nth-child(1) {
-      width: 38%;
+      width: 34%;
       min-width: 0;
     }
 
     ::v-deep .v-data-table__wrapper th:nth-child(2),
     ::v-deep .v-data-table__wrapper td:nth-child(2) {
-      width: 20%;
-      min-width: 0;
+      width: 12%;
+      min-width: 70px;
     }
 
     ::v-deep .v-data-table__wrapper th:nth-child(3),
     ::v-deep .v-data-table__wrapper td:nth-child(3) {
-      width: 20%;
+      width: 18%;
       min-width: 0;
     }
 
     ::v-deep .v-data-table__wrapper th:nth-child(4),
     ::v-deep .v-data-table__wrapper td:nth-child(4) {
-      width: 22%;
+      width: 18%;
+      min-width: 0;
+    }
+
+    ::v-deep .v-data-table__wrapper th:nth-child(5),
+    ::v-deep .v-data-table__wrapper td:nth-child(5) {
+      width: 18%;
       min-width: 0;
     }
   }
@@ -1016,8 +1098,6 @@ export default {
 .subject-name-cell {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   width: 100%;
 }
 
@@ -1028,8 +1108,11 @@ export default {
   text-overflow: ellipsis;
 }
 
-.subject-name-actions {
-  flex: 0 0 auto;
+.subject-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
 }
 
 .subject-action-buttons {
@@ -1183,13 +1266,9 @@ export default {
 
 .subject-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
-  background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   overflow: hidden;
-}
-.subject-menu-sheet .v-list {
-  background-color: transparent !important;
 }
 .subject-menu-sheet .v-list-item {
   justify-content: center !important;

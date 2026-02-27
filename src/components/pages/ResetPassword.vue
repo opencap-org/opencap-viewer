@@ -1,47 +1,49 @@
 <template>
-  <v-layout class="login-main" ma-0 pa-3 row justify-center align-center fill-height>
+  <v-layout class="reset-main" ma-0 pa-3 row justify-center align-center fill-height>
     <v-flex
       xs12 sm6 md4 lg3 xl2 pa-3
-      class="wrapper-box d-flex flex-column align-stretch scroll-y">
+      class="reset-wrapper d-flex flex-column align-stretch scroll-y">
 
-      <h1 class="white--text text-center">Retrieve username and/or change password</h1>
+      <div class="reset-card">
+        <h1 class="reset-title">Retrieve username and/or change password</h1>
 
-      <span 
-        class="text-center mt-2">If your email exists in our database, we will send you an email with your username and a link to change your password.</span>
-      
-      <ValidationObserver
-        tag="div"
-        class="d-flex flex-column"
-        ref="observer"
-        v-slot="{ invalid }">
-        
-        <ValidationProvider
-          rules="required|email"
-          v-slot="{ errors }"
-          name="Email"
-        >
-          <v-text-field
-            label="Email"
-            v-model="email"
-            dark
-            :error="errors.length > 0"
-            :error-messages="errors[0]"
-          />
-        </ValidationProvider>
+        <p class="reset-description">
+          If your email exists in our database, we will send you an email with your username and a link to change your password.
+        </p>
 
-        <v-btn
-          type="submit" 
-          class="white--text mx-0 align-self-center"
-          :disabled="(submitted && invalid) || loading"
-          @click="onReset()">Send Email</v-btn>            
-      </ValidationObserver>
-      
-      <router-link class="mt-4 text-center"
-          :to="{ name: 'Login' }"
-      >
-      <span v-on:click="clearToasted">Back to Login</span>
-      </router-link>
-      
+        <ValidationObserver
+          tag="div"
+          class="reset-form d-flex flex-column"
+          ref="observer"
+          v-slot="{ invalid }">
+
+          <ValidationProvider
+            rules="required|email"
+            v-slot="{ errors }"
+            name="Email">
+            <v-text-field
+              label="Email"
+              v-model="email"
+              dark
+              outlined
+              dense
+              :error="errors.length > 0"
+              :error-messages="errors[0]"/>
+          </ValidationProvider>
+
+          <v-btn
+            type="submit"
+            class="reset-btn"
+            :loading="loading"
+            :disabled="(submitted && invalid) || loading"
+            @click="onReset()">Send Email</v-btn>
+        </ValidationObserver>
+
+        <router-link class="reset-back-link" :to="{ name: 'Login' }" @click="clearToasted">
+          <v-icon size="18" class="back-arrow">mdi-arrow-left</v-icon>
+          Back to Login
+        </router-link>
+      </div>
     </v-flex>
   </v-layout>
 </template>
@@ -90,38 +92,111 @@ export default {
 
 </script>
 
-<style lang="scss">
-.login-main {
-  button {
-    width: 100%;
-    max-width: 260px;
-  }
+<style lang="scss" scoped>
+.reset-main {
+  a {
+    text-decoration: none !important;
+    color: rgba(255, 255, 255, 0.85);
 
-  .wrapper-box {
-    max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
-    max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
-    overflow-y: scroll;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
+    &:hover {
+      text-decoration: underline !important;
+      color: rgba(255, 255, 255, 1);
     }
   }
+}
 
-  @media (max-width: 599px) {
+.reset-wrapper {
+  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.reset-card {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.reset-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  margin: 0 0 16px 0;
+}
+
+.reset-description {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.reset-form {
+  gap: 4px;
+
+  .v-text-field {
+    margin-bottom: 4px;
+  }
+}
+
+.reset-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 16px !important;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.reset-back-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.9375rem;
+
+  .back-arrow {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 599px) {
+  .reset-main {
     padding-left: 8px !important;
     padding-right: 8px !important;
+  }
 
-    .wrapper-box {
-      max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
+  .reset-wrapper {
+    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
 
-    button {
-      max-width: none;
-    }
+  .reset-card {
+    padding: 24px 20px;
+  }
+
+  .reset-title {
+    font-size: 1.25rem;
+    margin-bottom: 12px;
+  }
+
+  .reset-description {
+    font-size: 0.875rem;
+    margin-bottom: 20px;
   }
 }
 </style>

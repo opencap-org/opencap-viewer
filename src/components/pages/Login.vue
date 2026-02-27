@@ -1,82 +1,80 @@
 <template>
   <v-layout class="login-main" ma-0 pa-3 row justify-center align-center fill-height>
     <v-flex
-      xs12 sm6 md4 lg3 xl2 pa-3
-      class="wrapper-box d-flex flex-column align-stretch scroll-y">
+      xs12 sm6 md4 lg4 xl3 pa-3
+      class="login-wrapper d-flex flex-column align-stretch scroll-y">
 
-      <h1 class="white--text text-center">Login</h1>
+      <div class="login-card">
+        <h1 class="login-title">Login</h1>
 
-      <ValidationObserver
-        tag="div"
-        class="d-flex flex-column"
-        ref="observer"
-        v-slot="{ invalid }">
-        
-        <ValidationProvider
-          rules="required"
-          v-slot="{ errors }"
-          name="Username"
-          slim>
+        <ValidationObserver
+          tag="form"
+          class="login-form d-flex flex-column"
+          ref="observer"
+          @submit.native.prevent="onLogin()"
+          v-slot="{ invalid }">
+          
+          <ValidationProvider
+            rules="required"
+            v-slot="{ errors }"
+            name="Username"
+            slim>
+            <v-text-field
+              label="Username" 
+              v-model="username"
+              dark
+              outlined
+              dense
+              :error="errors.length > 0"
+              :error-messages="errors[0]"/>
+          </ValidationProvider>
 
-          <v-text-field
-            label="Username" 
-            v-model="username"
+          <ValidationProvider
+            rules="required"
+            v-slot="{ errors }"
+            name="Password"
+            slim>
+            <v-text-field
+              label="Password" 
+              v-model="password"
+              dark
+              outlined
+              dense
+              :error="errors.length > 0"
+              :error-messages="errors[0]"
+              :append-icon="show_password ? 'mdi-eye' : 'mdi-eye-off'"
+              :type="show_password ? 'text' : 'password'"
+              @click:append="show_password = !show_password"/>
+          </ValidationProvider>
+
+          <v-checkbox
+            label="Remember this device for 90 days"
+            v-if="show_remember_checkbox"
+            v-model="remember_device"
             dark
-            :error="errors.length > 0"
-            :error-messages="errors[0]"/>
-        </ValidationProvider>
+            hide-details
+            class="login-remember"
+          ></v-checkbox>
 
-        <ValidationProvider
-          rules="required"
-          v-slot="{ errors }"
-          name="Password"
-          slim>
+          <v-btn
+            type="submit" 
+            class="login-btn"
+            :loading="loading"
+            :disabled="(submitted && invalid) || loading"
+            @click="onLogin()">Login</v-btn>            
+        </ValidationObserver>
 
-          <v-text-field
-            label="Password" 
-            v-model="password"
-            dark
-            :error="errors.length > 0"
-            :error-messages="errors[0]"
-            :append-icon="show_password ? 'mdi-eye' : 'mdi-eye-off'"
-            :type="show_password ? 'text' : 'password'"
-            @click:append="show_password = !show_password"/>
-        </ValidationProvider>
+        <div class="login-links">
+          <router-link :to="{ name: 'ResetPassword' }">Forgot your username or password?</router-link>
+          <router-link :to="{ name: 'Register' }">Don't have an account? Sign Up</router-link>
+        </div>
+      </div>
 
-        <v-checkbox
-          label="Remember this device for 90 days"
-          v-if="show_remember_checkbox"
-          v-model="remember_device"
-          dark
-        ></v-checkbox>
-
-        <v-btn
-          type="submit" 
-          class="white--text mx-0 align-self-center"
-          :disabled="(submitted && invalid) || loading"
-          @click="onLogin()">Login</v-btn>            
-      </ValidationObserver>
-
-      <router-link
-        class="mt-4 text-center"
-        :to="{ name: 'ResetPassword' }">Forgot your username or password?</router-link>
-        
-      <span class="text-center mt-2"> -- </span>
-
-      <router-link
-        class="mt-4 text-center"
-        :to="{ name: 'Register' }">Don't have an account yet? Sign Up</router-link>
-        
-      <span class="text-center mt-2"> -- </span>
-      
-      <span 
-        class="text-center mt-2"><a href="https://www.opencap.ai/get-started">Gather the materials described on our Get Started page before collecting data.</a></span>
-      
-      <span class="text-center mt-2"> -- </span>
-      
-      <span 
-        class="text-center mt-2"><a href="https://www.opencap.ai/best-practices">Watch the quick tutorial videos on our Best Practices page before collecting data.</a></span>
-
+      <div class="login-help">
+        <a href="https://www.opencap.ai/get-started" target="_blank" rel="noopener">Get Started</a>
+        <span class="login-help-sep">·</span>
+        <a href="https://www.opencap.ai/best-practices" target="_blank" rel="noopener">Best Practices</a>
+      </div>
     </v-flex>
   </v-layout>
 </template>
@@ -176,46 +174,115 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .login-main {
-  button {
-    width: 100%;
-    max-width: 260px;
-  }
-
-  .wrapper-box {
-    max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
-    max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
-    overflow-y: scroll;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
-
   a {
     text-decoration: none !important;
+    color: rgba(255, 255, 255, 0.85);
 
     &:hover {
       text-decoration: underline !important;
+      color: rgba(255, 255, 255, 1);
     }
   }
+}
 
-  @media (max-width: 599px) {
+.login-wrapper {
+  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.login-card {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  margin: 0 0 24px 0;
+}
+
+.login-form {
+  gap: 4px;
+
+  .v-text-field {
+    margin-bottom: 4px;
+  }
+}
+
+.login-remember {
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.login-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 16px !important;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.login-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  font-size: 0.9375rem;
+}
+
+.login-help {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+
+  a {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .login-help-sep {
+    margin: 0 8px;
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 599px) {
+  .login-main {
     padding-left: 8px !important;
     padding-right: 8px !important;
+  }
 
-    .wrapper-box {
-      max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
+  .login-wrapper {
+    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
 
-    button {
-      max-width: none;
-    }
+  .login-card {
+    padding: 24px 20px;
+  }
+
+  .login-title {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
   }
 }
 </style>

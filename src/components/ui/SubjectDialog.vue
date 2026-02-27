@@ -150,8 +150,8 @@
             Cancel
           </v-btn>
           <v-btn
-            color="primary"
-            depressed
+            color="grey darken-4"
+            dark
             :disabled="invalid"
             @click="submitSubjectForm()"
           >

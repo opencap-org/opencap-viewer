@@ -10,6 +10,8 @@
           Back to Sessions
         </v-btn>
         <v-btn
+          color="grey darken-4"
+          dark
           class="recycle-toolbar-button"
           @click="empty_bin_dialog = true">
           <v-icon left>mdi-delete-sweep</v-icon>
@@ -39,6 +41,13 @@
               class="sessions-table recycle-sessions-table flex-grow-1"
               @item-selected="onSelect"
               @click:row="onRowClick">
+              <template v-slot:no-data>
+                <div class="table-empty-state">
+                  <v-icon size="48" color="grey" class="mb-3">mdi-delete-outline</v-icon>
+                  <p class="mb-0">Recycle bin is empty</p>
+                  <p class="text-caption mb-0 mt-1">Trashed sessions will appear here</p>
+                </div>
+              </template>
               <template v-slot:item.controls="{ item }">
                 <div class="session-controls-cell">
                   <template v-if="$vuetify.breakpoint.smAndDown && item.trashed">
@@ -157,7 +166,7 @@
 
     <!-- Session menu bottom sheet (mobile) -->
     <v-bottom-sheet content-class="bottom-sheet-rounded" v-model="showSessionMenuSheet" @input="val => !val && (selectedSessionForMenu = null)">
-      <v-sheet class="text-center recycle-menu-sheet" color="blue-grey darken-1">
+      <v-sheet class="text-center recycle-menu-sheet">
         <v-list v-if="selectedSessionForMenu">
           <v-list-item link @click="closeSheetAndRestoreSession(selectedSessionForMenu)">
             <v-list-item-content>
@@ -182,7 +191,7 @@
 
     <!-- Trial menu bottom sheet (mobile) -->
     <v-bottom-sheet content-class="bottom-sheet-rounded" v-model="showTrialMenuSheet" @input="val => !val && (selectedTrialForMenu = null)">
-      <v-sheet class="text-center recycle-menu-sheet" color="blue-grey darken-1">
+      <v-sheet class="text-center recycle-menu-sheet">
         <v-list v-if="selectedTrialForMenu">
           <v-list-item link @click="closeSheetAndRestoreTrial(selectedTrialForMenu)">
             <v-list-item-content>
@@ -620,6 +629,10 @@ export default {
   margin: 0 !important;
   flex-shrink: 0;
 
+  @media (min-width: 600px) {
+    min-height: 48px !important;
+  }
+
   @media (max-width: 599px) {
     flex: 1 1 calc(50% - 3px);
     width: calc(50% - 3px);
@@ -736,8 +749,9 @@ export default {
     }
 
     ::v-deep .v-data-table__wrapper thead th {
-      padding: 6px 6px !important;
-      font-size: 0.72rem !important;
+      padding: 12px 8px !important;
+      min-height: 44px !important;
+      font-size: 0.75rem !important;
       white-space: nowrap;
     }
 
@@ -789,13 +803,9 @@ export default {
 
 .recycle-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
-  background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   overflow: hidden;
-}
-.recycle-menu-sheet .v-list {
-  background-color: transparent !important;
 }
 .recycle-menu-sheet .v-list-item {
   justify-content: center !important;
