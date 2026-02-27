@@ -75,7 +75,7 @@
             <div class="left d-flex flex-column pa-2">
               <div v-if="loggedIn" class="left d-flex flex-column">
 
-                  <v-dialog v-model="dialog" width="500">
+                  <v-dialog v-model="dialog" content-class="app-dialog" width="500" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
                     <template v-slot:activator="{ on, attrs }">
                         <v-btn
                           class="mt-4 w-100 sidebar-action-btn"

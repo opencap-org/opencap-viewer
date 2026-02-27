@@ -199,8 +199,8 @@
                       New session
                   </v-btn>
   
-                  <v-dialog v-model="dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
-                      :fullscreen="$vuetify.breakpoint.smAndDown">
+                  <v-dialog v-model="dialog" content-class="app-dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
+                      max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
                       <template v-slot:activator="{ on, attrs }">
                           <v-btn small class="mt-4 w-100 session-action-btn" v-bind="attrs" v-on="on" v-show="show_controls">
                               <v-icon left small>mdi-share-variant</v-icon>
@@ -260,6 +260,7 @@
                   </v-btn>
                   <v-dialog
                       v-model="showArchiveDialog"
+                      content-class="app-dialog"
                       max-width="500"
                       :fullscreen="$vuetify.breakpoint.smAndDown">
                       <v-card>
@@ -467,7 +468,7 @@
   
         <v-dialog
               v-model="trial_rename_dialog"
-              content-class="compact-rename-dialog"
+              content-class="compact-rename-dialog app-dialog"
               max-width="420"
               :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
@@ -507,6 +508,7 @@
 
               <v-dialog
             v-model="trial_modify_tags"
+            content-class="app-dialog"
             max-width="500"
             :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
@@ -555,9 +557,9 @@
       <v-dialog
         v-model="remove_dialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="confirm-dialog"
         max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown"
-        persistent>
+        :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4" v-if="trialForTrashDialog">
             <v-row class="m-0">
@@ -595,9 +597,9 @@
       <v-dialog
         v-model="restore_dialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="confirm-dialog"
         max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown"
-        persistent>
+        :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4" v-if="trialForRestoreDialog">
             <v-row class="m-0">
@@ -633,9 +635,9 @@
       <v-dialog
         v-model="permanent_delete_dialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="confirm-dialog"
         max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown"
-        persistent>
+        :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4" v-if="trialForPermanentDeleteDialog">
             <v-row class="m-0">
@@ -671,6 +673,7 @@
     <v-dialog
         v-model="showAnalysisDialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="app-dialog"
         max-width="fit-content"
         :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>

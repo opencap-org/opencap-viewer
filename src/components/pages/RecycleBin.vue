@@ -1,8 +1,10 @@
 <template>
   <div class="recycle-bin d-flex flex-column">
+    <h1 class="page-title">Recycle Bin</h1>
     <div class="d-flex flex-wrap align-center recycle-toolbar">
         <v-btn
           class="recycle-toolbar-button"
+          text
           @click="$router.push({ name: 'SelectSession' })">
           <v-icon left>mdi-arrow-left</v-icon>
           Back to Sessions
@@ -10,6 +12,7 @@
         <v-btn
           class="recycle-toolbar-button"
           @click="empty_bin_dialog = true">
+          <v-icon left>mdi-delete-sweep</v-icon>
           Empty Recycle Bin
         </v-btn>
     </div>
@@ -203,7 +206,7 @@
     </v-bottom-sheet>
 
     <!-- Restore Session Dialog -->
-    <v-dialog v-model="restore_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="restore_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSessionForRestore">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -222,7 +225,7 @@
     </v-dialog>
 
     <!-- Permanent Delete Session Dialog -->
-    <v-dialog v-model="remove_permanently_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_permanently_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSessionForPermanentDelete">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -241,7 +244,7 @@
     </v-dialog>
 
     <!-- Restore Trial Dialog -->
-    <v-dialog v-model="restore_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="restore_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedTrialForRestore">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -260,7 +263,7 @@
     </v-dialog>
 
     <!-- Permanent Delete Trial Dialog -->
-    <v-dialog v-model="remove_permanently_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_permanently_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedTrialForPermanentDelete">
         <v-card-text class="pt-4">
           <v-row class="m-0">

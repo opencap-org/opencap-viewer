@@ -1,5 +1,6 @@
 <template>
   <div class="select-session d-flex flex-column">
+    <h1 class="page-title">Sessions</h1>
     <div class="d-flex flex-wrap align-center toolbar-container">
       <v-btn
         @click="$router.push({ name: 'RecordingMode' })"

@@ -1,9 +1,11 @@
 <template>
   <div class="subjects-page d-flex flex-column">
+    <h1 class="page-title">Subjects</h1>
     <div class="d-flex flex-column">
-    <div class="pa-2 d-flex flex-wrap align-center subjects-toolbar">
+    <div class="d-flex flex-wrap align-center subjects-toolbar">
       <v-btn
         class="subjects-toolbar__btn"
+        text
         @click="$router.push({ name: 'SelectSession' })">
         <v-icon left>mdi-arrow-left</v-icon>
         Back to Sessions
@@ -41,7 +43,7 @@
     </div>
     </div>
 
-    <v-row class="subjects-page-row">
+    <v-row class="subjects-page-row" no-gutters>
       <v-col cols="12" :md="selected ? 7 : 12" class="subjects-table-col">
 
             <v-data-table
@@ -61,7 +63,7 @@
               :height="$vuetify.breakpoint.smAndDown ? '50vh' : '70vh'"
               fixed-header
               single-select
-              class="subjects-table mx-2 mb-4 flex-grow-1"
+              class="subjects-table flex-grow-1"
               @item-selected="onSelect"
               @click:row="onRowClick">
               <template v-slot:item.name="{ item }">
@@ -142,7 +144,7 @@
               fixed-header
               :height="$vuetify.breakpoint.smAndDown ? '50vh' : '80vh'"
               single-select
-              class="sessions-table mx-2 flex-grow-1"
+              class="sessions-table flex-grow-1"
               @click:row="onRowSessionClick">
               <template v-slot:item.sessionName="{ item }">
                 <div class="session-name-cell">
@@ -254,7 +256,7 @@
     </v-bottom-sheet>
 
     <!-- Trash Subject Dialog -->
-    <v-dialog v-model="remove_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSubjectForTrash">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -274,7 +276,7 @@
     </v-dialog>
 
     <!-- Restore Subject Dialog -->
-    <v-dialog v-model="restore_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="restore_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSubjectForRestore">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -293,7 +295,7 @@
     </v-dialog>
 
     <!-- Permanent Delete Subject Dialog -->
-    <v-dialog v-model="remove_permanently_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_permanently_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSubjectForPermanentDelete">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -312,7 +314,7 @@
     </v-dialog>
 
     <!-- Download Subject Dialog -->
-    <v-dialog v-model="download_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="download_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSubjectForDownload">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -614,14 +616,21 @@ export default {
     itemClasses (item) {
       return item.trashed ? 'trashed' : '';
     },
-    clickOutsideDialogSubjectHideMenu(e) {
-      if (e.target.className === 'v-overlay__scrim') {
-        for (let t of this.valid_subjects) {
-          t.isMenuOpen = false;
-        }
-        this.showSubjectMenuSheet = false;
-        this.selectedSubjectForMenu = null;
+    clickOutsideDialogSubjectHideMenu() {
+      for (let t of this.valid_subjects) {
+        t.isMenuOpen = false;
       }
+      this.showSubjectMenuSheet = false;
+      this.selectedSubjectForMenu = null;
+      // Close dialogs when clicking outside
+      this.remove_dialog = false;
+      this.selectedSubjectForTrash = null;
+      this.restore_dialog = false;
+      this.selectedSubjectForRestore = null;
+      this.remove_permanently_dialog = false;
+      this.selectedSubjectForPermanentDelete = null;
+      this.download_dialog = false;
+      this.selectedSubjectForDownload = null;
     },
     openSubjectMenuSheet(item) {
       this.selectedSubjectForMenu = item;
@@ -728,11 +737,11 @@ export default {
   height: calc(100vh - var(--app-bar-top-offset, 64px));
   height: calc(100dvh - var(--app-bar-top-offset, 64px));
   overflow: hidden;
-  padding: 16px 0;
+  padding: 16px 8px;
   box-sizing: border-box;
 
   @media (max-width: 599px) {
-    padding: 8px 0;
+    padding: 8px 4px;
   }
 
   @media (max-width: 959px) {
@@ -741,6 +750,7 @@ export default {
 }
 
 .subjects-toolbar {
+  padding: 10px 8px 14px;
   gap: 8px;
   min-width: 0;
   flex: 0 0 auto;
@@ -750,6 +760,7 @@ export default {
   }
 
   @media (max-width: 599px) {
+    padding: 8px 6px 10px;
     gap: 6px;
     justify-content: flex-start;
     align-items: stretch;
@@ -802,6 +813,7 @@ export default {
     flex: 1 1 100% !important;
     max-width: 100%;
     margin-left: 0 !important;
+    margin-top: 4px;
     flex-direction: row;
     align-items: center !important;
     gap: 6px;
@@ -846,6 +858,7 @@ export default {
 
 .subjects-table,
 .sessions-table {
+  margin: 0 8px 16px 8px;
   max-width: 100%;
   min-width: 0;
   width: 100%;
@@ -853,6 +866,10 @@ export default {
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+
+  @media (max-width: 599px) {
+    margin: 0 4px 8px 4px;
+  }
 
   ::v-deep .v-data-table {
     display: flex;
@@ -930,12 +947,12 @@ export default {
     }
 
     ::v-deep .v-data-table__wrapper thead th {
-      padding: 6px 6px !important;
+      padding: 6px 4px !important;
       font-size: 0.72rem !important;
     }
 
     ::v-deep .v-data-table__wrapper tbody td {
-      padding: 7px 6px !important;
+      padding: 7px 4px !important;
       vertical-align: middle;
     }
 

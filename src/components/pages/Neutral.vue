@@ -149,7 +149,8 @@
                   <v-dialog
                     v-model="advancedSettingsDialog"
                     :width="$vuetify.breakpoint.smAndDown ? '95%' : '700px'"
-                    content-class="advanced-settings-dialog"
+                    content-class="advanced-settings-dialog app-dialog"
+                    max-width="700"
                   >
                     <v-card class="advanced-settings-card">
                       <v-card-actions class="advanced-settings-header justify-space-between align-center">

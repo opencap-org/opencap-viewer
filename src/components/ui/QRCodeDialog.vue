@@ -11,6 +11,8 @@
         <v-dialog
             v-model="dialog"
             activator="parent"
+            content-class="app-dialog"
+            max-width="420"
             width="auto"
         >
             <v-card>

@@ -4,7 +4,6 @@
       :width="$vuetify.breakpoint.smAndDown ? '100%' : '520'"
       max-width="520"
       :fullscreen="$vuetify.breakpoint.smAndDown"
-      persistent
       @click:outside="closeDialog">
 
       <ValidationObserver
