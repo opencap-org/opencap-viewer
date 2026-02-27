@@ -680,6 +680,7 @@
           </v-card-title>
           <v-divider></v-divider>
           <v-card-text v-if="analysisFunctions.length > 0" class="pt-4">
+                  <template v-if="session?.trials && session.trials[trial_analysis_index]">
                   <div v-for="(func, index) in analysisFunctions"
                       v-bind:item="func"
                       v-bind:index="index"
@@ -768,6 +769,8 @@
               
               <v-divider v-if="index < analysisFunctions.length - 1" class="my-3"></v-divider>
               </div>
+                  </template>
+                  <p v-else class="mb-0 grey--text">Select a trial to run analysis.</p>
           </v-card-text>
           <v-card-text v-else class="text-center py-8">
               <v-icon size="64" color="grey lighten-1">mdi-function-variant</v-icon>
@@ -976,13 +979,14 @@
             isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed
           }),
         sessionUrl() {
-          return location.origin + "/session/" + this.session.id;
+          return location.origin + "/session/" + (this.session?.id || '');
         },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
         },
         filteredTrials() {
-          return this.session.trials.filter(trial => trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
+          const trials = this.session?.trials || []
+          return trials.filter(trial => trial && trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
         },
         videoControlsDisabled() {
           return !this.trial || this.frames.length === 0
@@ -1059,9 +1063,17 @@
       if (this.session.id == undefined) {
         return
       }
-      // Get number of expected cameras.
-      const res = await axios.get(`/sessions/${this.session.id}/get_n_calibrated_cameras/`, {})
-      this.n_calibrated_cameras = res.data.data
+      // Get number of expected cameras. Skip for monocular sessions (no calibration).
+      if (this.isMonocularSession) {
+        this.n_calibrated_cameras = 1
+      } else {
+        try {
+          const res = await axios.get(`/sessions/${this.session.id}/get_n_calibrated_cameras/`, {})
+          this.n_calibrated_cameras = res.data.data
+        } catch (e) {
+          this.n_calibrated_cameras = 0
+        }
+      }
   
       if (this.user_id == this.session.user) {
         this.show_controls = true
