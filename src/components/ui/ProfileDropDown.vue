@@ -75,13 +75,42 @@
         </ul>
         <hr class="dropdown-divider">
         <ul>
-          <li class="dropdown-logout" @click="logoutAction">
+          <li class="dropdown-logout" @click.stop="openLogoutDialog">
                 <i class="mdi mdi-logout inline-icon"></i>
                 Logout
           </li>
         </ul>
       </div>
     </transition>
+    <!-- Logout confirmation dialog -->
+    <v-dialog
+      v-model="showLogoutDialog"
+      content-class="confirm-dialog"
+      max-width="500"
+      :fullscreen="$vuetify.breakpoint.smAndDown"
+      :retain-focus="false">
+      <v-card>
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2">
+              <v-icon x-large color="blue">mdi-logout</v-icon>
+            </v-col>
+            <v-col cols="12" sm="10">
+              <p>Are you sure you want to log out?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="white" text @click="showLogoutDialog = false">
+            Cancel
+          </v-btn>
+          <v-btn color="white" text @click="confirmLogout">
+            Log out
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -89,6 +118,7 @@
 import { mapState, mapActions } from 'vuex'
 
 export default {
+  name: 'ProfileDropdown',
   computed: {
     ...mapState({
       username: state => state.auth.username,
@@ -99,6 +129,7 @@ export default {
     return {
       isDropdownOpen: false,
       profileImage: '/images/Default_pfp.svg',
+      showLogoutDialog: false,
     };
   },
   methods: {
@@ -121,9 +152,14 @@ export default {
       // Add your help logic here
       console.log('Help clicked');
     },
-    logoutAction() {
+    openLogoutDialog() {
+      this.isDropdownOpen = false;
+      this.showLogoutDialog = true;
+    },
+    confirmLogout() {
+      this.showLogoutDialog = false;
       this.logout();
-    }
+    },
   },
   beforeDestroy() {
     document.body.removeEventListener('click', this.closeDropdownOnClickOutside);
