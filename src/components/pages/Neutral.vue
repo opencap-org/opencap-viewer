@@ -558,9 +558,12 @@ export default {
       this.onNext();
     }
 
-    const res = await axios.get(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
-
-    this.n_calibrated_cameras = res.data.data
+    if (this.isMonocularMode) {
+      this.n_calibrated_cameras = 1
+    } else {
+      const res = await axios.get(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+      this.n_calibrated_cameras = res.data.data
+    }
     this.loadSubjectsList(false)
   },
   watch: {
