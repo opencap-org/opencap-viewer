@@ -37,11 +37,11 @@
   
                 <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
   
-                    <v-text-field v-show="show_controls" v-model="trialName" label="Trial name" class="flex-grow-0"
+                    <v-text-field v-show="show_controls && !showOpenInAppButton" v-model="trialName" label="Trial name" class="flex-grow-0"
                         :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]" />
                 </ValidationProvider>
   
-                  <v-btn class="mb-4 w-100" v-show="show_controls" :disabled="busy || invalid" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="busy || invalid" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
                   <p v-if="state === 'recording'">{{ n_cameras_connected }} devices are recording, do not refresh</p>
