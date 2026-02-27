@@ -1031,6 +1031,9 @@
         showOpenInAppButton() {
           return this.$vuetify.breakpoint.mdAndDown && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
         },
+        hasRecordedTrial() {
+          return this.filteredTrials.some(t => t.status && t.status !== 'ready')
+        },
         mobileVideoSizeLabel() {
           return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
         },
@@ -1056,6 +1059,11 @@
     async mounted() {
       await this.loadSession(this.$route.params.id)
       this.persistSameDeviceSessionFlag()
+
+      // Open sidebar by default on tablets/mobile when not in same-device flow, or when a trial has been recorded
+      if (this.$vuetify.breakpoint.mdAndDown && (!this.showOpenInAppButton || this.hasRecordedTrial)) {
+        this.leftMenuOpen = true
+      }
 
       this.loadTrialTags()
 
@@ -1139,6 +1147,20 @@
           this.isArchiveDone = false;
           this.isArchiveInProgress = false;
           this.archiveUrl = "#";
+        }
+      },
+      showOpenInAppButton: {
+        handler(val) {
+          if (val && this.$vuetify.breakpoint.mdAndDown && !this.hasRecordedTrial) {
+            this.leftMenuOpen = false
+          }
+        }
+      },
+      hasRecordedTrial: {
+        handler(val) {
+          if (val && this.$vuetify.breakpoint.mdAndDown && !this.showOpenInAppButton) {
+            this.leftMenuOpen = true
+          }
         }
       },
       // showAnalysisDialog(newShowAnalysisDialog, oldShowAnalysisDialog){
