@@ -203,7 +203,7 @@
     </v-bottom-sheet>
 
     <!-- Restore Session Dialog -->
-    <v-dialog v-model="restore_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="restore_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedSessionForRestore">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -222,7 +222,7 @@
     </v-dialog>
 
     <!-- Permanent Delete Session Dialog -->
-    <v-dialog v-model="remove_permanently_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_permanently_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedSessionForPermanentDelete">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -241,7 +241,7 @@
     </v-dialog>
 
     <!-- Restore Trial Dialog -->
-    <v-dialog v-model="restore_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="restore_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedTrialForRestore">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -260,7 +260,7 @@
     </v-dialog>
 
     <!-- Permanent Delete Trial Dialog -->
-    <v-dialog v-model="remove_permanently_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_permanently_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedTrialForPermanentDelete">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -278,7 +278,7 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="empty_bin_dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
+    <v-dialog v-model="empty_bin_dialog" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
         <v-card-text class="pt-4">
           <v-row class="m-0">

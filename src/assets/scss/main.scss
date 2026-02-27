@@ -161,6 +161,76 @@ body,
   }
 }
 
+/* Shared dialog styling for form and confirmation dialogs */
+.app-dialog,
+.confirm-dialog {
+  .v-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  .v-card__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .v-card__text {
+    padding: 24px;
+  }
+
+  .v-card__actions {
+    padding: 16px 24px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 12px;
+  }
+
+  .v-card__actions .v-btn {
+    text-transform: none;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 0 20px;
+    min-height: 40px;
+  }
+}
+
+/* Form dialog specific (Create/Edit subject) */
+.app-dialog {
+  .v-card__text {
+    padding-top: 8px;
+  }
+
+  .v-input {
+    margin-bottom: 4px;
+  }
+}
+
+/* Confirmation dialog specific */
+.confirm-dialog {
+  .v-card__text {
+    padding: 24px;
+  }
+
+  .v-card__text p {
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .v-card__text code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  .v-card__actions .v-btn:last-child {
+    margin-left: 0;
+  }
+}
+
 // Mobile safe area for Safari bottom bar
 @media (max-width: 599px) {
   .v-application .v-main > .container,

@@ -24,7 +24,8 @@
         <div class="flex-grow-1 mr-2">
           <v-text-field
             v-model="searchText"
-            label="Enter Subject ID/Name"
+            label="Subject ID/Name"
+            prepend-inner-icon="mdi-magnify"
             dense
             hide-details
           ></v-text-field>
@@ -253,7 +254,7 @@
     </v-bottom-sheet>
 
     <!-- Trash Subject Dialog -->
-    <v-dialog v-model="remove_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedSubjectForTrash">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -273,7 +274,7 @@
     </v-dialog>
 
     <!-- Restore Subject Dialog -->
-    <v-dialog v-model="restore_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="restore_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedSubjectForRestore">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -292,7 +293,7 @@
     </v-dialog>
 
     <!-- Permanent Delete Subject Dialog -->
-    <v-dialog v-model="remove_permanently_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="remove_permanently_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedSubjectForPermanentDelete">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -311,7 +312,7 @@
     </v-dialog>
 
     <!-- Download Subject Dialog -->
-    <v-dialog v-model="download_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
+    <v-dialog v-model="download_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown" persistent>
       <v-card v-if="selectedSubjectForDownload">
         <v-card-text class="pt-4">
           <v-row class="m-0">
@@ -792,6 +793,11 @@ export default {
 }
 
 .subjects-search-section {
+  ::v-deep .v-text-field input,
+  ::v-deep .v-text-field .v-label {
+    font-size: 0.8rem;
+  }
+
   @media (max-width: 599px) {
     flex: 1 1 100% !important;
     max-width: 100%;

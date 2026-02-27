@@ -51,7 +51,8 @@
         <div class="flex-grow-1 mr-2">
           <v-text-field
             v-model="searchText"
-            label="Search Session ID/Name"
+            label="Session ID/Name"
+            prepend-inner-icon="mdi-magnify"
             dense
             hide-details
           ></v-text-field>
@@ -259,7 +260,7 @@
     <v-dialog
       v-model="rename_dialog"
       v-click-outside="clickOutsideDialogSessionHideMenu"
-      content-class="compact-rename-dialog"
+      content-class="compact-rename-dialog app-dialog"
       max-width="420"
       :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSessionForRename">
@@ -295,6 +296,7 @@
     <!-- Trash Session Dialog -->
     <v-dialog
         v-model="remove_dialog"
+        content-class="confirm-dialog"
         max-width="500"
         :fullscreen="$vuetify.breakpoint.smAndDown"
         :retain-focus="false">
@@ -334,6 +336,7 @@
     <!-- Restore Session Dialog -->
     <v-dialog
         v-model="restore_dialog"
+        content-class="confirm-dialog"
         max-width="500"
         :fullscreen="$vuetify.breakpoint.smAndDown"
         :retain-focus="false">
@@ -1189,6 +1192,11 @@ export default {
 }
 
 .search-section {
+  ::v-deep .v-text-field input,
+  ::v-deep .v-text-field .v-label {
+    font-size: 0.8rem;
+  }
+
   @media (max-width: 599px) {
     flex: 1 1 100% !important;
     max-width: 100%;
