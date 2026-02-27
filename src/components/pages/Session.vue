@@ -68,7 +68,7 @@
                       :ref="t.id"
                       class="my-1 trial d-flex justify-content-between"
                       :class="{ selected: isSelected(t) }">
-                      <Status :value="t" :class="trialClasses(t)" @click="loadTrial(t)" />
+                      <Status :value="t" :class="[trialClasses(t), 'flex-grow-1']" @click="loadTrial(t)" />
                       <div class="">
                         <!-- Mobile: bottom sheet for better touch UX -->
                         <template v-if="$vuetify.breakpoint.smAndDown">
