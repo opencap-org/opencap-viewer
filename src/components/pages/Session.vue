@@ -16,17 +16,8 @@
             @click="leftMenuOpen = false">
         </div>
         
-        <div class="left ui-no-zoom d-flex flex-column pa-2" :class="{ 'mobile-open': leftMenuOpen }">
-            <!-- Mobile close button -->
-            <v-btn
-                v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
-                class="mobile-close-btn ui-no-zoom"
-                icon
-                small
-                @click="leftMenuOpen = false">
-                <v-icon>mdi-close</v-icon>
-            </v-btn>
-
+        <div class="left-wrapper" :class="{ 'mobile-open': leftMenuOpen }">
+            <div class="left ui-no-zoom d-flex flex-column pa-2">
             <div class="left-scroll d-flex flex-column">
             <!-- Open in app button for monocular sessions on mobile -->
             <v-btn
@@ -38,9 +29,6 @@
                 <v-icon left>mdi-cellphone-arrow-down</v-icon>
                 Open in App
             </v-btn>
-            <p v-if="showOpenInAppButton" class="open-in-app-requirement mb-4">
-              Monocular requires OpenCap app version 2.0+.
-            </p>
             <p v-if="isMonocularSession && show_controls" class="monocular-jump-warning mb-4">
               Monocular does not support jumping activities yet.
             </p>
@@ -343,6 +331,17 @@
                   </v-btn>
             </div>
           </div>
+
+            <!-- Mobile sidebar toggle - outside, right next to sidebar -->
+            <v-btn
+                v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
+                class="sidebar-toggle-btn ui-no-zoom"
+                icon
+                small
+                @click="leftMenuOpen = false">
+                <v-icon>mdi-chevron-left</v-icon>
+            </v-btn>
+        </div><!-- end left-wrapper -->
 
         <div class="main-content d-flex flex-grow-1">
         <!-- Centered Open in App prompt for monocular mobile sessions -->
@@ -1507,23 +1506,23 @@
       },
       async startTrialsPoll() {
         this.trialsPoll = window.setTimeout(async () => {
-          const trials = this.filteredTrials.filter(trial => trial.status === 'stopped' || trial.status === 'processing' || trial.status === 'reprocess')
-  
-          if (trials.length > 0) {
+          try {
             const res = await axios.get(`/sessions/${this.session.id}/status/?ret_session=true`)
-  
-            const updatedTrials = res.data.session.trials
-  
-            trials.forEach(t => {
-              const updatedT = updatedTrials.find(x => x.id === t.id)
-  
-              // Trial found and its status changed
-              if (updatedT && updatedT.status !== t.status) {
+            const updatedTrials = res.data.session.trials || []
+
+            // Add new trials and update existing ones
+            updatedTrials.forEach(updatedT => {
+              const existingIndex = this.session.trials.findIndex(t => t.id === updatedT.id)
+              if (existingIndex < 0) {
+                this.addTrial(updatedT)
+              } else if (this.session.trials[existingIndex].status !== updatedT.status) {
                 this.updateTrial(updatedT)
               }
             })
+          } catch (e) {
+            // Ignore poll errors (e.g. session no longer exists)
           }
-  
+
           this.startTrialsPoll()
         }, 5000)
       },
@@ -2207,9 +2206,18 @@
       top: calc(var(--app-bar-height, 56px) + 8px);
       left: 8px;
       z-index: 100;
-      background-color: rgba(0, 0, 0, 0.8) !important;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      
+      background-color: #424242 !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      border-radius: 8px !important;
+      min-width: 48px !important;
+      width: 48px !important;
+      min-height: 48px !important;
+      height: 48px !important;
+
+      .v-icon {
+        font-size: 28px !important;
+      }
+
       @media (min-width: 1280px) {
         display: none !important;
       }
@@ -2229,19 +2237,15 @@
       }
     }
     
-    .left {
+    .left-wrapper {
       min-width: 0;
-      overflow: hidden;
       flex-shrink: 0;
       position: relative;
       z-index: 99;
       display: flex;
-      flex-direction: column;
 
       @media (min-width: 1280px) {
-        width: 250px;
-        height: 100%;
-        background-color: #000000;
+        /* Desktop: just a flex container */
       }
 
       @media (max-width: 1279px) {
@@ -2253,13 +2257,33 @@
         max-width: 85vw;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
-        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-        padding-top: 48px;
-        background-color: rgb(18, 18, 18);
+        overflow: visible;
 
         &.mobile-open {
           transform: translateX(0);
         }
+      }
+    }
+
+    .left {
+      min-width: 0;
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+
+      @media (min-width: 1280px) {
+        width: 250px;
+        height: 100%;
+        background-color: #000000;
+      }
+
+      @media (max-width: 1279px) {
+        width: 100%;
+        height: 100%;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+        padding-top: 48px;
+        background-color: rgb(18, 18, 18);
       }
 
       .left-scroll {
@@ -2305,30 +2329,32 @@
         }
       }
       
-      .mobile-close-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 103;
-        background-color: #424242 !important;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-        min-width: 32px !important;
-        max-width: 32px !important;
-        width: 32px !important;
-        min-height: 32px !important;
-        max-height: 32px !important;
-        height: 32px !important;
-        padding: 0 !important;
-        border-radius: 50% !important;
-        aspect-ratio: 1;
+    }
 
-        .v-icon {
-          font-size: 20px !important;
-        }
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 50%;
+      right: -16px;
+      transform: translateY(-50%);
+      z-index: 103;
+      background-color: #424242 !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      min-width: 34px !important;
+      max-width: 34px !important;
+      width: 34px !important;
+      min-height: 34px !important;
+      max-height: 34px !important;
+      height: 34px !important;
+      padding: 0 !important;
+      border-radius: 50% !important;
+      aspect-ratio: 1;
 
-        @media (min-width: 960px) {
-          display: none !important;
-        }
+      .v-icon {
+        font-size: 22px !important;
+      }
+
+      @media (min-width: 1280px) {
+        display: none !important;
       }
     }
   
@@ -2641,12 +2667,6 @@
         pointer-events: auto;
       }
     }
-  }
-
-  .open-in-app-requirement {
-    font-size: 0.85rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.85);
   }
 
   .monocular-jump-warning {
