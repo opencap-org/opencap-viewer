@@ -65,61 +65,62 @@
                       v-bind:item="t"
                       v-bind:index="index"
                       v-bind:key="t.id"
-                      :ref="t.id"
-                      class="my-1 trial d-flex justify-content-between"
-                      :class="{ selected: isSelected(t) }">
-                      <Status :value="t" :class="[trialClasses(t), 'flex-grow-1']" @click="loadTrial(t)" />
-                      <div class="">
-                        <!-- Mobile: bottom sheet for better touch UX -->
-                        <template v-if="$vuetify.breakpoint.smAndDown">
-                          <v-btn
-                            icon
-                            dark
-                            @click="openTrialMenuSheet(t)">
-                            <v-icon>mdi-menu</v-icon>
-                          </v-btn>
-                        </template>
-                        <!-- Desktop: dropdown menu -->
-                        <v-menu
-                          v-else
-                          v-model="t.isMenuOpen"
-                          offset-y
-                          right
-                          close-on-content-click
-                          content-class="trial-context-menu">
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-btn
-                              icon
-                              dark
-                              v-bind="attrs"
-                              v-on="on">
-                              <v-icon>mdi-menu</v-icon>
-                            </v-btn>
-                          </template>
-                          <v-list>
-                            <v-list-item link v-if="t.name !== 'neutral'" @click="closeMenuAndRename(t)">
-                              <v-list-item-title>Rename</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="closeMenuAndAnalysis(t)">
-                              <v-list-item-title>Analysis</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link @click="closeMenuAndEditTags(t)">
-                              <v-list-item-title>Edit Tags</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenTrashDialog(t)">
-                              <v-list-item-title>Trash</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
-                              <v-list-item-title>Restore</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
-                              <v-list-item-title>Delete</v-list-item-title>
-                            </v-list-item>
-                          </v-list>
-                        </v-menu>
+                      class="trial-row">
+                      <div :ref="t.id"
+                          class="my-1 trial d-flex justify-content-between"
+                          :class="{ selected: isSelected(t) }">
+                          <Status :value="t" :class="[trialClasses(t), 'flex-grow-1']" @click="loadTrial(t)" />
+                          <div class="">
+                            <!-- Mobile: bottom sheet for better touch UX -->
+                            <template v-if="$vuetify.breakpoint.smAndDown">
+                              <v-btn
+                                icon
+                                dark
+                                @click="openTrialMenuSheet(t)">
+                                <v-icon>mdi-menu</v-icon>
+                              </v-btn>
+                            </template>
+                            <!-- Desktop: dropdown menu -->
+                            <v-menu
+                              v-else
+                              v-model="t.isMenuOpen"
+                              offset-y
+                              right
+                              close-on-content-click
+                              content-class="trial-context-menu">
+                              <template v-slot:activator="{ on, attrs }">
+                                <v-btn
+                                  icon
+                                  dark
+                                  v-bind="attrs"
+                                  v-on="on">
+                                  <v-icon>mdi-menu</v-icon>
+                                </v-btn>
+                              </template>
+                              <v-list>
+                                <v-list-item link v-if="t.name !== 'neutral'" @click="closeMenuAndRename(t)">
+                                  <v-list-item-title>Rename</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="closeMenuAndAnalysis(t)">
+                                  <v-list-item-title>Analysis</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link @click="closeMenuAndEditTags(t)">
+                                  <v-list-item-title>Edit Tags</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenTrashDialog(t)">
+                                  <v-list-item-title>Trash</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
+                                  <v-list-item-title>Restore</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
+                                  <v-list-item-title>Delete</v-list-item-title>
+                                </v-list-item>
+                              </v-list>
+                            </v-menu>
+                          </div>
                       </div>
-  
-  
+                      <v-divider v-if="index < filteredTrialsWithMenu.length - 1" class="mx-0 my-1" />
                   </div>
               </div>
 
