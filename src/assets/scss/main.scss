@@ -59,8 +59,90 @@
   overflow: hidden;
 }
 
+/* ==========================================================================
+   Toast notifications – refined, dark-theme-friendly styling
+   ========================================================================== */
+
 .toasted {
-  font-family: Roboto, sans-serif;
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 0.9375rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em;
+  line-height: 1.4 !important;
+  min-height: 48px !important;
+  padding: 12px 20px !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Base primary theme – dark, elevated */
+.toasted.toasted-primary,
+.toasted .primary {
+  background-color: #2a2a2a !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Success – softer green */
+.toasted.toasted-primary.success,
+.toasted .primary.success {
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%) !important;
+  border-color: rgba(129, 199, 132, 0.3) !important;
+}
+
+/* Error – softer red */
+.toasted.toasted-primary.error,
+.toasted .primary.error {
+  background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%) !important;
+  border-color: rgba(239, 154, 154, 0.3) !important;
+}
+
+/* Info – softer blue */
+.toasted.toasted-primary.info,
+.toasted .primary.info {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
+  border-color: rgba(144, 202, 249, 0.3) !important;
+}
+
+/* Action / Close button */
+.toasted-container .toasted .action {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  margin: 0 0 0 12px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease;
+}
+
+.toasted-container .toasted .action:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  text-decoration: none !important;
+}
+
+/* Container – offset below app bar on top-center */
+.toasted-container.top-center {
+  top: calc(var(--app-bar-top-offset, 64px) + 16px) !important;
+}
+
+/* Mobile: full-width toasts with safe spacing */
+@media only screen and (max-width: 600px) {
+  .toasted-container.top-center {
+    top: calc(var(--app-bar-top-offset, 56px) + 12px) !important;
+  }
+
+  .toasted {
+    border-radius: 10px !important;
+    padding: 14px 16px !important;
+    font-size: 0.875rem !important;
+  }
 }
 
 .justify-content-evenly {
@@ -165,8 +247,11 @@ body,
   cursor: default;
 }
 
-.warning-toast {
-  background-color: darkorange !important;
+/* Warning toast – amber/orange gradient */
+.warning-toast,
+.toasted.warning-toast {
+  background: linear-gradient(135deg, #ef6c00 0%, #e65100 100%) !important;
+  border-color: rgba(255, 183, 77, 0.3) !important;
 }
 
 /* ==========================================================================
