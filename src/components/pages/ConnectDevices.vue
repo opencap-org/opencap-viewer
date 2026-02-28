@@ -17,7 +17,17 @@
       <v-card-text class="d-flex flex-column align-center">
 
         <div class="d-flex step-1 align-center flex-wrap">
-          <div class="image-container qr-container d-flex align-center justify-center my-1 qr-code-wrapper">
+          <div class="qr-section d-flex flex-column align-center">
+            <v-alert
+              v-if="isMonocularMode"
+              type="info"
+              dense
+              outlined
+              class="mono-connect-message mb-2"
+            >
+              Connect only one phone for monocular recording
+            </v-alert>
+            <div class="image-container qr-container d-flex align-center justify-center my-1 qr-code-wrapper">
             <v-progress-circular
               v-if="loading"
               indeterminate 
@@ -29,6 +39,7 @@
               v-else
               class="w-100 h-100"
               :src="session.qrcode">
+            </div>
           </div>
 
           <div class="d-flex flex-column flex-grow-1 justify-space-between my-1 instructions-wrapper">
@@ -186,11 +197,14 @@ export default {
     justify-content: center;
   }
 
+  .qr-section {
+    flex-shrink: 0;
+    order: 2;
+  }
+  
   .qr-code-wrapper {
     width: 200px;
     height: 200px;
-    flex-shrink: 0;
-    order: 2;
     
     @media (min-width: 960px) {
       order: 2;
@@ -292,5 +306,11 @@ export default {
   height: 48px !important;
   min-height: 48px !important;
   max-height: 48px !important;
+}
+
+.mono-connect-message {
+  max-width: 220px;
+  text-align: center;
+  font-size: 0.9rem;
 }
 </style>
