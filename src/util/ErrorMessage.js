@@ -3,6 +3,7 @@
  * @module util/ErrorMessage
  */
 import Vue from 'vue'
+import { showNotification, hideNotification } from '@/util/notificationStore.js'
 
 /**
  * Format object field depending on field type
@@ -85,13 +86,16 @@ function apiError (error, operation) {
   if (error == "Error: Network Error") {
     error = "Could not reach server. Check your internet connection and try again."
   }
-  Vue.toasted.error(processErrorMessage(error, operation),{duration: 10000})
+  const msg = processErrorMessage(error, operation)
+  showNotification({ text: msg.replace(/<br\/?>/g, ' '), type: 'error', timeout: 10000 })
+  Vue.toasted.error(msg, {duration: 10000})
 }
 /**
  * Shorthand for successful toast message
  * @param {String} text - message text
  */
 function apiSuccess (text) {
+  showNotification({ text, type: 'success', timeout: 10000 })
   Vue.toasted.success(text, {duration: 10000})
 }
 /**
@@ -101,6 +105,8 @@ function apiSuccess (text) {
  * @param {Object} opts - options: { text, onClick } for action, or { position } for toast placement, etc.
  */
 function apiInfo (text, time=null, opts={}) {
+  const duration = time != null ? time : 5000
+  showNotification({ text, type: 'info', timeout: duration })
   const defaultAction = { text: 'Close', onClick: (e, t) => t.goAway(0) };
   const { text: actionText, onClick, ...rest } = opts;
   const action = (actionText !== undefined && onClick !== undefined)
@@ -113,6 +119,7 @@ function apiInfo (text, time=null, opts={}) {
  * @param {String} text - message text
  */
  function apiWarning (text) {
+  showNotification({ text, type: 'warning', timeout: 10000 })
   Vue.toasted.global.warning(text, {duration: null})
 }
 
@@ -129,6 +136,7 @@ function apiErrorRes (axiosRes, defaultText) {
 
 function clearToastMessages() {
     Vue.toasted.clear()
+    hideNotification()
 }
 
 export {

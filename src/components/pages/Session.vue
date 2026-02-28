@@ -1340,7 +1340,6 @@
                     const msg = this.n_calibrated_cameras === 1
                         ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.`
                         : `${this.n_cameras_connected} cameras connected. Too many for this session.`
-                    this.sessionNotification = { show: true, text: msg, type: 'error' }
                     apiError(msg)
                     throw new Error(msg)
                 }
@@ -1379,8 +1378,6 @@
                 if (this.isAuditoryFeedbackEnabled)
                   playRecordingSound()
               } catch (error) {
-                const msg = error?.message || (typeof error === 'string' ? error : String(error))
-                this.sessionNotification = { show: true, text: msg, type: 'error' }
                 apiError(error)
               }
   
@@ -1455,7 +1452,6 @@
               const msg = this.n_calibrated_cameras === 1
                 ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.`
                 : `${this.n_cameras_connected} cameras connected. Too many for this session.`
-              this.sessionNotification = { show: true, text: msg, type: 'error' }
               apiError(msg)
               return
             }
