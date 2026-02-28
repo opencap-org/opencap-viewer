@@ -106,7 +106,7 @@ function apiInfo (text, time=null, opts={}) {
   const action = (actionText !== undefined && onClick !== undefined)
     ? { text: actionText, onClick }
     : defaultAction;
-  Vue.toasted.info(text, { duration: time, action, ...rest });
+  return Vue.toasted.info(text, { duration: time, action, ...rest });
 }
 /**
  * Shorthand for info toast message

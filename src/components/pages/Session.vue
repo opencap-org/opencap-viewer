@@ -1,5 +1,24 @@
 <template>
     <div class="step-5 d-flex">
+        <!-- Session notification banner (errors, waiting status) -->
+        <v-snackbar
+            v-model="sessionNotification.show"
+            :color="sessionNotification.type === 'error' ? 'error' : 'info'"
+            :timeout="sessionNotification.type === 'error' ? 10000 : 5000"
+            app
+            top
+            centered
+            content-class="session-notification-snackbar">
+            {{ sessionNotification.text }}
+            <template v-slot:action="{ attrs }">
+                <v-btn
+                    v-bind="attrs"
+                    text
+                    @click="sessionNotification.show = false">
+                    Close
+                </v-btn>
+            </template>
+        </v-snackbar>
         <!-- Mobile menu button -->
         <v-btn
             v-if="!leftMenuOpen && $vuetify.breakpoint.mdAndDown"
@@ -60,8 +79,8 @@
                   <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
-                  <p v-if="state === 'recording'">{{ n_cameras_connected }} devices are recording, do not refresh</p>
-                  <p v-if="state === 'processing'">{{ n_videos_uploaded  }} of {{ n_cameras_connected }} videos uploaded, do not refresh.</p>
+                  <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">{{ displayDeviceCount }} devices are recording, do not refresh</p>
+                  <p v-if="state === 'processing'">{{ n_videos_uploaded }} of {{ displayDeviceCount }} videos uploaded, do not refresh.</p>
               </ValidationObserver>
 
               <div class="show-removed-trials-sidebar mb-2">
@@ -959,7 +978,8 @@
               recordingStarted: null,
               recordingTimePassed: 0,
               recordingTimer: null,
-  
+              recordingStatusPoll: null,
+
               trialsPoll: null,
               showSessionMenuButtons: true,
               leftMenuOpen: false,
@@ -984,6 +1004,8 @@
 
               isAuditoryFeedbackEnabled: false,
               controlGestureGuard: null,
+
+              sessionNotification: { show: false, text: '', type: 'error' },
           }
       },
       filters: {
@@ -1070,6 +1092,10 @@
         hasRecordedTrial() {
           return this.filteredTrials.some(t => t.status && t.status !== 'ready')
         },
+        // Use max of API values so monocular (n_calibrated=1) still shows actual device count when more are recording
+        displayDeviceCount() {
+          return Math.max(this.n_cameras_connected, this.n_videos_uploaded, 1)
+        },
         mobileVideoSizeLabel() {
           return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
         },
@@ -1152,6 +1178,7 @@
     beforeDestroy() {
       this.cancelPoll()
       this.cancelRecordTimer()
+      this.cancelRecordingStatusPoll()
       this.cancelTrialsPoll()
   
       if (this.resizeObserver) {
@@ -1293,23 +1320,45 @@
                 this.n_cameras_connected = res_status.data.n_cameras_connected
 
                 // If no calibrated cameras...
-                if (this.n_calibrated_cameras === 0)
-                  throw new Error("There are no calibrated cameras for this trial.");
+                if (this.n_calibrated_cameras === 0) {
+                  const noCamMsg = "There are no calibrated cameras for this trial."
+                  apiError(noCamMsg)
+                  throw new Error(noCamMsg)
+                }
 
                 // Transition to recording state
                 this.state = 'recording';
 
+                // If too many cameras connected (e.g. monocular with multiple devices), cancel immediately
+                if (this.n_cameras_connected > this.n_calibrated_cameras) {
+                    const res_stop = await axios.get(`/sessions/${this.session.id}/stop/`, {})
+                    const res_cancel = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
+                    this.cancelPoll()
+                    this.cancelRecordingStatusPoll()
+                    this.state = 'ready'
+                    this.trialInProcess.status = "error"
+                    const msg = this.n_calibrated_cameras === 1
+                        ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.`
+                        : `${this.n_cameras_connected} cameras connected. Too many for this session.`
+                    this.sessionNotification = { show: true, text: msg, type: 'error' }
+                    apiError(msg)
+                    throw new Error(msg)
+                }
+
                 // Check if the appropriate number of cameras is connected.
                 const startTime = Date.now();
                 while (this.n_cameras_connected !== this.n_calibrated_cameras) {
-                    console.log("WAITING CAMERA CONNECTION...")
                     if (Date.now() - startTime > 5000) { // 5-second timeout
                         const res_stop = await axios.get(`/sessions/${this.session.id}/stop/`, {})
                         const res_cancel = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
                         this.cancelPoll()
+                        this.cancelRecordingStatusPoll()
                         this.state = 'ready'
                         this.trialInProcess.status = "error"
-                        throw new Error("Connected cameras do not match calibrated cameras. Timeout while waiting for cameras to connect.");
+                        const timeoutMsg = this.n_cameras_connected > this.n_calibrated_cameras
+                            ? (this.n_calibrated_cameras === 1 ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.` : `${this.n_cameras_connected} cameras connected. Too many for this session.`)
+                            : "Connected cameras do not match calibrated cameras. Timeout while waiting for cameras to connect."
+                        throw new Error(timeoutMsg)
                     }
 
                     // Retry fetching the status
@@ -1318,15 +1367,20 @@
                     this.n_cameras_connected = retryRes.data.n_cameras_connected;
                 }
 
+                this.sessionNotification = { show: false, text: '', type: 'error' }
+
                 // Start recording timer.
                 this.recordingStarted = moment()
                 this.recordingTimePassed = 0
                 this.recordingTimer = window.setTimeout(this.recordTimerHandler, 500)
+                this.startRecordingStatusPoll()
 
                 // Play sound indicating the subject can start motion.
                 if (this.isAuditoryFeedbackEnabled)
                   playRecordingSound()
               } catch (error) {
+                const msg = error?.message || (typeof error === 'string' ? error : String(error))
+                this.sessionNotification = { show: true, text: msg, type: 'error' }
                 apiError(error)
               }
   
@@ -1337,7 +1391,8 @@
           }
           case 'recording': {
             this.cancelRecordTimer()
-  
+            this.cancelRecordingStatusPoll()
+
             try {
               const res = await axios.get(`/sessions/${this.session.id}/stop/`, {})
 
@@ -1378,6 +1433,45 @@
         if (this.recordingTimer) {
           window.clearTimeout(this.recordingTimer)
           this.recordingTimer = null
+        }
+      },
+      startRecordingStatusPoll() {
+        this.cancelRecordingStatusPoll()
+        const poll = async () => {
+          if (this.state !== 'recording') return
+          try {
+            const res = await axios.get(`/sessions/${this.session.id}/status/`)
+            this.n_cameras_connected = res.data.n_cameras_connected
+            this.n_videos_uploaded = res.data.n_videos_uploaded
+
+            if (this.n_cameras_connected > this.n_calibrated_cameras) {
+              await axios.get(`/sessions/${this.session.id}/stop/`, {})
+              await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
+              this.cancelRecordTimer()
+              this.cancelRecordingStatusPoll()
+              this.cancelPoll()
+              this.state = 'ready'
+              this.trialInProcess.status = 'error'
+              const msg = this.n_calibrated_cameras === 1
+                ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.`
+                : `${this.n_cameras_connected} cameras connected. Too many for this session.`
+              this.sessionNotification = { show: true, text: msg, type: 'error' }
+              apiError(msg)
+              return
+            }
+          } catch (e) {
+            // Ignore poll errors
+          }
+          if (this.state === 'recording') {
+            this.recordingStatusPoll = window.setTimeout(poll, 2000)
+          }
+        }
+        this.recordingStatusPoll = window.setTimeout(poll, 2000)
+      },
+      cancelRecordingStatusPoll() {
+        if (this.recordingStatusPoll) {
+          window.clearTimeout(this.recordingStatusPoll)
+          this.recordingStatusPoll = null
         }
       },
       async onDownloadData() {
@@ -1547,8 +1641,12 @@
             }
             if (res.data.status === 'processing' || res.data.status === 'ready') {
               if (this.n_cameras_connected !== this.n_calibrated_cameras) {
-                const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
-                apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.n_videos_uploaded + " videos were uploaded. Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                if (this.n_cameras_connected > this.n_calibrated_cameras) {
+                  apiErrorRes(res.data, this.n_calibrated_cameras === 1 ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.` : `${this.n_cameras_connected} cameras connected. Too many for this session.`)
+                } else {
+                  const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
+                  apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.n_videos_uploaded + " videos were uploaded. Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                }
               }
             }
             this.state = 'ready'
