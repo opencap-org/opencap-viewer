@@ -402,7 +402,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
-import { apiInfo, apiError, clearToastMessages } from '@/util/ErrorMessage.js'
+import { apiInfo, apiError, apiSuccess, clearToastMessages } from '@/util/ErrorMessage.js'
 import { formatDate } from '@/util/DateFormat.js'
 import axios from 'axios'
 import router from '@/router'
@@ -720,6 +720,7 @@ export default {
       try {
         await axios.post(`/sessions/${id}/trash/`)
         this.loadValidSessions()
+        apiSuccess('Session moved to trash.')
       } catch (error) {
         apiError(error)
       }
@@ -738,6 +739,7 @@ export default {
         console.log(oldName + " will be renamed to " + sessionNewName);
         const { data } = await axios.post(`/sessions/${session.id}/rename/`, {sessionNewName});
         await this.updateSessionWithData(session, data.data);
+        apiSuccess('Session renamed successfully.')
       } catch (error) {
         apiError(error)
       }
