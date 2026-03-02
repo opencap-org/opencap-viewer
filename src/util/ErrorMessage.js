@@ -2,7 +2,6 @@
  * Error message processing
  * @module util/ErrorMessage
  */
-import Vue from 'vue'
 import { showNotification, hideNotification } from '@/util/notificationStore.js'
 
 /**
@@ -88,7 +87,6 @@ function apiError (error, operation) {
   }
   const msg = processErrorMessage(error, operation)
   showNotification({ text: msg.replace(/<br\/?>/g, ' '), type: 'error', timeout: 10000 })
-  Vue.toasted.error(msg, {duration: 10000})
 }
 /**
  * Shorthand for successful toast message
@@ -96,7 +94,6 @@ function apiError (error, operation) {
  */
 function apiSuccess (text) {
   showNotification({ text, type: 'success', timeout: 10000 })
-  Vue.toasted.success(text, {duration: 10000})
 }
 /**
  * Shorthand for info toast message
@@ -104,23 +101,22 @@ function apiSuccess (text) {
  * @param {Number} time - duration in ms (null = default)
  * @param {Object} opts - options: { text, onClick } for action, or { position } for toast placement, etc.
  */
-function apiInfo (text, time=null, opts={}) {
+function apiInfo (text, time = null, opts = {}) {
   const duration = time != null ? time : 5000
-  showNotification({ text, type: 'info', timeout: duration })
-  const defaultAction = { text: 'Close', onClick: (e, t) => t.goAway(0) };
-  const { text: actionText, onClick, ...rest } = opts;
-  const action = (actionText !== undefined && onClick !== undefined)
-    ? { text: actionText, onClick }
-    : defaultAction;
-  return Vue.toasted.info(text, { duration: time, action, ...rest });
+  const { text: actionText, onClick } = opts
+  showNotification({
+    text,
+    type: 'info',
+    timeout: duration,
+    ...(actionText != null && onClick != null && { actionText, actionOnClick: onClick })
+  })
 }
 /**
  * Shorthand for info toast message
  * @param {String} text - message text
  */
- function apiWarning (text) {
+function apiWarning (text) {
   showNotification({ text, type: 'warning', timeout: 10000 })
-  Vue.toasted.global.warning(text, {duration: null})
 }
 
 /**
@@ -134,9 +130,8 @@ function apiErrorRes (axiosRes, defaultText) {
   }
 }
 
-function clearToastMessages() {
-    Vue.toasted.clear()
-    hideNotification()
+function clearToastMessages () {
+  hideNotification()
 }
 
 export {
