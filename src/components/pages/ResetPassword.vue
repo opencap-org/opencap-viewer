@@ -50,7 +50,7 @@
 
 <script>
 import { mapActions, mapState } from "vuex";
-import { apiSuccess, apiError } from "@/util/ErrorMessage.js";
+import { apiSuccess, apiError, clearToastMessages } from "@/util/ErrorMessage.js";
 
 export default {
   name: "Reset",
@@ -85,7 +85,7 @@ export default {
       this.loading = false
     },
     clearToasted() {
-      this.$toasted.clear()
+      clearToastMessages()
     }
   }
 }
