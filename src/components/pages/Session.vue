@@ -3,7 +3,7 @@
         <!-- Session notification banner (errors, waiting status) -->
         <v-snackbar
             v-model="sessionNotification.show"
-            :color="sessionNotification.type === 'error' ? 'error' : 'info'"
+            :color="sessionNotification.type === 'error' ? 'error' : sessionNotification.type === 'success' ? 'success' : 'info'"
             :timeout="sessionNotification.type === 'error' ? 10000 : 5000"
             app
             top
@@ -239,7 +239,7 @@
                   <v-dialog v-model="dialog" content-class="app-dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
                       max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
                       <template v-slot:activator="{ on, attrs }">
-                          <v-btn small class="mt-4 w-100 session-action-btn" v-bind="attrs" v-on="on" v-show="show_controls">
+                          <v-btn ref="shareDialogActivator" small class="mt-4 w-100 session-action-btn" v-bind="attrs" v-on="on" v-show="show_controls">
                               <v-icon left small>mdi-share-variant</v-icon>
                               Share session publicly
                           </v-btn>
@@ -273,7 +273,14 @@
                                   </ShareNetwork>
   
                                   <v-text-field label="Alternatively, copy this link"
-                                      v-model="sessionUrl" class="mt-5" readonly></v-text-field>
+                                      v-model="sessionUrl" class="mt-5" readonly>
+                                      <template v-slot:append-outer>
+                                          <v-btn icon small @click="copySessionUrlToClipboard" :disabled="!sessionUrl"
+                                              title="Copy to clipboard">
+                                              <v-icon small>mdi-content-copy</v-icon>
+                                          </v-btn>
+                                      </template>
+                                  </v-text-field>
                               </v-container>
   
                           </v-card-text>
@@ -1190,6 +1197,14 @@
       this.unbindControlGestureGuards()
     },
     watch: {
+      dialog(isOpen) {
+        if (!isOpen) {
+          this.$nextTick(() => {
+            const el = this.$refs.shareDialogActivator?.$el
+            if (el && typeof el.blur === 'function') el.blur()
+          })
+        }
+      },
       trial() {
         if (this.trial) {
           this.$nextTick(() => {
@@ -1618,6 +1633,28 @@
       setPublic(p) {
         console.log(p)
         axios.patch(`/sessions/${this.session.id}/`, {"public": p})
+      },
+      async copySessionUrlToClipboard() {
+        if (!this.sessionUrl) return
+        try {
+          await navigator.clipboard.writeText(this.sessionUrl)
+          this.sessionNotification = { show: true, text: 'Link copied to clipboard!', type: 'success' }
+        } catch {
+          try {
+            const input = document.createElement('input')
+            input.value = this.sessionUrl
+            input.setAttribute('readonly', '')
+            input.style.position = 'absolute'
+            input.style.left = '-9999px'
+            document.body.appendChild(input)
+            input.select()
+            document.execCommand('copy')
+            document.body.removeChild(input)
+            this.sessionNotification = { show: true, text: 'Link copied to clipboard!', type: 'success' }
+          } catch {
+            this.sessionNotification = { show: true, text: 'Failed to copy link', type: 'error' }
+          }
+        }
       },
       async newSessionSameSetup() {
         await this.initSessionSameSetup()

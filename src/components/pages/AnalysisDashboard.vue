@@ -78,6 +78,7 @@
                   <v-dialog v-model="dialog" content-class="app-dialog" width="500" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
                     <template v-slot:activator="{ on, attrs }">
                         <v-btn
+                          ref="shareDialogActivator"
                           class="mt-4 w-100 sidebar-action-btn"
                           v-bind="attrs"
                           v-on="on"
@@ -248,6 +249,14 @@ export default {
 
     },
     watch: {
+      dialog(isOpen) {
+        if (!isOpen) {
+          this.$nextTick(() => {
+            const el = this.$refs.shareDialogActivator?.$el
+            if (el && typeof el.blur === 'function') el.blur()
+          })
+        }
+      },
       trial_selected: function (val) {
         this.show_dashboard = false
         this.y_values = []
