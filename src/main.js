@@ -66,29 +66,6 @@ extend('unique_trial_name', {
 Vue.component("ValidationProvider", ValidationProvider);
 Vue.component("ValidationObserver", ValidationObserver);
 
-import Toasted from 'vue-toasted'
-Vue.use(Toasted, { 
-  position: 'top-center', 
-  duration: 10000,
-  className: 'vue-toasted',
-  // Show all toasts with Close button
-  action : {
-    text : 'Close',
-    onClick : (e, toastObject) => {
-        toastObject.goAway(0)
-    }
-  }
-})
-
-Vue.toasted.register('warning', (message) => {
-  Vue.toasted.show(message, {
-    type: 'warning',
-    theme: 'toasted-primary',
-    position: 'top-right',
-    className: 'warning-toast'
-  });
-});
-
 Vue.config.productionTip = false
 
 axios.defaults.baseURL = process.env.VUE_APP_API_SERVER //"https://api.opencap.ai/"
