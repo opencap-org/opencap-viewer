@@ -364,7 +364,7 @@
                       Download data (old)
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100 session-action-btn" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
+                  <v-btn small class="mt-4 w-100 session-action-btn" :disabled="!hasKinematicsAvailable" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
                       <v-icon left small>mdi-view-dashboard-outline</v-icon>
                       Dashboard kinematics
                   </v-btn>
@@ -1055,6 +1055,10 @@
         },
         videoControlsDisabled() {
           return !this.trial || this.frames.length === 0
+        },
+        hasKinematicsAvailable() {
+          if (!this.trial || !this.trial.results) return false
+          return this.trial.results.some(r => r.tag === 'visualizerTransforms-json')
         },
         buttonCaption() {
           switch (this.state) {
