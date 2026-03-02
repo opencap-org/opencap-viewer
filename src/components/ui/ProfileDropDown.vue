@@ -197,12 +197,12 @@ export default {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: rgba(30, 30, 30, 0.98);
+  background: rgb(30, 30, 30);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   border-radius: 12px;
   padding: 8px 0;
-  z-index: 1000;
+  z-index: 9998;
   width: auto;
   min-width: 260px;
   max-width: calc(100vw - 32px);
