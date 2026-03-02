@@ -549,7 +549,8 @@
                         <v-text-field v-model="trialNewName" label="Trial new name" class="flex-grow-0"
                             :disabled="state !== 'ready' || session.trials[trial_rename_index]?.status === 'processing' || session.trials[trial_rename_index]?.status === 'uploading'"
                                       dark
-                                      :error="errors.length > 0" :error-messages="errors[0]" />
+                                      :error="errors.length > 0" :error-messages="errors[0]"
+                                      @keydown.enter.prevent="submitRenameTrial" />
                     </ValidationProvider>
   
                     <v-spacer></v-spacer>
@@ -1798,6 +1799,16 @@
         this.trialNewName = trial.name;
         this.trial_rename_dialog = true;
       },
+      submitRenameTrial() {
+        const trial = this.session.trials[this.trial_rename_index];
+        if (this.state !== 'ready' || trial?.status === 'processing' || trial?.status === 'uploading') return;
+        this.$refs.observer_tr.validate().then(valid => {
+          if (valid) {
+            this.trial_rename_dialog = false;
+            this.renameTrial(trial, this.trial_rename_index, this.trialNewName);
+          }
+        });
+      },
       async addTagTrialDialog(trial) {
         const index = this.session.trials.findIndex(x => x.id === trial.id)
         this.trial_modify_tags_index = index;
@@ -1817,6 +1828,7 @@
           console.log(trial.name + " will be renamed to " + trialNewName);
           const {data} = await axios.post(`/trials/${trial.id}/rename/`, {trialNewName});
           await this.updateTrialWithData(trial, data.data);
+          this.sessionNotification = { show: true, text: 'Trial renamed successfully.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
@@ -1827,6 +1839,7 @@
           console.log(trial.tags + " will be replaced by " + trialNewTags)
           const {data} = await axios.post(`/trials/${trial.id}/modifyTags/`, {trialNewTags});
           await this.updateTrialWithData(trial, data.data);
+          this.sessionNotification = { show: true, text: 'Trial tags updated.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
@@ -1846,6 +1859,7 @@
         try {
           const {data} = await axios.post(`/trials/${trial.id}/trash/`);
           await this.updateTrialWithData(trial, data);
+          this.sessionNotification = { show: true, text: 'Trial moved to trash.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
@@ -1853,15 +1867,17 @@
       async permanentDeleteTrial(trial) {
         try {
           await axios.post(`/trials/${trial.id}/permanent_remove/`);
+          await this.updateTrialWithData(trial, {});
+          this.sessionNotification = { show: true, text: 'Trial permanently deleted.', type: 'success' };
         } catch (error) {
           apiError(error);
         }
-        await this.updateTrialWithData(trial, {});
       },
       async restoreTrial(trial) {
         try {
           const {data} = await axios.post(`/trials/${trial.id}/restore/`);
           await this.updateTrialWithData(trial, data);
+          this.sessionNotification = { show: true, text: 'Trial restored.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
