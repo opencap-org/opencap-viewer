@@ -99,9 +99,9 @@
         @click:row="onRowClick">
       <template v-slot:no-data>
         <div class="table-empty-state">
-          <v-icon size="48" color="grey" class="mb-3">mdi-folder-open-outline</v-icon>
-          <p class="mb-0">No sessions yet</p>
-          <p class="text-caption mb-0 mt-1">Create a new session to get started</p>
+          <v-icon size="48" color="grey" class="mb-3">{{ searchText.trim() ? 'mdi-magnify' : 'mdi-folder-open-outline' }}</v-icon>
+          <p class="mb-0">{{ searchText.trim() ? 'No matching sessions' : 'No sessions yet' }}</p>
+          <p class="text-caption mb-0 mt-1">{{ searchText.trim() ? 'Try a different search term or clear the search' : 'Create a new session to get started' }}</p>
         </div>
       </template>
       <template v-slot:item.created_at="{ item }">
@@ -402,7 +402,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
-import { apiInfo, apiError } from '@/util/ErrorMessage.js'
+import { apiInfo, apiError, clearToastMessages } from '@/util/ErrorMessage.js'
 import { formatDate } from '@/util/DateFormat.js'
 import axios from 'axios'
 import router from '@/router'
@@ -414,7 +414,7 @@ export default {
       this.loadAnalysisDashboardList()
   },
   mounted() {
-      this.$toasted.clear()
+      clearToastMessages()
   },
   beforeDestroy () {
     if (this.searchDebounceTimer) {

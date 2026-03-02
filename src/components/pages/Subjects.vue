@@ -72,9 +72,9 @@
               @click:row="onRowClick">
               <template v-slot:no-data>
                 <div class="table-empty-state">
-                  <v-icon size="48" color="grey" class="mb-3">mdi-account-group-outline</v-icon>
-                  <p class="mb-0">No subjects yet</p>
-                  <p class="text-caption mb-0 mt-1">Create a new subject to get started</p>
+                  <v-icon size="48" color="grey" class="mb-3">{{ searchText.trim() ? 'mdi-magnify' : 'mdi-account-group-outline' }}</v-icon>
+                  <p class="mb-0">{{ searchText.trim() ? 'No matching subjects' : 'No subjects yet' }}</p>
+                  <p class="text-caption mb-0 mt-1">{{ searchText.trim() ? 'Try a different search term or clear the search' : 'Create a new subject to get started' }}</p>
                 </div>
               </template>
               <template v-slot:item.name="{ item }">
