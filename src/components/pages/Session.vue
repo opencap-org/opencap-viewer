@@ -65,6 +65,17 @@
               </div>
             </v-alert>
   
+            <!-- Session name (display + rename) -->
+            <div class="session-name-block mb-3">
+              <div class="session-name-label text-caption">Session name</div>
+              <div class="session-name-row d-flex align-center flex-wrap">
+                <span class="session-name-text text-body-2 flex-grow-1 min-width-0 text-truncate" :title="displaySessionName">{{ displaySessionName }}</span>
+                <v-btn icon dark small class="flex-shrink-0" @click="openSessionRenameDialog" title="Rename session">
+                  <v-icon small>mdi-pencil</v-icon>
+                </v-btn>
+              </div>
+            </div>
+
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
                 <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
@@ -566,6 +577,42 @@
           </v-card>
         </v-dialog>
 
+        <!-- Session rename dialog -->
+        <v-dialog
+          v-model="session_rename_dialog"
+          content-class="compact-rename-dialog app-dialog"
+          max-width="420"
+          :fullscreen="$vuetify.breakpoint.smAndDown">
+          <v-card>
+            <v-card-text class="pt-4">
+              <v-row class="m-0">
+                <v-col cols="12" sm="2">
+                  <v-icon x-large color="orange">mdi-rename-box</v-icon>
+                </v-col>
+                <v-col cols="12" sm="10">
+                  <p class="mb-1">Enter a new name for this session:</p>
+                  <small class="mt-0">Only alphanumeric characters and underscores are allowed.</small>
+                  <ValidationObserver tag="div" class="d-flex flex-column" ref="observer_session_rename" v-slot="{ invalid }">
+                    <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Session name">
+                      <v-text-field
+                        v-model="sessionNewName"
+                        label="Session name"
+                        class="flex-grow-0"
+                        dark
+                        :error="errors.length > 0"
+                        :error-messages="errors[0]"
+                        @keydown.enter.prevent="submitRenameSession" />
+                    </ValidationProvider>
+                    <v-btn class="text-right" :disabled="invalid" @click="submitRenameSession">
+                      Rename Session
+                    </v-btn>
+                  </ValidationObserver>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
+
               <v-dialog
             v-model="trial_modify_tags"
             content-class="app-dialog"
@@ -998,6 +1045,9 @@
               trial_rename_dialog: false,
               trial_rename_index: 0,
 
+              session_rename_dialog: false,
+              sessionNewName: '',
+
               trial_modify_tags: false,
               trial_modify_tags_index: 0,
 
@@ -1045,6 +1095,11 @@
           }),
         sessionUrl() {
           return location.origin + "/session/" + (this.session?.id || '');
+        },
+        displaySessionName() {
+          const s = this.session;
+          if (!s) return 'Session';
+          return s.meta?.sessionName || s.sessionName || (s.id ? String(s.id).split('-')[0] : '') || 'Session';
         },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
@@ -1264,6 +1319,7 @@
     },
     methods: {
       ...mapMutations('data', [
+        'setSession',
         'setSessionStep5',
         'clearAll',
         'setSessionId',
@@ -1793,6 +1849,29 @@
         this.showAnalysisDialog = true;
       },
   
+      openSessionRenameDialog() {
+        this.sessionNewName = this.displaySessionName;
+        this.session_rename_dialog = true;
+        this.$nextTick(() => this.$refs.observer_session_rename?.reset());
+      },
+      submitRenameSession() {
+        this.$refs.observer_session_rename?.validate().then(valid => {
+          if (valid) {
+            this.session_rename_dialog = false;
+            this.renameSession(this.sessionNewName);
+          }
+        });
+      },
+      async renameSession(sessionNewName) {
+        try {
+          const { data } = await axios.post(`/sessions/${this.session.id}/rename/`, { sessionNewName });
+          const updated = data?.data != null ? data.data : data;
+          if (updated) this.setSession(updated);
+          this.sessionNotification = { show: true, text: 'Session renamed successfully.', type: 'success' };
+        } catch (error) {
+          apiError(error);
+        }
+      },
       async renameTrialDialog(trial) {
         const index = this.session.trials.findIndex(x => x.id === trial.id)
         this.trial_rename_index = index;
@@ -2522,6 +2601,7 @@
         flex-shrink: 0;
         overflow-y: auto;
         overflow-x: hidden;
+        margin-top: 8px;
       }
 
       .trials-wrapper {
@@ -2529,6 +2609,20 @@
         overflow: visible;
       }
 
+      .session-name-block {
+        padding: 8px 0;
+      }
+      .session-name-label {
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 4px;
+        font-size: 0.75rem;
+      }
+      .session-name-row {
+        gap: 4px;
+      }
+      .session-name-text {
+        opacity: 0.95;
+      }
       .trial-name-row {
         gap: 8px;
       }
