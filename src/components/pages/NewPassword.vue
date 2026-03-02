@@ -56,9 +56,10 @@
           @click="onNewPassword()">Submit</v-btn>            
       </ValidationObserver>
 
-        <router-link class="mt-4 text-center" :to="{ name: 'Login' }"
-          >Back to Login</router-link
-        >
+        <router-link class="newpassword-back-link" :to="{ name: 'Login' }">
+          <v-icon size="18" class="back-arrow">mdi-arrow-left</v-icon>
+          Back to Login
+        </router-link>
         
       </v-flex>
     </v-layout>
@@ -120,8 +121,18 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .login-main {
+  a {
+    text-decoration: none !important;
+    color: rgba(255, 255, 255, 0.85);
+
+    &:hover {
+      text-decoration: underline !important;
+      color: rgba(255, 255, 255, 1);
+    }
+  }
+
   button {
     width: 100%;
     max-width: 260px;
@@ -148,4 +159,15 @@ export default {
   }
 }
 
+.newpassword-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  font-size: 0.9375rem;
+
+  .back-arrow {
+    flex-shrink: 0;
+  }
+}
 </style>

@@ -1,5 +1,24 @@
 <template>
     <div class="step-5 d-flex">
+        <!-- Session notification banner (errors, waiting status) -->
+        <v-snackbar
+            v-model="sessionNotification.show"
+            :color="sessionNotification.type === 'error' ? 'error' : sessionNotification.type === 'success' ? 'success' : 'info'"
+            :timeout="sessionNotification.type === 'error' ? 10000 : 5000"
+            app
+            top
+            centered
+            content-class="session-notification-snackbar">
+            {{ sessionNotification.text }}
+            <template v-slot:action="{ attrs }">
+                <v-btn
+                    v-bind="attrs"
+                    text
+                    @click="sessionNotification.show = false">
+                    Close
+                </v-btn>
+            </template>
+        </v-snackbar>
         <!-- Mobile menu button -->
         <v-btn
             v-if="!leftMenuOpen && $vuetify.breakpoint.mdAndDown"
@@ -16,17 +35,8 @@
             @click="leftMenuOpen = false">
         </div>
         
-        <div class="left ui-no-zoom d-flex flex-column pa-2" :class="{ 'mobile-open': leftMenuOpen }">
-            <!-- Mobile close button -->
-            <v-btn
-                v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
-                class="mobile-close-btn ui-no-zoom"
-                icon
-                small
-                @click="leftMenuOpen = false">
-                <v-icon>mdi-close</v-icon>
-            </v-btn>
-
+        <div class="left-wrapper" :class="{ 'mobile-open': leftMenuOpen }">
+            <div class="left ui-no-zoom d-flex flex-column pa-2">
             <div class="left-scroll d-flex flex-column">
             <!-- Open in app button for monocular sessions on mobile -->
             <v-btn
@@ -38,88 +48,108 @@
                 <v-icon left>mdi-cellphone-arrow-down</v-icon>
                 Open in App
             </v-btn>
-            <p v-if="showOpenInAppButton" class="open-in-app-requirement mb-4">
-              Monocular requires OpenCap app version 2.0+.
-            </p>
-            <p v-if="isMonocularSession && show_controls" class="monocular-jump-warning mb-4">
-              Monocular does not support jumping activities yet.
-            </p>
+            <!-- Monocular beta notification banner -->
+            <v-alert
+                v-if="isMonocularSession"
+                type="info"
+                dense
+                outlined
+                class="monocular-beta-alert mb-4"
+                border="left">
+              <div class="monocular-beta-content">
+                <strong>Monocular mode is in beta.</strong>
+                <a href="https://www.opencap.ai/best-practices?variant=Monocular" target="_blank" rel="noopener noreferrer">Best practices</a>
+                ·
+                <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.
+                Jumping is not supported yet. Camera must be static at 45° angle.
+              </div>
+            </v-alert>
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
-                <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
+                <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
+                  <div class="flex-grow-1 min-width-0">
+                    <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
+                      <v-text-field v-show="show_controls && !showOpenInAppButton" v-model="trialName" label="Trial name" class="flex-grow-0"
+                          :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]" />
+                    </ValidationProvider>
+                  </div>
+                </div>
   
-                    <v-text-field v-show="show_controls" v-model="trialName" label="Trial name" class="flex-grow-0"
-                        :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]" />
-                </ValidationProvider>
-  
-                  <v-btn class="mb-4 w-100" v-show="show_controls" :disabled="busy || invalid" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
-                  <p v-if="state === 'recording'">{{ n_cameras_connected }} devices are recording, do not refresh</p>
-                  <p v-if="state === 'processing'">{{ n_videos_uploaded  }} of {{ n_cameras_connected }} videos uploaded, do not refresh.</p>
+                  <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">{{ displayDeviceCount }} devices are recording, do not refresh</p>
+                  <p v-if="state === 'processing'">{{ n_videos_uploaded }} of {{ displayDeviceCount }} videos uploaded, do not refresh.</p>
               </ValidationObserver>
 
-              <div class="trials flex-grow-1">
+              <div class="show-removed-trials-sidebar mb-2">
+                <v-checkbox v-model="show_trashed" label="Show removed trials" hide-details dense class="toolbar-checkbox"></v-checkbox>
+              </div>
+
+              <div class="trials-wrapper flex-grow-1">
+                  <div class="trials">
                   <div v-for="(t, index) in filteredTrialsWithMenu"
                       v-bind:item="t"
                       v-bind:index="index"
                       v-bind:key="t.id"
-                      :ref="t.id"
-                      class="my-1 trial d-flex justify-content-between"
-                      :class="{ selected: isSelected(t) }">
-                      <Status :value="t" :class="trialClasses(t)" @click="loadTrial(t)" />
-                      <div class="">
-                        <!-- Mobile: bottom sheet for better touch UX -->
-                        <template v-if="$vuetify.breakpoint.smAndDown">
-                          <v-btn
-                            icon
-                            dark
-                            @click="openTrialMenuSheet(t)">
-                            <v-icon>mdi-menu</v-icon>
-                          </v-btn>
-                        </template>
-                        <!-- Desktop: dropdown menu -->
-                        <v-menu
-                          v-else
-                          v-model="t.isMenuOpen"
-                          offset-y
-                          right
-                          close-on-content-click
-                          content-class="trial-context-menu">
-                          <template v-slot:activator="{ on, attrs }">
-                            <v-btn
-                              icon
-                              dark
-                              v-bind="attrs"
-                              v-on="on">
-                              <v-icon>mdi-menu</v-icon>
-                            </v-btn>
-                          </template>
-                          <v-list>
-                            <v-list-item link v-if="t.name !== 'neutral'" @click="closeMenuAndRename(t)">
-                              <v-list-item-title>Rename</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="closeMenuAndAnalysis(t)">
-                              <v-list-item-title>Analysis</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link @click="closeMenuAndEditTags(t)">
-                              <v-list-item-title>Edit Tags</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenTrashDialog(t)">
-                              <v-list-item-title>Trash</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
-                              <v-list-item-title>Restore</v-list-item-title>
-                            </v-list-item>
-                            <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
-                              <v-list-item-title>Delete</v-list-item-title>
-                            </v-list-item>
-                          </v-list>
-                        </v-menu>
+                      class="trial-row">
+                      <div :ref="t.id"
+                          class="my-1 trial d-flex justify-content-between"
+                          :class="{ selected: isSelected(t) }">
+                          <Status :value="t" :class="[trialClasses(t), 'flex-grow-1']" @click="loadTrial(t)" />
+                          <div class="">
+                            <!-- Mobile: bottom sheet for better touch UX -->
+                            <template v-if="$vuetify.breakpoint.smAndDown">
+                              <v-btn
+                                icon
+                                dark
+                                @click="openTrialMenuSheet(t)">
+                                <v-icon>mdi-menu</v-icon>
+                              </v-btn>
+                            </template>
+                            <!-- Desktop: dropdown menu -->
+                            <v-menu
+                              v-else
+                              v-model="t.isMenuOpen"
+                              offset-y
+                              right
+                              close-on-content-click
+                              content-class="trial-context-menu">
+                              <template v-slot:activator="{ on, attrs }">
+                                <v-btn
+                                  icon
+                                  dark
+                                  v-bind="attrs"
+                                  v-on="on">
+                                  <v-icon>mdi-menu</v-icon>
+                                </v-btn>
+                              </template>
+                              <v-list>
+                                <v-list-item link v-if="t.name !== 'neutral'" @click="closeMenuAndRename(t)">
+                                  <v-list-item-title>Rename</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="!t.trashed && t.name !== 'neutral'" @click="closeMenuAndAnalysis(t)">
+                                  <v-list-item-title>Analysis</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link @click="closeMenuAndEditTags(t)">
+                                  <v-list-item-title>Edit Tags</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenTrashDialog(t)">
+                                  <v-list-item-title>Trash</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
+                                  <v-list-item-title>Restore</v-list-item-title>
+                                </v-list-item>
+                                <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
+                                  <v-list-item-title>Delete</v-list-item-title>
+                                </v-list-item>
+                              </v-list>
+                            </v-menu>
+                          </div>
                       </div>
-  
-  
+                      <v-divider v-if="index < filteredTrialsWithMenu.length - 1" class="mx-0 my-1" />
+                  </div>
                   </div>
               </div>
 
@@ -195,10 +225,6 @@
             </v-btn>
 
             <div v-if="showSessionMenuButtons" class="session-actions-panel">
-                  <div>
-                      <v-checkbox v-model="show_trashed" class="ml-2 m-2" label="Show removed trials"></v-checkbox>
-                  </div>
-  
                   <v-btn small class="w-100 session-action-btn" v-show="show_controls && !isMonocularSession" :disabled="busy || state !== 'ready'"
                       @click="newSessionSameSetup">
                       <v-icon left small>mdi-plus-box-multiple</v-icon>
@@ -210,10 +236,10 @@
                       New session
                   </v-btn>
   
-                  <v-dialog v-model="dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
-                      :fullscreen="$vuetify.breakpoint.smAndDown">
+                  <v-dialog v-model="dialog" content-class="app-dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
+                      max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
                       <template v-slot:activator="{ on, attrs }">
-                          <v-btn small class="mt-4 w-100 session-action-btn" v-bind="attrs" v-on="on" v-show="show_controls">
+                          <v-btn ref="shareDialogActivator" small class="mt-4 w-100 session-action-btn" v-bind="attrs" v-on="on" v-show="show_controls">
                               <v-icon left small>mdi-share-variant</v-icon>
                               Share session publicly
                           </v-btn>
@@ -247,7 +273,14 @@
                                   </ShareNetwork>
   
                                   <v-text-field label="Alternatively, copy this link"
-                                      v-model="sessionUrl" class="mt-5" readonly></v-text-field>
+                                      v-model="sessionUrl" class="mt-5" readonly>
+                                      <template v-slot:append-outer>
+                                          <v-btn icon small @click="copySessionUrlToClipboard" :disabled="!sessionUrl"
+                                              title="Copy to clipboard">
+                                              <v-icon small>mdi-content-copy</v-icon>
+                                          </v-btn>
+                                      </template>
+                                  </v-text-field>
                               </v-container>
   
                           </v-card-text>
@@ -271,6 +304,7 @@
                   </v-btn>
                   <v-dialog
                       v-model="showArchiveDialog"
+                      content-class="app-dialog"
                       max-width="500"
                       :fullscreen="$vuetify.breakpoint.smAndDown">
                       <v-card>
@@ -330,7 +364,7 @@
                       Download data (old)
                   </v-btn>
   
-                  <v-btn small class="mt-4 w-100 session-action-btn" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
+                  <v-btn small class="mt-4 w-100 session-action-btn" :disabled="!hasKinematicsAvailable" @click="$router.push({ name: 'Dashboard', params: { id: session.id, trialId: trial.name  } })">
                       <v-icon left small>mdi-view-dashboard-outline</v-icon>
                       Dashboard kinematics
                   </v-btn>
@@ -342,6 +376,17 @@
                   </v-btn>
             </div>
           </div>
+
+            <!-- Mobile sidebar toggle - outside, right next to sidebar -->
+            <v-btn
+                v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
+                class="sidebar-toggle-btn ui-no-zoom"
+                icon
+                small
+                @click="leftMenuOpen = false">
+                <v-icon>mdi-chevron-left</v-icon>
+            </v-btn>
+        </div><!-- end left-wrapper -->
 
         <div class="main-content d-flex flex-grow-1">
         <!-- Centered Open in App prompt for monocular mobile sessions -->
@@ -357,6 +402,21 @@
                 <v-icon left>mdi-launch</v-icon>
                 Open in App
             </v-btn>
+            <v-alert
+                type="info"
+                dense
+                outlined
+                class="monocular-beta-alert mt-6 mx-4"
+                border="left">
+              <div class="monocular-beta-content">
+                <strong>Monocular mode is in beta.</strong>
+                Jumping is not supported yet. Camera must be static at 45° angle.
+                <div class="d-flex flex-wrap mt-2">
+                  <v-btn x-small outlined class="mr-2 mb-1" @click="window.open('https://www.opencap.ai/best-practices?variant=Monocular', '_blank')">Best practices</v-btn>
+                  <v-btn x-small outlined class="mb-1" @click="window.open('https://www.opencap.ai/get-started?variant=monocular', '_blank')">Get started</v-btn>
+                </div>
+              </div>
+            </v-alert>
         </div>
 
         <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
@@ -467,7 +527,7 @@
   
         <v-dialog
               v-model="trial_rename_dialog"
-              content-class="compact-rename-dialog"
+              content-class="compact-rename-dialog app-dialog"
               max-width="420"
               :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
@@ -489,7 +549,8 @@
                         <v-text-field v-model="trialNewName" label="Trial new name" class="flex-grow-0"
                             :disabled="state !== 'ready' || session.trials[trial_rename_index]?.status === 'processing' || session.trials[trial_rename_index]?.status === 'uploading'"
                                       dark
-                                      :error="errors.length > 0" :error-messages="errors[0]" />
+                                      :error="errors.length > 0" :error-messages="errors[0]"
+                                      @keydown.enter.prevent="submitRenameTrial" />
                     </ValidationProvider>
   
                     <v-spacer></v-spacer>
@@ -507,6 +568,7 @@
 
               <v-dialog
             v-model="trial_modify_tags"
+            content-class="app-dialog"
             max-width="500"
             :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
@@ -555,9 +617,9 @@
       <v-dialog
         v-model="remove_dialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="confirm-dialog"
         max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown"
-        persistent>
+        :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4" v-if="trialForTrashDialog">
             <v-row class="m-0">
@@ -595,9 +657,9 @@
       <v-dialog
         v-model="restore_dialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="confirm-dialog"
         max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown"
-        persistent>
+        :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4" v-if="trialForRestoreDialog">
             <v-row class="m-0">
@@ -633,9 +695,9 @@
       <v-dialog
         v-model="permanent_delete_dialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="confirm-dialog"
         max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown"
-        persistent>
+        :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
           <v-card-text class="pt-4" v-if="trialForPermanentDeleteDialog">
             <v-row class="m-0">
@@ -671,6 +733,7 @@
     <v-dialog
         v-model="showAnalysisDialog"
         v-click-outside="clickOutsideDialogTrialHideMenu"
+        content-class="app-dialog"
         max-width="fit-content"
         :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card>
@@ -680,6 +743,7 @@
           </v-card-title>
           <v-divider></v-divider>
           <v-card-text v-if="analysisFunctions.length > 0" class="pt-4">
+                  <template v-if="session?.trials && session.trials[trial_analysis_index]">
                   <div v-for="(func, index) in analysisFunctions"
                       v-bind:item="func"
                       v-bind:index="index"
@@ -687,23 +751,22 @@
                       :ref="func.id">
                     
                   <v-row class="align-center mb-2">
-                  <v-col cols="12" sm="3" class="py-2">
-                    <div class="font-weight-bold text-subtitle-1">
-                      {{ func.title }}
+                  <v-col cols="12" sm="4" class="py-2">
+                    <div class="font-weight-bold text-subtitle-1 d-flex align-center">
+                      <span>{{ func.title }}</span>
+                      <v-tooltip bottom v-if="func.info.length > 0" max-width="320px">
+                        <template v-slot:activator="{ on }">
+                          <v-icon v-on="on" small color="grey" class="ml-1"> mdi-help-circle-outline </v-icon>
+                        </template>
+                        <p v-html="func.info.replace(/\n/g, '<br>')" />
+                      </v-tooltip>
                     </div>
-                    <v-tooltip bottom v-if="func.info.length > 0">
-                      <template v-slot:activator="{ on }">
-                        <v-icon v-on="on" small color="grey" class="ml-1"> mdi-help-circle-outline </v-icon>
-                      </template>
-                      <p v-html="func.info.replace(/\n/g, '<br>')" />
-                    </v-tooltip>
-
                   </v-col>
                   <v-col cols="12" sm="5" class="py-2">
                     <div class="text-body-2 grey--text text--darken-2">{{ func.description }}</div>
                   </v-col>
-                  <v-col cols="12" sm="4" class="py-2 text-right">
-                    <v-btn small color="grey darken-3" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
+                  <v-col cols="12" sm="3" class="py-2 text-right">
+                    <v-btn small color="grey darken-4" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                             Calculating...
@@ -713,7 +776,7 @@
                     <v-btn
                         small
                         elevation="2"
-                        color="grey darken-2"
+                        color="grey darken-4"
                         dark
                         v-if="!func.trials.includes(session.trials[trial_analysis_index].id) && !(session.trials[trial_analysis_index].id in func.states)"
                         @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
@@ -724,7 +787,7 @@
                       <v-btn
                         small
                         elevation="2"
-                        color="grey darken-3"
+                        color="grey darken-4"
                         dark
                         v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
                         @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
@@ -768,6 +831,8 @@
               
               <v-divider v-if="index < analysisFunctions.length - 1" class="my-3"></v-divider>
               </div>
+                  </template>
+                  <p v-else class="mb-0 grey--text">Select a trial to run analysis.</p>
           </v-card-text>
           <v-card-text v-else class="text-center py-8">
               <v-icon size="64" color="grey lighten-1">mdi-function-variant</v-icon>
@@ -920,7 +985,8 @@
               recordingStarted: null,
               recordingTimePassed: 0,
               recordingTimer: null,
-  
+              recordingStatusPoll: null,
+
               trialsPoll: null,
               showSessionMenuButtons: true,
               leftMenuOpen: false,
@@ -945,6 +1011,8 @@
 
               isAuditoryFeedbackEnabled: false,
               controlGestureGuard: null,
+
+              sessionNotification: { show: false, text: '', type: 'error' },
           }
       },
       filters: {
@@ -976,16 +1044,21 @@
             isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed
           }),
         sessionUrl() {
-          return location.origin + "/session/" + this.session.id;
+          return location.origin + "/session/" + (this.session?.id || '');
         },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
         },
         filteredTrials() {
-          return this.session.trials.filter(trial => trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
+          const trials = this.session?.trials || []
+          return trials.filter(trial => trial && trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
         },
         videoControlsDisabled() {
           return !this.trial || this.frames.length === 0
+        },
+        hasKinematicsAvailable() {
+          if (!this.trial || !this.trial.results) return false
+          return this.trial.results.some(r => r.tag === 'visualizerTransforms-json')
         },
         buttonCaption() {
           switch (this.state) {
@@ -1010,7 +1083,7 @@
           return this.$vuetify.breakpoint.mdAndDown
         },
         isMonocularSession() {
-          return !!this.session?.isMono
+          return !!(this.session?.isMono ?? this.session?.is_mono)
         },
         sessionDeepLinkUrl() {
           if (!this.session?.id) return null
@@ -1026,6 +1099,13 @@
         },
         showOpenInAppButton() {
           return this.$vuetify.breakpoint.mdAndDown && this.isMonocularSession && this.isSameDevice && this.session?.id && this.sessionDeepLinkUrl
+        },
+        hasRecordedTrial() {
+          return this.filteredTrials.some(t => t.status && t.status !== 'ready')
+        },
+        // Use max of API values so monocular (n_calibrated=1) still shows actual device count when more are recording
+        displayDeviceCount() {
+          return Math.max(this.n_cameras_connected, this.n_videos_uploaded, 1)
         },
         mobileVideoSizeLabel() {
           return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
@@ -1053,15 +1133,28 @@
       await this.loadSession(this.$route.params.id)
       this.persistSameDeviceSessionFlag()
 
+      // Open sidebar by default on tablets/mobile when not in same-device flow, or when a trial has been recorded
+      if (this.$vuetify.breakpoint.mdAndDown && (!this.showOpenInAppButton || this.hasRecordedTrial)) {
+        this.leftMenuOpen = true
+      }
+
       this.loadTrialTags()
 
       // Check if something went wrong with loading session. Usually there was a redirect to Login page.
       if (this.session.id == undefined) {
         return
       }
-      // Get number of expected cameras.
-      const res = await axios.get(`/sessions/${this.session.id}/get_n_calibrated_cameras/`, {})
-      this.n_calibrated_cameras = res.data.data
+      // Get number of expected cameras. Skip for monocular sessions (no calibration).
+      if (this.isMonocularSession) {
+        this.n_calibrated_cameras = 1
+      } else {
+        try {
+          const res = await axios.get(`/sessions/${this.session.id}/get_n_calibrated_cameras/`, {})
+          this.n_calibrated_cameras = res.data.data
+        } catch (e) {
+          this.n_calibrated_cameras = 0
+        }
+      }
   
       if (this.user_id == this.session.user) {
         this.show_controls = true
@@ -1096,6 +1189,7 @@
     beforeDestroy() {
       this.cancelPoll()
       this.cancelRecordTimer()
+      this.cancelRecordingStatusPoll()
       this.cancelTrialsPoll()
   
       if (this.resizeObserver) {
@@ -1107,6 +1201,14 @@
       this.unbindControlGestureGuards()
     },
     watch: {
+      dialog(isOpen) {
+        if (!isOpen) {
+          this.$nextTick(() => {
+            const el = this.$refs.shareDialogActivator?.$el
+            if (el && typeof el.blur === 'function') el.blur()
+          })
+        }
+      },
       trial() {
         if (this.trial) {
           this.$nextTick(() => {
@@ -1127,6 +1229,20 @@
           this.isArchiveDone = false;
           this.isArchiveInProgress = false;
           this.archiveUrl = "#";
+        }
+      },
+      showOpenInAppButton: {
+        handler(val) {
+          if (val && this.$vuetify.breakpoint.mdAndDown && !this.hasRecordedTrial) {
+            this.leftMenuOpen = false
+          }
+        }
+      },
+      hasRecordedTrial: {
+        handler(val) {
+          if (val && this.$vuetify.breakpoint.mdAndDown && !this.showOpenInAppButton) {
+            this.leftMenuOpen = true
+          }
         }
       },
       // showAnalysisDialog(newShowAnalysisDialog, oldShowAnalysisDialog){
@@ -1223,23 +1339,44 @@
                 this.n_cameras_connected = res_status.data.n_cameras_connected
 
                 // If no calibrated cameras...
-                if (this.n_calibrated_cameras === 0)
-                  throw new Error("There are no calibrated cameras for this trial.");
+                if (this.n_calibrated_cameras === 0) {
+                  const noCamMsg = "There are no calibrated cameras for this trial."
+                  apiError(noCamMsg)
+                  throw new Error(noCamMsg)
+                }
 
                 // Transition to recording state
                 this.state = 'recording';
 
+                // If too many cameras connected (e.g. monocular with multiple devices), cancel immediately
+                if (this.n_cameras_connected > this.n_calibrated_cameras) {
+                    const res_stop = await axios.get(`/sessions/${this.session.id}/stop/`, {})
+                    const res_cancel = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
+                    this.cancelPoll()
+                    this.cancelRecordingStatusPoll()
+                    this.state = 'ready'
+                    this.trialInProcess.status = "error"
+                    const msg = this.n_calibrated_cameras === 1
+                        ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.`
+                        : `${this.n_cameras_connected} cameras connected. Too many for this session.`
+                    apiError(msg)
+                    throw new Error(msg)
+                }
+
                 // Check if the appropriate number of cameras is connected.
                 const startTime = Date.now();
                 while (this.n_cameras_connected !== this.n_calibrated_cameras) {
-                    console.log("WAITING CAMERA CONNECTION...")
                     if (Date.now() - startTime > 5000) { // 5-second timeout
                         const res_stop = await axios.get(`/sessions/${this.session.id}/stop/`, {})
                         const res_cancel = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
                         this.cancelPoll()
+                        this.cancelRecordingStatusPoll()
                         this.state = 'ready'
                         this.trialInProcess.status = "error"
-                        throw new Error("Connected cameras do not match calibrated cameras. Timeout while waiting for cameras to connect.");
+                        const timeoutMsg = this.n_cameras_connected > this.n_calibrated_cameras
+                            ? (this.n_calibrated_cameras === 1 ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.` : `${this.n_cameras_connected} cameras connected. Too many for this session.`)
+                            : "Connected cameras do not match calibrated cameras. Timeout while waiting for cameras to connect."
+                        throw new Error(timeoutMsg)
                     }
 
                     // Retry fetching the status
@@ -1248,10 +1385,13 @@
                     this.n_cameras_connected = retryRes.data.n_cameras_connected;
                 }
 
+                this.sessionNotification = { show: false, text: '', type: 'error' }
+
                 // Start recording timer.
                 this.recordingStarted = moment()
                 this.recordingTimePassed = 0
                 this.recordingTimer = window.setTimeout(this.recordTimerHandler, 500)
+                this.startRecordingStatusPoll()
 
                 // Play sound indicating the subject can start motion.
                 if (this.isAuditoryFeedbackEnabled)
@@ -1267,7 +1407,8 @@
           }
           case 'recording': {
             this.cancelRecordTimer()
-  
+            this.cancelRecordingStatusPoll()
+
             try {
               const res = await axios.get(`/sessions/${this.session.id}/stop/`, {})
 
@@ -1308,6 +1449,44 @@
         if (this.recordingTimer) {
           window.clearTimeout(this.recordingTimer)
           this.recordingTimer = null
+        }
+      },
+      startRecordingStatusPoll() {
+        this.cancelRecordingStatusPoll()
+        const poll = async () => {
+          if (this.state !== 'recording') return
+          try {
+            const res = await axios.get(`/sessions/${this.session.id}/status/`)
+            this.n_cameras_connected = res.data.n_cameras_connected
+            this.n_videos_uploaded = res.data.n_videos_uploaded
+
+            if (this.n_cameras_connected > this.n_calibrated_cameras) {
+              await axios.get(`/sessions/${this.session.id}/stop/`, {})
+              await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
+              this.cancelRecordTimer()
+              this.cancelRecordingStatusPoll()
+              this.cancelPoll()
+              this.state = 'ready'
+              this.trialInProcess.status = 'error'
+              const msg = this.n_calibrated_cameras === 1
+                ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.`
+                : `${this.n_cameras_connected} cameras connected. Too many for this session.`
+              apiError(msg)
+              return
+            }
+          } catch (e) {
+            // Ignore poll errors
+          }
+          if (this.state === 'recording') {
+            this.recordingStatusPoll = window.setTimeout(poll, 2000)
+          }
+        }
+        this.recordingStatusPoll = window.setTimeout(poll, 2000)
+      },
+      cancelRecordingStatusPoll() {
+        if (this.recordingStatusPoll) {
+          window.clearTimeout(this.recordingStatusPoll)
+          this.recordingStatusPoll = null
         }
       },
       async onDownloadData() {
@@ -1459,6 +1638,28 @@
         console.log(p)
         axios.patch(`/sessions/${this.session.id}/`, {"public": p})
       },
+      async copySessionUrlToClipboard() {
+        if (!this.sessionUrl) return
+        try {
+          await navigator.clipboard.writeText(this.sessionUrl)
+          this.sessionNotification = { show: true, text: 'Link copied to clipboard!', type: 'success' }
+        } catch {
+          try {
+            const input = document.createElement('input')
+            input.value = this.sessionUrl
+            input.setAttribute('readonly', '')
+            input.style.position = 'absolute'
+            input.style.left = '-9999px'
+            document.body.appendChild(input)
+            input.select()
+            document.execCommand('copy')
+            document.body.removeChild(input)
+            this.sessionNotification = { show: true, text: 'Link copied to clipboard!', type: 'success' }
+          } catch {
+            this.sessionNotification = { show: true, text: 'Failed to copy link', type: 'error' }
+          }
+        }
+      },
       async newSessionSameSetup() {
         await this.initSessionSameSetup()
         const query = this.isMonocularSession ? { isMono: 'true', fromDevice: 'true' } : {}
@@ -1477,8 +1678,12 @@
             }
             if (res.data.status === 'processing' || res.data.status === 'ready') {
               if (this.n_cameras_connected !== this.n_calibrated_cameras) {
-                const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
-                apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.n_videos_uploaded + " videos were uploaded. Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                if (this.n_cameras_connected > this.n_calibrated_cameras) {
+                  apiErrorRes(res.data, this.n_calibrated_cameras === 1 ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.` : `${this.n_cameras_connected} cameras connected. Too many for this session.`)
+                } else {
+                  const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
+                  apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.n_videos_uploaded + " videos were uploaded. Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                }
               }
             }
             this.state = 'ready'
@@ -1494,23 +1699,23 @@
       },
       async startTrialsPoll() {
         this.trialsPoll = window.setTimeout(async () => {
-          const trials = this.filteredTrials.filter(trial => trial.status === 'stopped' || trial.status === 'processing' || trial.status === 'reprocess')
-  
-          if (trials.length > 0) {
+          try {
             const res = await axios.get(`/sessions/${this.session.id}/status/?ret_session=true`)
-  
-            const updatedTrials = res.data.session.trials
-  
-            trials.forEach(t => {
-              const updatedT = updatedTrials.find(x => x.id === t.id)
-  
-              // Trial found and its status changed
-              if (updatedT && updatedT.status !== t.status) {
+            const updatedTrials = res.data.session.trials || []
+
+            // Add new trials and update existing ones
+            updatedTrials.forEach(updatedT => {
+              const existingIndex = this.session.trials.findIndex(t => t.id === updatedT.id)
+              if (existingIndex < 0) {
+                this.addTrial(updatedT)
+              } else if (this.session.trials[existingIndex].status !== updatedT.status) {
                 this.updateTrial(updatedT)
               }
             })
+          } catch (e) {
+            // Ignore poll errors (e.g. session no longer exists)
           }
-  
+
           this.startTrialsPoll()
         }, 5000)
       },
@@ -1594,6 +1799,16 @@
         this.trialNewName = trial.name;
         this.trial_rename_dialog = true;
       },
+      submitRenameTrial() {
+        const trial = this.session.trials[this.trial_rename_index];
+        if (this.state !== 'ready' || trial?.status === 'processing' || trial?.status === 'uploading') return;
+        this.$refs.observer_tr.validate().then(valid => {
+          if (valid) {
+            this.trial_rename_dialog = false;
+            this.renameTrial(trial, this.trial_rename_index, this.trialNewName);
+          }
+        });
+      },
       async addTagTrialDialog(trial) {
         const index = this.session.trials.findIndex(x => x.id === trial.id)
         this.trial_modify_tags_index = index;
@@ -1613,6 +1828,7 @@
           console.log(trial.name + " will be renamed to " + trialNewName);
           const {data} = await axios.post(`/trials/${trial.id}/rename/`, {trialNewName});
           await this.updateTrialWithData(trial, data.data);
+          this.sessionNotification = { show: true, text: 'Trial renamed successfully.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
@@ -1623,6 +1839,7 @@
           console.log(trial.tags + " will be replaced by " + trialNewTags)
           const {data} = await axios.post(`/trials/${trial.id}/modifyTags/`, {trialNewTags});
           await this.updateTrialWithData(trial, data.data);
+          this.sessionNotification = { show: true, text: 'Trial tags updated.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
@@ -1642,6 +1859,7 @@
         try {
           const {data} = await axios.post(`/trials/${trial.id}/trash/`);
           await this.updateTrialWithData(trial, data);
+          this.sessionNotification = { show: true, text: 'Trial moved to trash.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
@@ -1649,15 +1867,17 @@
       async permanentDeleteTrial(trial) {
         try {
           await axios.post(`/trials/${trial.id}/permanent_remove/`);
+          await this.updateTrialWithData(trial, {});
+          this.sessionNotification = { show: true, text: 'Trial permanently deleted.', type: 'success' };
         } catch (error) {
           apiError(error);
         }
-        await this.updateTrialWithData(trial, {});
       },
       async restoreTrial(trial) {
         try {
           const {data} = await axios.post(`/trials/${trial.id}/restore/`);
           await this.updateTrialWithData(trial, data);
+          this.sessionNotification = { show: true, text: 'Trial restored.', type: 'success' };
         } catch (error) {
           apiError(error)
         }
@@ -2194,9 +2414,18 @@
       top: calc(var(--app-bar-height, 56px) + 8px);
       left: 8px;
       z-index: 100;
-      background-color: rgba(0, 0, 0, 0.8) !important;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      
+      background-color: #424242 !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      border-radius: 8px !important;
+      min-width: 48px !important;
+      width: 48px !important;
+      min-height: 48px !important;
+      height: 48px !important;
+
+      .v-icon {
+        font-size: 28px !important;
+      }
+
       @media (min-width: 1280px) {
         display: none !important;
       }
@@ -2216,19 +2445,15 @@
       }
     }
     
-    .left {
+    .left-wrapper {
       min-width: 0;
-      overflow: hidden;
       flex-shrink: 0;
       position: relative;
       z-index: 99;
       display: flex;
-      flex-direction: column;
 
       @media (min-width: 1280px) {
-        width: 250px;
-        height: 100%;
-        background-color: #000000;
+        /* Desktop: just a flex container */
       }
 
       @media (max-width: 1279px) {
@@ -2240,13 +2465,34 @@
         max-width: 85vw;
         transform: translateX(-100%);
         transition: transform 0.3s ease;
-        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-        padding-top: 48px;
-        background-color: rgb(18, 18, 18);
+        overflow: visible;
 
         &.mobile-open {
           transform: translateX(0);
         }
+      }
+    }
+
+    .left {
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+
+      @media (min-width: 1280px) {
+        width: 250px;
+        height: 100%;
+        background-color: #000000;
+      }
+
+      @media (max-width: 1279px) {
+        width: 100%;
+        height: 100%;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+        padding-top: 48px;
+        background-color: rgb(18, 18, 18);
       }
 
       .left-scroll {
@@ -2263,6 +2509,13 @@
         width: 100% !important;
         min-width: 0;
         box-sizing: border-box;
+        height: 36px !important;
+        min-height: 36px !important;
+
+        @media (max-width: 599px) {
+          height: 44px !important;
+          min-height: 44px !important;
+        }
       }
 
       .session-actions-panel {
@@ -2271,12 +2524,46 @@
         overflow-x: hidden;
       }
 
+      .trials-wrapper {
+        min-height: 0;
+        overflow: visible;
+      }
+
+      .trial-name-row {
+        gap: 8px;
+      }
+
+      .show-removed-trials-sidebar {
+        flex-shrink: 0;
+      }
+
+      .toolbar-checkbox {
+        flex-shrink: 0;
+
+        ::v-deep .v-input {
+          margin-top: 0;
+          padding-top: 0;
+        }
+        ::v-deep .v-input__control {
+          align-items: center;
+        }
+        ::v-deep .v-messages {
+          display: none;
+        }
+      }
+
       .session-action-btn {
         width: 100%;
-        height: 32px !important;
-        min-height: 32px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        font-size: 0.9375rem !important;
+
+        @media (max-width: 599px) {
+          height: 44px !important;
+          min-height: 44px !important;
+        }
       }
-  
+
       .trials {
         overflow-y: visible;
         flex-grow: 0;
@@ -2292,30 +2579,32 @@
         }
       }
       
-      .mobile-close-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        z-index: 103;
-        background-color: #424242 !important;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-        min-width: 32px !important;
-        max-width: 32px !important;
-        width: 32px !important;
-        min-height: 32px !important;
-        max-height: 32px !important;
-        height: 32px !important;
-        padding: 0 !important;
-        border-radius: 50% !important;
-        aspect-ratio: 1;
+    }
 
-        .v-icon {
-          font-size: 20px !important;
-        }
+    .sidebar-toggle-btn {
+      position: absolute;
+      top: 50%;
+      right: -16px;
+      transform: translateY(-50%);
+      z-index: 103;
+      background-color: #424242 !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      min-width: 34px !important;
+      max-width: 34px !important;
+      width: 34px !important;
+      min-height: 34px !important;
+      max-height: 34px !important;
+      height: 34px !important;
+      padding: 0 !important;
+      border-radius: 50% !important;
+      aspect-ratio: 1;
 
-        @media (min-width: 960px) {
-          display: none !important;
-        }
+      .v-icon {
+        font-size: 22px !important;
+      }
+
+      @media (min-width: 1280px) {
+        display: none !important;
       }
     }
   
@@ -2630,16 +2919,15 @@
     }
   }
 
-  .open-in-app-requirement {
+  .monocular-beta-alert {
     font-size: 0.85rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.85);
   }
-
-  .monocular-jump-warning {
-    font-size: 0.85rem;
-    line-height: 1.4;
-    color: #ffb74d;
+  .monocular-beta-alert a {
+    color: #64b5f6;
+    text-decoration: underline;
+  }
+  .monocular-beta-alert a:hover {
+    color: #90caf9;
   }
   </style>
   

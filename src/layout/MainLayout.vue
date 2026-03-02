@@ -13,6 +13,7 @@
       <div class="slot">
         <v-btn
           v-if="leftButton"
+          text
           @click="$emit('left')">
           {{ leftButton}}
         </v-btn>
@@ -25,6 +26,8 @@
       <div class="slot">
         <v-btn
           v-if="rightButton"
+          color="grey darken-4"
+          dark
           :disabled="rightDisabled || rightSpinner"
           @click="$emit('right')">
 

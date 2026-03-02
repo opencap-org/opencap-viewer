@@ -2,7 +2,7 @@
  * Error message processing
  * @module util/ErrorMessage
  */
-import Vue from 'vue'
+import { showNotification, hideNotification } from '@/util/notificationStore.js'
 
 /**
  * Format object field depending on field type
@@ -85,14 +85,15 @@ function apiError (error, operation) {
   if (error == "Error: Network Error") {
     error = "Could not reach server. Check your internet connection and try again."
   }
-  Vue.toasted.error(processErrorMessage(error, operation),{duration: 10000})
+  const msg = processErrorMessage(error, operation)
+  showNotification({ text: msg.replace(/<br\/?>/g, ' '), type: 'error', timeout: 10000 })
 }
 /**
  * Shorthand for successful toast message
  * @param {String} text - message text
  */
 function apiSuccess (text) {
-  Vue.toasted.success(text, {duration: 10000})
+  showNotification({ text, type: 'success', timeout: 10000 })
 }
 /**
  * Shorthand for info toast message
@@ -100,20 +101,22 @@ function apiSuccess (text) {
  * @param {Number} time - duration in ms (null = default)
  * @param {Object} opts - options: { text, onClick } for action, or { position } for toast placement, etc.
  */
-function apiInfo (text, time=null, opts={}) {
-  const defaultAction = { text: 'Close', onClick: (e, t) => t.goAway(0) };
-  const { text: actionText, onClick, ...rest } = opts;
-  const action = (actionText !== undefined && onClick !== undefined)
-    ? { text: actionText, onClick }
-    : defaultAction;
-  Vue.toasted.info(text, { duration: time, action, ...rest });
+function apiInfo (text, time = null, opts = {}) {
+  const duration = time != null ? time : 5000
+  const { text: actionText, onClick } = opts
+  showNotification({
+    text,
+    type: 'info',
+    timeout: duration,
+    ...(actionText != null && onClick != null && { actionText, actionOnClick: onClick })
+  })
 }
 /**
  * Shorthand for info toast message
  * @param {String} text - message text
  */
- function apiWarning (text) {
-  Vue.toasted.global.warning(text, {duration: null})
+function apiWarning (text) {
+  showNotification({ text, type: 'warning', timeout: 10000 })
 }
 
 /**
@@ -127,8 +130,8 @@ function apiErrorRes (axiosRes, defaultText) {
   }
 }
 
-function clearToastMessages() {
-    Vue.toasted.clear()
+function clearToastMessages () {
+  hideNotification()
 }
 
 export {

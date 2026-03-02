@@ -1,8 +1,9 @@
 <template>
     <v-dialog v-model="edit_dialog"
-      :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
+      content-class="app-dialog"
+      :width="$vuetify.breakpoint.smAndDown ? '100%' : '520'"
+      max-width="520"
       :fullscreen="$vuetify.breakpoint.smAndDown"
-      persistent
       @click:outside="closeDialog">
 
       <ValidationObserver
@@ -12,8 +13,11 @@
               v-slot="{ invalid }">
       <v-form>
       <v-card>
-        <v-card-title class="headline" v-if="edited_subject.id">Edit subject "{{ edited_subject.name }}"</v-card-title>
-        <v-card-title class="headline" v-else>Create new subject</v-card-title>
+        <v-card-title class="app-dialog-title">
+          <v-icon class="mr-2" color="primary">mdi-account-plus</v-icon>
+          <span v-if="edited_subject.id">Edit subject "{{ edited_subject.name }}"</span>
+          <span v-else>Create new subject</span>
+        </v-card-title>
         <v-card-text class="pt-4">
           <v-text-field
             v-model="edited_subject.name"
@@ -136,18 +140,18 @@
           </div>
 
         </v-card-text>
-        <v-card-actions>
+        <v-card-actions class="px-4">
           <v-spacer></v-spacer>
           <v-btn
-            color="blue darken-1"
+            color="grey"
             text
             @click="cancelSubjectForm()"
           >
             Cancel
           </v-btn>
           <v-btn
-            color="green darken-1"
-            text
+            color="grey darken-4"
+            dark
             :disabled="invalid"
             @click="submitSubjectForm()"
           >

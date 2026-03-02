@@ -1,5 +1,22 @@
 <template>
   <v-app :style="appStyle">
+    <!-- Global notification snackbar - ensures errors/success/info visible across entire app -->
+    <v-snackbar
+      v-model="globalNotificationShow"
+      :color="notificationState.type === 'error' ? 'error' : notificationState.type === 'success' ? 'success' : notificationState.type === 'warning' ? 'warning' : 'info'"
+      :timeout="notificationState.timeout"
+      app
+      top
+      centered
+      content-class="global-notification-snackbar">
+      {{ notificationState.text }}
+      <template v-slot:action="{ attrs }">
+        <v-btn v-bind="attrs" text @click="onNotificationAction">
+          {{ notificationState.actionText || 'Close' }}
+        </v-btn>
+      </template>
+    </v-snackbar>
+
     <v-app-bar
       ref="appBar"
       app
@@ -28,6 +45,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
+import { notificationState, hideNotification } from '@/util/notificationStore.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
 
@@ -87,6 +105,12 @@ export default {
           if (nextVMain) nextVMain.scrollTop = 0
         })
       })
+    },
+    onNotificationAction () {
+      if (notificationState.actionOnClick) {
+        notificationState.actionOnClick()
+      }
+      hideNotification()
     }
   },
   computed: {
@@ -98,10 +122,22 @@ export default {
       return {
         background: this.$vuetify.theme.themes.dark.background
       }
+    },
+    notificationState () {
+      return notificationState
+    },
+    globalNotificationShow: {
+      get () {
+        return notificationState.show
+      },
+      set (val) {
+        if (!val) hideNotification()
+      }
     }
   },
   watch: {
     $route () {
+      hideNotification()
       this.cancelTimer()
       this.startTimer()
       this.resetMainScroll()
@@ -182,7 +218,9 @@ export default {
 }
 
 ::v-deep .v-app-bar {
-  z-index: 5;
+  z-index: 1100;
+  background: rgba(30, 30, 30, 0.98) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   
   .v-toolbar__content {
     flex-wrap: nowrap;
@@ -217,16 +255,34 @@ export default {
   overflow: hidden;
 }
 
-/* Make all dialogs visually distinct from the page background */
-.v-dialog {
-  .v-card,
-  .v-sheet {
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.6),
-      0 0 0 1px rgba(255, 255, 255, 0.06);
-  }
+/* Bottom sheet menu content – match card theme */
+.session-menu-sheet,
+.subject-menu-sheet,
+.recycle-menu-sheet {
+  background: rgba(30, 30, 30, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
 }
+
+.session-menu-sheet .v-list,
+.subject-menu-sheet .v-list,
+.recycle-menu-sheet .v-list {
+  background: transparent !important;
+}
+
+.session-menu-sheet .v-list-item,
+.subject-menu-sheet .v-list-item,
+.recycle-menu-sheet .v-list-item {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.session-menu-sheet .v-divider,
+.subject-menu-sheet .v-divider,
+.recycle-menu-sheet .v-divider {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Dialog cards use unified app card style (see main.scss) */
 
 /* Slightly stronger scrim so overlay is clearly visible */
 .v-overlay__scrim {

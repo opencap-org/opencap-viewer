@@ -149,7 +149,8 @@
                   <v-dialog
                     v-model="advancedSettingsDialog"
                     :width="$vuetify.breakpoint.smAndDown ? '95%' : '700px'"
-                    content-class="advanced-settings-dialog"
+                    content-class="advanced-settings-dialog app-dialog"
+                    max-width="700"
                   >
                     <v-card class="advanced-settings-card">
                       <v-card-actions class="advanced-settings-header justify-space-between align-center">
@@ -359,7 +360,10 @@
               <v-icon left>mdi-arrow-left</v-icon>
               {{ backButtonLabel }}
             </v-btn>
-            <v-btn class="same-width"
+            <v-btn
+              color="grey darken-4"
+              dark
+              class="same-width"
               :disabled="busy || disabledNextButton"
               :loading="busy && !imgs"
               @click="isMonocularMode ? skipProcessingToMonocular() : onNext()">
@@ -558,9 +562,12 @@ export default {
       this.onNext();
     }
 
-    const res = await axios.get(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
-
-    this.n_calibrated_cameras = res.data.data
+    if (this.isMonocularMode) {
+      this.n_calibrated_cameras = 1
+    } else {
+      const res = await axios.get(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+      this.n_calibrated_cameras = res.data.data
+    }
     this.loadSubjectsList(false)
   },
   watch: {

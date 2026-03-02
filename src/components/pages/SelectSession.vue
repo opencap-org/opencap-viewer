@@ -1,7 +1,10 @@
 <template>
   <div class="select-session d-flex flex-column">
+    <h1 class="page-title">Sessions</h1>
     <div class="d-flex flex-wrap align-center toolbar-container">
       <v-btn
+        color="grey darken-4"
+        dark
         @click="$router.push({ name: 'RecordingMode' })"
         class="toolbar-button">
         <v-icon left>mdi-plus</v-icon>
@@ -10,7 +13,7 @@
 
       <v-menu offset-y>
         <template v-slot:activator="{ on, attrs }">
-          <v-btn dark v-bind="attrs" v-on="on" class="toolbar-button">
+          <v-btn color="grey darken-4" dark v-bind="attrs" v-on="on" class="toolbar-button">
             <span class="dashboards-text d-none d-sm-inline mr-2">Dashboards</span>
             <span class="dashboards-text-mobile d-sm-none">Dashboards</span>
             <v-icon>mdi-menu</v-icon>
@@ -30,6 +33,8 @@
       </v-menu>
 
       <v-btn
+        color="grey darken-4"
+        dark
         class="toolbar-button"
         @click="$router.push({ name: 'Subjects' })">
         <v-icon left>mdi-account-group-outline</v-icon>
@@ -37,21 +42,24 @@
       </v-btn>
 
       <v-btn
+        color="grey darken-4"
+        dark
         class="toolbar-button"
         @click="$router.push({ name: 'RecycleBin' })">
         <v-icon left>mdi-delete-outline</v-icon>
         Recycle Bin
       </v-btn>
 
-      <div class="checkbox-wrapper toolbar-button d-flex align-center">
-        <v-checkbox v-model="show_trashed" class="mt-0 mb-0" label="Show removed sessions" hide-details></v-checkbox>
+      <div class="show-removed-checkbox toolbar-checkbox">
+        <v-checkbox v-model="show_trashed" label="Show removed sessions" hide-details dense></v-checkbox>
       </div>
 
       <div class="d-flex align-center flex-grow-1 flex-md-grow-0 ml-0 ml-md-auto mt-2 mt-md-0 search-section">
         <div class="flex-grow-1 mr-2">
           <v-text-field
             v-model="searchText"
-            label="Search Session ID/Name"
+            label="Session ID/Name"
+            prepend-inner-icon="mdi-magnify"
             dense
             hide-details
           ></v-text-field>
@@ -59,6 +67,8 @@
 
         <div v-if="searchText">
           <v-btn
+            color="grey darken-4"
+            dark
             class="submit-btn"
             @click="onClearSearch()">
             Clear
@@ -67,25 +77,33 @@
       </div>
     </div>
 
-    <v-data-table        
-      :headers="displayHeaders"
-      :items="valid_sessions"
-      :options.sync="options"
-      :item-class="itemClasses"
-      :loading="loading"
-      :server-items-length="session_total"
-      :mobile-breakpoint="0"
-      :dense="$vuetify.breakpoint.smAndDown"
-      :footer-props="{
-        showFirstLastPage: false,
-        disableItemsPerPage: true,
-        itemsPerPageOptions: [40]
-      }"
-      fixed-header
-      single-select
-      class="sessions-table flex-grow-1"
-      @item-selected="onSelect"
-      @click:row="onRowClick">
+    <div class="sessions-table-wrapper">
+      <v-data-table        
+        :headers="displayHeaders"
+        :items="valid_sessions"
+        :options.sync="options"
+        :item-class="itemClasses"
+        :loading="loading"
+        :server-items-length="session_total"
+        :mobile-breakpoint="0"
+        :dense="$vuetify.breakpoint.smAndDown"
+        :footer-props="{
+          showFirstLastPage: false,
+          disableItemsPerPage: true,
+          itemsPerPageOptions: [40]
+        }"
+        fixed-header
+        single-select
+        class="sessions-table flex-grow-1"
+        @item-selected="onSelect"
+        @click:row="onRowClick">
+      <template v-slot:no-data>
+        <div class="table-empty-state">
+          <v-icon size="48" color="grey" class="mb-3">{{ searchText.trim() ? 'mdi-magnify' : 'mdi-folder-open-outline' }}</v-icon>
+          <p class="mb-0">{{ searchText.trim() ? 'No matching sessions' : 'No sessions yet' }}</p>
+          <p class="text-caption mb-0 mt-1">{{ searchText.trim() ? 'Try a different search term or clear the search' : 'Create a new session to get started' }}</p>
+        </div>
+      </template>
       <template v-slot:item.created_at="{ item }">
         <span>{{ item.created_at|date }}</span>
       </template>
@@ -198,14 +216,15 @@
       <template v-slot:item.isMono="{ item }">
         <span>{{ item.isMono ? 'Yes' : 'No' }}</span>
       </template>
-    </v-data-table>
+      </v-data-table>
+    </div>
 
     <!-- Session menu bottom sheet (mobile) -->
     <v-bottom-sheet
       content-class="bottom-sheet-rounded"
       v-model="showSessionMenuSheet"
       @input="val => !val && (selectedSessionForMenu = null)">
-      <v-sheet class="text-center session-menu-sheet" color="blue-grey darken-1">
+      <v-sheet class="text-center session-menu-sheet">
         <v-list v-if="selectedSessionForMenu">
           <v-list-item link @click="closeSheetAndLoad(selectedSessionForMenu)">
             <v-list-item-content>
@@ -259,7 +278,7 @@
     <v-dialog
       v-model="rename_dialog"
       v-click-outside="clickOutsideDialogSessionHideMenu"
-      content-class="compact-rename-dialog"
+      content-class="compact-rename-dialog app-dialog"
       max-width="420"
       :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSessionForRename">
@@ -295,6 +314,7 @@
     <!-- Trash Session Dialog -->
     <v-dialog
         v-model="remove_dialog"
+        content-class="confirm-dialog"
         max-width="500"
         :fullscreen="$vuetify.breakpoint.smAndDown"
         :retain-focus="false">
@@ -334,6 +354,7 @@
     <!-- Restore Session Dialog -->
     <v-dialog
         v-model="restore_dialog"
+        content-class="confirm-dialog"
         max-width="500"
         :fullscreen="$vuetify.breakpoint.smAndDown"
         :retain-focus="false">
@@ -381,7 +402,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
-import { apiInfo, apiError } from '@/util/ErrorMessage.js'
+import { apiInfo, apiError, apiSuccess, clearToastMessages } from '@/util/ErrorMessage.js'
 import { formatDate } from '@/util/DateFormat.js'
 import axios from 'axios'
 import router from '@/router'
@@ -393,7 +414,7 @@ export default {
       this.loadAnalysisDashboardList()
   },
   mounted() {
-      this.$toasted.clear()
+      clearToastMessages()
   },
   beforeDestroy () {
     if (this.searchDebounceTimer) {
@@ -699,6 +720,7 @@ export default {
       try {
         await axios.post(`/sessions/${id}/trash/`)
         this.loadValidSessions()
+        apiSuccess('Session moved to trash.')
       } catch (error) {
         apiError(error)
       }
@@ -717,6 +739,7 @@ export default {
         console.log(oldName + " will be renamed to " + sessionNewName);
         const { data } = await axios.post(`/sessions/${session.id}/rename/`, {sessionNewName});
         await this.updateSessionWithData(session, data.data);
+        apiSuccess('Session renamed successfully.')
       } catch (error) {
         apiError(error)
       }
@@ -803,35 +826,13 @@ export default {
   margin: 0 !important;
   flex-shrink: 0;
 
+  @media (min-width: 600px) {
+    min-height: 48px !important;
+  }
+
   @media (max-width: 599px) {
     flex: 1 1 calc(50% - 3px);
     width: calc(50% - 3px);
-    min-height: 44px;
-  }
-}
-
-.checkbox-wrapper {
-  height: 36px; /* Match button height */
-  display: flex;
-  align-items: center;
-  
-  ::v-deep .v-input {
-    margin-top: 0;
-    padding-top: 0;
-  }
-  
-  ::v-deep .v-input__control {
-    align-items: center;
-  }
-  
-  ::v-deep .v-input__slot {
-    margin-bottom: 0;
-  }
-
-  @media (max-width: 599px) {
-    flex: 1 1 100%;
-    width: 100%;
-    height: auto;
     min-height: 44px;
   }
 }
@@ -854,7 +855,8 @@ export default {
     padding: 8px 4px;
   }
 
-  .sessions-table {
+  .sessions-table-wrapper {
+    position: relative;
     margin: 0 8px 16px 8px;
     overflow: hidden;
     display: flex;
@@ -862,13 +864,37 @@ export default {
     flex: 1 1 auto;
     min-height: 0;
 
-    ::v-deep .v-data-footer {
-      padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-      flex: 0 0 auto;
-    }
-    
     @media (max-width: 599px) {
       margin: 0 4px 8px 4px;
+    }
+  }
+
+  .toolbar-checkbox {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    ::v-deep .v-input {
+      margin-top: 0;
+      padding-top: 0;
+    }
+    ::v-deep .v-input__control {
+      align-items: center;
+    }
+    ::v-deep .v-messages {
+      display: none;
+    }
+  }
+
+  .sessions-table {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+
+    ::v-deep .v-data-footer {
+      flex: 0 0 auto;
     }
     
     .v-data-table__wrapper {
@@ -997,11 +1023,16 @@ export default {
         }
       }
       
+      .session-name-column {
+        padding-left: 12px !important;
+      }
+
       .session-name-text {
         font-weight: 500;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        padding-left: 12px;
       }
       
       .date-column {
@@ -1136,8 +1167,9 @@ export default {
         background: rgba(255, 255, 255, 0.02);
 
         thead th {
-          padding: 6px 4px !important;
-          font-size: 0.72rem !important;
+          padding: 12px 8px !important;
+          min-height: 44px !important;
+          font-size: 0.75rem !important;
         }
 
         tbody td {
@@ -1147,7 +1179,6 @@ export default {
 
       ::v-deep .v-data-footer {
         justify-content: center;
-        padding-top: 8px;
         font-size: 0.78rem;
       }
     }
@@ -1167,13 +1198,9 @@ export default {
 
 .session-menu-sheet {
   padding-bottom: env(safe-area-inset-bottom, 0);
-  background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   overflow: hidden;
-}
-.session-menu-sheet .v-list {
-  background-color: transparent !important;
 }
 .session-menu-sheet .v-list-item {
   justify-content: center !important;

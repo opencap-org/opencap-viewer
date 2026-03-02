@@ -273,7 +273,7 @@ export default {
     return {
       loading: false,
       leftMenuClosed: false,
-      rightMenuClosed: false,
+      rightMenuClosed: true, // closed by default until there is data
 
       selected_trials: [],
       public_session_id: null,
@@ -337,7 +337,7 @@ export default {
             }
           },
           zoom: {
-            pan: { enabled: true, mode: 'xy' },
+            pan: { enabled: true, mode: 'xy', modifierKey: 'ctrl' },
             zoom: { wheel: { enabled: true }, drag: { enabled: true } }
           }
         },

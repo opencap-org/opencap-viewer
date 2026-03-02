@@ -6,7 +6,7 @@
     <template v-slot:right><div class="d-none"></div></template>
 
     <div class="device-check-wrapper d-flex flex-column align-center justify-center">
-      <h1 class="mb-6 text-center">Are you on the device you'll use to record?</h1>
+      <h1 class="device-check-title">Are you on the device you'll use to record?</h1>
       <v-alert
         type="warning"
         outlined
@@ -14,23 +14,20 @@
         class="mb-6 requirement-alert">
         Monocular recording using a single device requires the OpenCap App Store app version 2.0 or newer. <a class="app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.
       </v-alert>
-      
 
       <div
         v-if="isIosDevice"
         class="options-container">
-        <v-card
+        <div
           class="option-card pa-6 d-flex flex-column align-center"
-          outlined
-          hover
           @click="onThisDevice">
-          <v-icon size="64" color="success" class="mb-4">mdi-check-circle-outline</v-icon>
+          <v-icon size="64" class="mb-4 option-icon">mdi-check-circle-outline</v-icon>
           <h2 class="mb-2 option-title">Yes, this device</h2>
           <p class="text-center option-description">
             I'll record using this phone. Set up the session here and open in the app.
           </p>
           <v-btn
-            color="grey darken-1"
+            color="grey darken-4"
             dark
             class="mt-4 select-button"
             large
@@ -38,20 +35,18 @@
             :disabled="loading">
             Select
           </v-btn>
-        </v-card>
+        </div>
 
-        <v-card
+        <div
           class="option-card pa-6 d-flex flex-column align-center"
-          outlined
-          hover
           @click="onDifferentDevice">
-          <v-icon size="64" color="primary" class="mb-4">mdi-qrcode-scan</v-icon>
+          <v-icon size="64" class="mb-4 option-icon">mdi-qrcode-scan</v-icon>
           <h2 class="mb-2 option-title">No, different device</h2>
           <p class="text-center option-description">
             I'll use a different phone to record. Show me a QR code to connect it.
           </p>
-          <v-btn color="grey darken-1" dark class="mt-4 select-button" large>Select</v-btn>
-        </v-card>
+          <v-btn color="grey darken-4" dark class="mt-4 select-button" large>Select</v-btn>
+        </div>
       </div>
 
       <div
@@ -62,16 +57,21 @@
           outlined
           dense
           class="mb-4 non-ios-alert">
-          Monocular recording is currently supported on iPhone and iPad using the OpenCap app. Please open this page on a compatible iOS device to continue, or use the multi-camera workflow on desktop.
+          Monocular recording is supported on iPhone and iPad using the OpenCap app. You can open this page on a compatible iOS device, or set up the session here and scan the QR code with your phone to connect. Alternatively, use the multi-camera workflowi.
         </v-alert>
-      </div>
-
-      <div class="mt-6">
-        <v-btn text @click="$router.push({ name: 'RecordingMode' })">
-          <v-icon left>mdi-arrow-left</v-icon>
-          {{ backLabel }}
+        <v-btn
+          color="grey darken-4"
+          dark
+          class="mt-2"
+          @click="onDifferentDevice">
+          Set up session and show QR code
         </v-btn>
       </div>
+
+      <router-link class="device-check-back-link" :to="{ name: 'RecordingMode' }">
+        <v-icon size="18" class="back-arrow">mdi-arrow-left</v-icon>
+        {{ backLabel }}
+      </router-link>
     </div>
   </MainLayout>
 </template>
@@ -99,21 +99,29 @@ export default {
       return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to recording mode'
     },
     isIosDevice() {
-      if (typeof navigator === 'undefined') {
-        return false
-      }
+      // Detect if the current device is an iPhone or iPad (not desktop with emulated/resized viewport)
+      if (typeof navigator === 'undefined') return false
 
       const ua = navigator.userAgent || ''
       const isIOS = /iPhone|iPad|iPod/i.test(ua)
 
-      // iPadOS 13+ reports itself as Mac; detect via touch support
+      // iPadOS 13+ identifies as Mac; check for touch support (excludes Mac with trackpad)
       const isIPadOS =
         !isIOS &&
         navigator.platform === 'MacIntel' &&
         typeof navigator.maxTouchPoints === 'number' &&
         navigator.maxTouchPoints > 1
 
-      return isIOS || isIPadOS
+      const uaSaysIos = isIOS || isIPadOS
+      if (!uaSaysIos) return false
+
+      // Only treat as iOS if the primary input is touch (pointer: coarse).
+      // Excludes desktop browsers with device emulation or resized to iPhone size.
+      const hasTouchPrimary =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(pointer: coarse)').matches
+
+      return uaSaysIos && hasTouchPrimary
     }
   },
   methods: {
@@ -154,6 +162,24 @@ export default {
   margin: 0 auto;
   min-height: 60vh;
   padding: 12px 16px 24px 16px;
+
+  a {
+    text-decoration: none !important;
+    color: rgba(255, 255, 255, 0.85);
+
+    &:hover {
+      text-decoration: underline !important;
+      color: rgba(255, 255, 255, 1);
+    }
+  }
+}
+
+.device-check-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  margin: 0 0 24px 0;
 }
 
 .requirement-alert {
@@ -162,15 +188,9 @@ export default {
 }
 
 .app-store-link {
-  color: #ffcc80;
+  color: #ffcc80 !important;
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-
-.subtitle-text {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.7);
-  max-width: 500px;
 }
 
 .options-container {
@@ -192,8 +212,14 @@ export default {
   flex-direction: column;
   justify-content: space-between;
 
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
   &:hover {
     transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -211,17 +237,36 @@ export default {
   text-align: center;
 }
 
-.option-card .v-icon {
-  color: #ffffff !important;
+.option-icon {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .select-button {
   min-width: 120px;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.device-check-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  font-size: 0.9375rem;
+
+  .back-arrow {
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 959px) {
   .device-check-wrapper {
     padding: 8px 12px 20px 12px;
+  }
+
+  .device-check-title {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
   }
 
   .options-container {

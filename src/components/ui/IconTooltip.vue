@@ -38,8 +38,8 @@ export default {
 .tooltip {
   position: absolute;
   bottom: calc(100% + 8px);
-  left: 0;
-  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: #555;
   color: #fff;
   padding: 8px 10px;
@@ -47,8 +47,8 @@ export default {
   font-size: 12px;
   line-height: 1.35;
   white-space: normal;
-  width: max-content;
-  max-width: min(360px, calc(100vw - 24px));
+  max-width: min(260px, calc(100vw - 24px));
+  word-wrap: break-word;
   z-index: 9999;
 }
 
