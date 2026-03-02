@@ -8,15 +8,19 @@ export const notificationState = Vue.observable({
   show: false,
   text: '',
   type: 'info', // 'error' | 'success' | 'info' | 'warning'
-  timeout: 10000
+  timeout: 10000,
+  actionText: null, // optional custom button label (default: 'Close')
+  actionOnClick: null  // optional callback when action is clicked
 })
 
-export function showNotification ({ text, type = 'info', timeout = 10000 }) {
+export function showNotification ({ text, type = 'info', timeout = 10000, actionText, actionOnClick } = {}) {
   Object.assign(notificationState, {
     show: true,
     text: String(text),
     type,
-    timeout: type === 'error' ? 10000 : timeout
+    timeout: type === 'error' ? 10000 : timeout,
+    actionText: actionText || null,
+    actionOnClick: actionOnClick || null
   })
 }
 
