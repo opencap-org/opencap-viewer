@@ -108,140 +108,71 @@
 }
 
 /* ==========================================================================
-   Toast notifications – refined, dark-theme-friendly styling
-   Responsive sizing for all screen sizes
+   Snackbar notifications – positioning + gradient styling
    ========================================================================== */
 
-/* Toast container – constrain width and add safe margins */
-.toasted-container {
-  width: 100% !important;
-  max-width: 100vw !important;
-  padding-left: max(16px, env(safe-area-inset-left)) !important;
-  padding-right: max(16px, env(safe-area-inset-right)) !important;
-  box-sizing: border-box !important;
-}
-
-.toasted-container.top-center {
-  left: 0 !important;
-  right: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-}
-
-.toasted-container.top-right {
-  top: calc(var(--app-bar-top-offset, 64px) + 16px + env(safe-area-inset-top, 0px)) !important;
-  right: max(16px, env(safe-area-inset-right)) !important;
-}
-
-.toasted {
-  font-family: Roboto, -apple-system, BlinkMacSystemFont, sans-serif !important;
-  font-size: 0.9375rem !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.01em;
-  line-height: 1.4 !important;
-  min-height: 48px !important;
-  padding: 12px 20px !important;
-  border-radius: 12px !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  max-width: min(420px, calc(100vw - 32px)) !important;
-  width: fit-content !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-  word-wrap: break-word !important;
-  overflow-wrap: break-word !important;
-  white-space: pre-wrap !important;
-}
-
-/* Base primary theme – dark, elevated */
-.toasted.toasted-primary,
-.toasted .primary {
-  background-color: #2a2a2a !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+/* Gradient backgrounds – match previous toast styling */
+.v-snack.error .v-snack__wrapper,
+.v-snack.success .v-snack__wrapper,
+.v-snack.info .v-snack__wrapper,
+.v-snack.warning .v-snack__wrapper,
+.v-snackbar.error .v-snackbar__wrapper,
+.v-snackbar.success .v-snackbar__wrapper,
+.v-snackbar.info .v-snackbar__wrapper,
+.v-snackbar.warning .v-snackbar__wrapper,
+.v-snack__wrapper.success,
+.v-snack__wrapper.error,
+.v-snack__wrapper.info,
+.v-snack__wrapper.warning {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
-
-/* Success – softer green */
-.toasted.toasted-primary.success,
-.toasted .primary.success {
+.v-snack.success .v-snack__wrapper,
+.v-snackbar.success .v-snackbar__wrapper,
+.v-snack__wrapper.success {
   background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%) !important;
   border-color: rgba(129, 199, 132, 0.3) !important;
 }
-
-/* Error – softer red */
-.toasted.toasted-primary.error,
-.toasted .primary.error {
+.v-snack.error .v-snack__wrapper,
+.v-snackbar.error .v-snackbar__wrapper,
+.v-snack__wrapper.error {
   background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%) !important;
   border-color: rgba(239, 154, 154, 0.3) !important;
 }
-
-/* Info – softer blue */
-.toasted.toasted-primary.info,
-.toasted .primary.info {
+.v-snack.info .v-snack__wrapper,
+.v-snackbar.info .v-snackbar__wrapper,
+.v-snack__wrapper.info {
   background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
   border-color: rgba(144, 202, 249, 0.3) !important;
 }
-
-/* Action / Close button */
-.toasted-container .toasted .action {
-  color: rgba(255, 255, 255, 0.9) !important;
-  font-size: 0.8125rem !important;
-  font-weight: 600 !important;
-  padding: 6px 12px !important;
-  margin: 0 0 0 12px !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-  text-transform: none !important;
-  letter-spacing: 0.02em;
-  transition: background 0.2s ease;
-  flex-shrink: 0 !important;
+.v-snack.warning .v-snack__wrapper,
+.v-snackbar.warning .v-snackbar__wrapper,
+.v-snack__wrapper.warning {
+  background: linear-gradient(135deg, #ef6c00 0%, #e65100 100%) !important;
+  border-color: rgba(255, 183, 77, 0.3) !important;
 }
 
-.toasted-container .toasted .action:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-  text-decoration: none !important;
+/* Session notification snackbar – top of viewport, above navbar */
+.session-notification-snackbar {
+  z-index: 9999 !important;
+  top: env(safe-area-inset-top, 0px) !important;
 }
 
-/* Container – offset below app bar on top-center, safe area for notched devices */
-.toasted-container.top-center {
-  top: calc(var(--app-bar-top-offset, 64px) + 16px + env(safe-area-inset-top, 0px)) !important;
+/* Calibration processing snackbar */
+.calibration-processing-snackbar {
+  z-index: 9999 !important;
+  top: env(safe-area-inset-top, 0px) !important;
 }
 
-/* Mobile: responsive toast sizing and safe spacing */
-@media only screen and (max-width: 600px) {
-  .toasted-container.top-center {
-    top: calc(var(--app-bar-top-offset, 56px) + 12px + env(safe-area-inset-top, 0px)) !important;
-    padding-left: max(12px, env(safe-area-inset-left)) !important;
-    padding-right: max(12px, env(safe-area-inset-right)) !important;
-  }
-
-  .toasted {
-    border-radius: 10px !important;
-    padding: 14px 16px !important;
-    font-size: 0.875rem !important;
-    max-width: calc(100vw - 24px) !important;
-  }
-
-  .toasted-container .toasted .action {
-    padding: 6px 10px !important;
-    margin-left: 10px !important;
-    font-size: 0.8125rem !important;
-  }
-
-  .toasted-container.top-right {
-    top: calc(var(--app-bar-top-offset, 56px) + 12px + env(safe-area-inset-top, 0px)) !important;
-    right: max(12px, env(safe-area-inset-right)) !important;
-  }
+/* Neutral page status snackbar */
+.neutral-status-snackbar {
+  z-index: 9999 !important;
+  top: env(safe-area-inset-top, 0px) !important;
 }
 
-/* Tablet: slightly constrained for medium screens */
-@media only screen and (min-width: 601px) and (max-width: 960px) {
-  .toasted {
-    max-width: min(380px, calc(100vw - 48px)) !important;
-  }
+/* Global app notification snackbar */
+.global-notification-snackbar {
+  z-index: 9999 !important;
+  top: env(safe-area-inset-top, 0px) !important;
 }
 
 .justify-content-evenly {
@@ -593,13 +524,6 @@ body,
     width: 30px !important;
     height: 30px !important;
   }
-}
-
-/* Warning toast – amber/orange gradient */
-.warning-toast,
-.toasted.warning-toast {
-  background: linear-gradient(135deg, #ef6c00 0%, #e65100 100%) !important;
-  border-color: rgba(255, 183, 77, 0.3) !important;
 }
 
 /* ==========================================================================
