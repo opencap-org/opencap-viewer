@@ -59,7 +59,7 @@
             label="Placement on the floor"
             class="input-field"/>
 
-          <v-tooltip bottom="" max-width="500px">
+          <v-tooltip bottom="" max-width="320px">
             <template v-slot:activator="{ on, attrs }">
               <span v-on="on" v-bind="attrs" class="help-icon-wrapper">
                 <v-icon class="ml-0 help-icon">mdi-help-circle-outline</v-icon>

@@ -750,22 +750,21 @@
                       :ref="func.id">
                     
                   <v-row class="align-center mb-2">
-                  <v-col cols="12" sm="3" class="py-2">
-                    <div class="font-weight-bold text-subtitle-1">
-                      {{ func.title }}
+                  <v-col cols="12" sm="4" class="py-2">
+                    <div class="font-weight-bold text-subtitle-1 d-flex align-center">
+                      <span>{{ func.title }}</span>
+                      <v-tooltip bottom v-if="func.info.length > 0" max-width="320px">
+                        <template v-slot:activator="{ on }">
+                          <v-icon v-on="on" small color="grey" class="ml-1"> mdi-help-circle-outline </v-icon>
+                        </template>
+                        <p v-html="func.info.replace(/\n/g, '<br>')" />
+                      </v-tooltip>
                     </div>
-                    <v-tooltip bottom v-if="func.info.length > 0">
-                      <template v-slot:activator="{ on }">
-                        <v-icon v-on="on" small color="grey" class="ml-1"> mdi-help-circle-outline </v-icon>
-                      </template>
-                      <p v-html="func.info.replace(/\n/g, '<br>')" />
-                    </v-tooltip>
-
                   </v-col>
                   <v-col cols="12" sm="5" class="py-2">
                     <div class="text-body-2 grey--text text--darken-2">{{ func.description }}</div>
                   </v-col>
-                  <v-col cols="12" sm="4" class="py-2 text-right">
+                  <v-col cols="12" sm="3" class="py-2 text-right">
                     <v-btn small color="grey darken-4" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
