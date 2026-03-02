@@ -18,17 +18,21 @@
           v-slot="{ invalid }">
           
           <ValidationProvider
-            rules="required"
+            rules="required|digits:6"
             v-slot="{ errors }"
             name="Verification code"
             slim>
             <v-text-field
               label="Verification code" 
-              v-model="otp_token"
+              v-model="otp_token_model"
+              @keydown="onOtpKeydown"
               dark
               outlined
               dense
               placeholder="000000"
+              maxlength="6"
+              inputmode="numeric"
+              pattern="[0-9]*"
               :error="errors.length > 0"
               :error-messages="errors[0]"
               class="verify-code-input"
@@ -74,7 +78,13 @@ export default {
       sessions: state => state.data.sessions,
       remember_device_flag: state => state.auth.remember_device_flag,
       skip_forcing_otp: state => state.auth.skip_forcing_otp
-    })
+    }),
+    otp_token_model: {
+      get () { return this.otp_token },
+      set (val) {
+        this.otp_token = String(val || '').replace(/\D/g, '').slice(0, 6)
+      }
+    }
   },
     mounted() {
       if (!this.skip_forcing_otp) {
@@ -85,6 +95,16 @@ export default {
     methods: {
     ...mapActions('auth', ['verify', 'set_skip_forcing_otp', 'logout']),
     ...mapActions('data', ['loadExistingSessions']),
+    onOtpKeydown (e) {
+      if (/^[0-9]$/.test(e.key)) {
+        if (this.otp_token.length >= 6) e.preventDefault()
+        return
+      }
+      const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter']
+      if (allowed.includes(e.key)) return
+      if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return
+      e.preventDefault()
+    },
     async onLogin () {
       this.loading = true
 
