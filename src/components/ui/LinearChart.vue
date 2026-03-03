@@ -2,18 +2,118 @@
     <div class="linear-chart">
       <div class="linear-chart-toolbar">
         <div class="toolbar-y-select">
-          <v-select
-            ref="ySelect"
-            v-model="y_selected"
-            @change="drawChart"
-            :items="result.y_axis"
-            label="Y Quantities"
-            multiple outlined dense hide-details
+          <v-dialog
+            v-model="ySelectDialog"
+            content-class="y-quantities-dialog"
+            max-width="720"
+            :fullscreen="$vuetify.breakpoint.smAndDown"
+            @input="onYSelectDialogChange"
           >
-            <template v-slot:selection="{ item, index }">
-              <span v-if="index === 0">{{ y_selected.length }} items selected</span>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                v-bind="attrs"
+                v-on="on"
+                outlined
+                class="toolbar-y-btn"
+                :disabled="!result.y_axis || result.y_axis.length === 0"
+              >
+                <span class="toolbar-y-btn-text">{{ y_selected.length }} Y quantit{{ y_selected.length === 1 ? 'y' : 'ies' }} selected</span>
+                <v-icon right small>mdi-chevron-down</v-icon>
+              </v-btn>
             </template>
-          </v-select>
+            <v-card>
+              <v-card-title class="text-subtitle-1 py-3">Select Y quantities</v-card-title>
+              <v-divider />
+              <v-card-text class="pa-0">
+                <div class="pa-3 pb-0">
+                  <v-text-field
+                    v-model="y_dialog_search"
+                    placeholder="Search quantities..."
+                    outlined
+                    dense
+                    hide-details
+                    clearable
+                    prepend-inner-icon="mdi-magnify"
+                    class="y-quantities-search"
+                  />
+                </div>
+                <div class="y-quantities-actions px-3 pb-2">
+                  <v-btn x-small text @click="selectAllFilteredY">Select all</v-btn>
+                  <v-btn x-small text @click="clearAllFilteredY">Clear</v-btn>
+                  <span class="y-quantities-count">{{ y_dialog_selection.length }} selected · {{ filteredYAxisForDialog.length }} shown</span>
+                </div>
+                <v-divider />
+                <div class="y-quantities-list">
+                  <div class="y-quantities-column">
+                    <div class="y-quantities-column-header">Left</div>
+                    <div
+                      v-for="item in leftYItems"
+                      :key="item"
+                      class="y-quantities-list-item"
+                      @click="toggleYDialogItem(item)"
+                    >
+                      <v-checkbox
+                        :input-value="y_dialog_selection.includes(item)"
+                        color="primary"
+                        hide-details
+                        dense
+                        readonly
+                        class="y-quantities-checkbox"
+                      />
+                      <span class="y-quantities-label" :title="item">{{ displayName(item) }}</span>
+                    </div>
+                  </div>
+                  <v-divider vertical class="y-quantities-column-divider" />
+                  <div class="y-quantities-column">
+                    <div class="y-quantities-column-header">Right</div>
+                    <div
+                      v-for="item in rightYItems"
+                      :key="item"
+                      class="y-quantities-list-item"
+                      @click="toggleYDialogItem(item)"
+                    >
+                      <v-checkbox
+                        :input-value="y_dialog_selection.includes(item)"
+                        color="primary"
+                        hide-details
+                        dense
+                        readonly
+                        class="y-quantities-checkbox"
+                      />
+                      <span class="y-quantities-label" :title="item">{{ displayName(item) }}</span>
+                    </div>
+                  </div>
+                  <v-divider vertical class="y-quantities-column-divider" />
+                  <div class="y-quantities-column">
+                    <div class="y-quantities-column-header">Other</div>
+                    <div
+                      v-for="item in otherYItems"
+                      :key="item"
+                      class="y-quantities-list-item"
+                      @click="toggleYDialogItem(item)"
+                    >
+                      <v-checkbox
+                        :input-value="y_dialog_selection.includes(item)"
+                        color="primary"
+                        hide-details
+                        dense
+                        readonly
+                        class="y-quantities-checkbox"
+                      />
+                      <span class="y-quantities-label" :title="item">{{ displayName(item) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-if="filteredYAxisForDialog.length === 0" class="text-center pa-3 grey--text">No quantities match your search.</p>
+              </v-card-text>
+              <v-divider />
+              <v-card-actions class="pa-3">
+                <v-spacer />
+                <v-btn text @click="ySelectDialog = false">Cancel</v-btn>
+                <v-btn color="primary" text @click="applyYSelection">Apply</v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
         </div>
         <v-btn class="toolbar-btn" @click="onExportPlot">Export Plot</v-btn>
         <v-btn class="toolbar-btn" @click="onResetZoom">Reset Zoom</v-btn>
@@ -41,7 +141,7 @@
       />
       <div v-else class="chart-empty-state">
         <p class="chart-empty-title">Select at least one Y quantity to display the plot.</p>
-        <v-btn small outlined class="chart-empty-btn" @click="focusYSelect">
+        <v-btn small outlined class="chart-empty-btn" @click="openYSelectDialog">
           Select Y Quantities
         </v-btn>
       </div>
@@ -111,6 +211,9 @@ export default {
       timeStart: 0,
       timeEnd: 0,
       y_selected: [],
+      ySelectDialog: false,
+      y_dialog_selection: [],
+      y_dialog_search: '',
       chartOptions: {
         animation: {
             duration: 0
@@ -214,6 +317,23 @@ export default {
       chart_point_radius: 12,
     }
   },
+  computed: {
+    filteredYAxisForDialog() {
+      const items = this.result?.y_axis || []
+      const q = (this.y_dialog_search || '').trim().toLowerCase()
+      if (!q) return items
+      return items.filter(item => String(item).toLowerCase().includes(q))
+    },
+    leftYItems() {
+      return this.filteredYAxisForDialog.filter(item => this.isLeftQuantity(item))
+    },
+    rightYItems() {
+      return this.filteredYAxisForDialog.filter(item => this.isRightQuantity(item))
+    },
+    otherYItems() {
+      return this.filteredYAxisForDialog.filter(item => !this.isLeftQuantity(item) && !this.isRightQuantity(item))
+    },
+  },
   watch: {
     timePosition: function () {
       this.drawChart();
@@ -274,7 +394,7 @@ export default {
       for(let i=0; i < this.y_selected.length; i++) {
         // console.log(this.y_selected[i])
         dataset = {};
-        dataset["label"] = this.y_selected[i];
+        dataset["label"] = this.displayName(this.y_selected[i]);
         dataset["data"] = [];
         dataset["backgroundColor"] = colors[i];
         dataset["borderColor"] = colors[i];
@@ -403,15 +523,51 @@ export default {
       }
       chart.update('none');
     },
-    focusYSelect() {
-      const ySelect = this.$refs.ySelect
-      if (!ySelect) return
-      if (typeof ySelect.focus === 'function') {
-        ySelect.focus()
+    openYSelectDialog() {
+      this.y_dialog_selection = [...this.y_selected]
+      this.ySelectDialog = true
+    },
+    onYSelectDialogChange(isOpen) {
+      if (isOpen) {
+        this.y_dialog_selection = [...this.y_selected]
+        this.y_dialog_search = ''
       }
-      if ('isMenuActive' in ySelect) {
-        ySelect.isMenuActive = true
+    },
+    toggleYDialogItem(item) {
+      const i = this.y_dialog_selection.indexOf(item)
+      if (i === -1) {
+        this.y_dialog_selection.push(item)
+      } else {
+        this.y_dialog_selection.splice(i, 1)
       }
+    },
+    applyYSelection() {
+      this.y_selected = [...this.y_dialog_selection]
+      this.ySelectDialog = false
+      this.drawChart()
+    },
+    selectAllFilteredY() {
+      const filtered = this.filteredYAxisForDialog
+      filtered.forEach(item => {
+        if (!this.y_dialog_selection.includes(item)) {
+          this.y_dialog_selection.push(item)
+        }
+      })
+    },
+    clearAllFilteredY() {
+      const filtered = this.filteredYAxisForDialog
+      this.y_dialog_selection = this.y_dialog_selection.filter(s => !filtered.includes(s))
+    },
+    displayName(name) {
+      return String(name || '').replace(/_/g, ' ')
+    },
+    isLeftQuantity(name) {
+      const s = String(name).toLowerCase()
+      return /_l\b|\bl_|\bleft\b/.test(s)
+    },
+    isRightQuantity(name) {
+      const s = String(name).toLowerCase()
+      return /_r\b|\br_|\bright\b/.test(s)
     },
   }
 };
@@ -451,6 +607,105 @@ export default {
   min-width: 0;
   flex: 1;
   max-width: 320px;
+}
+
+.linear-chart-toolbar .toolbar-y-btn {
+  height: 40px;
+  min-height: 40px;
+  text-transform: none;
+}
+
+.linear-chart-toolbar .toolbar-y-btn-text {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.y-quantities-dialog .v-card {
+  background: #1e1e1e;
+}
+
+.y-quantities-dialog .y-quantities-search .v-input__slot {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.y-quantities-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.y-quantities-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.y-quantities-list {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 8px 12px 12px;
+}
+
+.y-quantities-column-divider {
+  flex-shrink: 0;
+  margin: 0 12px;
+  align-self: stretch;
+  min-height: 40px;
+  border-width: 0 1px 0 0 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.y-quantities-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.y-quantities-column-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4px 8px 8px;
+  flex-shrink: 0;
+}
+
+.y-quantities-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.y-quantities-list-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.y-quantities-list-item .y-quantities-checkbox {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.y-quantities-list-item .y-quantities-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
 }
 
 .content-chart {
