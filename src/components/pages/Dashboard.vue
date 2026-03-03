@@ -106,14 +106,60 @@
           @change="onYQuantitySelected"
         />
 
-        <v-btn block class="mt-4" @click="onChartDownload">
-          <v-icon left small>mdi-download</v-icon>
-          Download Chart
-        </v-btn>
-        <v-btn block class="mt-2" @click="onChartDownloadWhite">
-          <v-icon left small>mdi-download</v-icon>
-          Download Chart (White)
-        </v-btn>
+        <v-dialog
+          v-model="downloadDialog"
+          max-width="400"
+          content-class="app-dialog"
+        >
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn
+              ref="downloadDialogActivator"
+              block
+              class="mt-4"
+              v-bind="attrs"
+              v-on="on"
+            >
+              <v-icon left small>mdi-download</v-icon>
+              Download Chart
+            </v-btn>
+          </template>
+
+          <v-card>
+            <v-card-title class="text-h6">
+              Choose background
+            </v-card-title>
+            <v-card-text>
+              <v-radio-group v-model="downloadBackground">
+                <v-radio label="Black background" value="black" />
+                <v-radio label="White background" value="white" />
+              </v-radio-group>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn text @click="downloadDialog = false">
+                Cancel
+              </v-btn>
+              <v-btn color="primary" text @click="onConfirmDownload">
+                Download
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
+        <div class="left d-flex flex-column pa-2" v-if="loggedIn">
+          <v-btn class="w-100 mt-4 sidebar-action-btn" :to="{ name: 'SelectSession' }">
+            <v-icon left small>mdi-arrow-left</v-icon>
+            Back to session list
+          </v-btn>
+
+          <v-btn
+            v-show="!showEmptyStateMessage"
+            class="w-100 mt-4 sidebar-action-btn"
+            @click="$router.push({ name: 'Session', params: { id: current_session_id } })">
+            <v-icon left small>mdi-play-circle-outline</v-icon>
+            Go to Visualizer
+          </v-btn>
+        </div>
       </v-card-text>
     </v-card>
 
@@ -306,6 +352,9 @@ export default {
         { text: 'Yellow-Blue', value: ['yellow', 'blue'] }
       ],
 
+      downloadDialog: false,
+      downloadBackground: 'black',
+
       chartData: {
         datasets: []
       },
@@ -416,6 +465,18 @@ export default {
     isMobile (val) {
       this.chartOptions.plugins.legend.display = !val
       this.chartOptions.plugins.title.font.size = val ? 18 : 28
+    },
+
+    downloadDialog (isOpen) {
+      if (!isOpen) {
+        this.$nextTick(() => {
+          const activator = this.$refs.downloadDialogActivator
+          const el = activator && (activator.$el || activator)
+          if (el && typeof el.blur === 'function') {
+            el.blur()
+          }
+        })
+      }
     }
   },
 
@@ -626,6 +687,9 @@ export default {
 
     onChartDownload () {
       const canvas = document.querySelector('#chart canvas')
+      if (!canvas) {
+        return
+      }
       const link = document.createElement('a')
       link.download = 'chart.png'
       link.href = canvas.toDataURL('image/png')
@@ -717,6 +781,18 @@ export default {
       clone.scales.y.border.color = '#000000'
 
       return clone
+    },
+
+    onConfirmDownload () {
+      const choice = this.downloadBackground
+      this.downloadDialog = false
+      this.$nextTick(async () => {
+        if (choice === 'white') {
+          await this.onChartDownloadWhite()
+        } else {
+          this.onChartDownload()
+        }
+      })
     },
 
     async fetchResultText (url) {
