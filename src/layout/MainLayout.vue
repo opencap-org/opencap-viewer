@@ -127,7 +127,8 @@ export default {
 
   .content-wrapper {
     overflow-x: hidden;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .navigation {

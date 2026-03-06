@@ -1,12 +1,12 @@
 <template>
   <div class="subjects-page d-flex flex-column">
-    <h1 class="page-title">Subjects</h1>
+    <h1 class="page-title subjects-toolbar-layer">Subjects</h1>
     <div class="d-flex flex-column">
-    <div class="d-flex flex-wrap align-center subjects-toolbar">
+    <div class="d-flex flex-wrap align-center subjects-toolbar subjects-toolbar-layer">
       <v-btn
         class="subjects-toolbar__btn"
         text
-        @click="$router.push({ name: 'SelectSession' })">
+        @click.prevent="$router.push({ name: 'SelectSession' })">
         <v-icon left>mdi-arrow-left</v-icon>
         Back to Sessions
       </v-btn>
@@ -14,7 +14,7 @@
         color="grey darken-4"
         dark
         class="subjects-toolbar__btn"
-        @click="$refs.dialogRef.addSubject()">
+        @click.prevent="$refs.dialogRef.addSubject()">
         <v-icon left>mdi-plus</v-icon>
         New Subject
       </v-btn>
@@ -38,7 +38,7 @@
             color="grey darken-4"
             dark
             class="subjects-submit-btn"
-            @click="onClearSearch()">
+            @click.prevent="onClearSearch()">
             Clear
           </v-btn>
         </div>
@@ -781,11 +781,18 @@ export default {
   }
 }
 
+.subjects-toolbar-layer {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+}
+
 .subjects-toolbar {
   padding: 10px 8px 14px;
   gap: 8px;
   min-width: 0;
   flex: 0 0 auto;
+  touch-action: manipulation;
 
   @media (max-width: 959px) {
     justify-content: center;
@@ -870,6 +877,8 @@ export default {
 }
 
 .subjects-page-row {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   flex: 1 1 auto;
   min-height: 0;

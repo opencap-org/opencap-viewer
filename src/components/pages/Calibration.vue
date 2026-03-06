@@ -3,6 +3,19 @@
     column
     :step="2">
 
+    <template v-slot:left>
+      <v-btn text @click="$router.push(`/${session.id}/connect-devices`)">
+        <v-icon left>mdi-arrow-left</v-icon>
+        {{ backLabel }}
+      </v-btn>
+    </template>
+
+    <template v-slot:right>
+      <v-btn class="calibration-nav-btn" :disabled="busy" @click="onNext">
+        Calibrate
+      </v-btn>
+    </template>
+
     <v-card v-if="!$vuetify.breakpoint.smAndDown" class="step-2-1">
       <v-card-text class="d-flex align-center">
         <p style="margin-bottom: 0">{{ n_videos_uploaded }} of {{ n_cameras_connected }} videos uploaded.</p>
@@ -97,14 +110,6 @@
         <p style="margin-bottom: 0">{{ n_videos_uploaded }} of {{ n_cameras_connected }} videos uploaded.</p>
       </v-card-text>
     </v-card>
-
-    <div class="navigation page-navigation d-flex justify-space-between align-center w-100 flex-nowrap">
-      <v-btn text @click="$router.push(`/${session.id}/connect-devices`)">
-        <v-icon left>mdi-arrow-left</v-icon>
-        {{ backLabel }}
-      </v-btn>
-      <v-btn class="calibration-nav-btn" :disabled="busy" @click="onNext">Calibrate</v-btn>
-    </div>
 
   </MainLayout>
 </template>
