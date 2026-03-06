@@ -90,6 +90,7 @@
 import { mapMutations, mapActions, mapState } from 'vuex'
 import { apiInfo, clearToastMessages} from "@/util/ErrorMessage.js";
 import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
+import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import MainLayout from '@/layout/MainLayout'
 
 export default {
@@ -104,6 +105,10 @@ export default {
     }
   },
   async mounted () {
+    // Ensure content starts below navbar (fixes content hidden behind navbar on navigation).
+    resetPageScroll()
+    this.$nextTick(() => resetPageScrollDeferred(this))
+
     if (!localStorage.getItem('iosAppNotificationShown')) {
       apiInfo("The new iOS app (2.0) is available on the App Store.", 20000, {text : "Go to App Store", onClick : () => {window.open("https://apps.apple.com/us/app/opencap/id1630513242", "_blank");}, position: 'top-center'});
       localStorage.setItem('iosAppNotificationShown', 'true');
@@ -118,6 +123,8 @@ export default {
         this.loading = false
       }
     }
+    // Reset scroll again after async content loads (spinner -> QR code) to fix layout-shift scroll.
+    this.$nextTick(() => resetPageScrollDeferred(this))
   },
   computed: {
     ...mapState({ 

@@ -533,11 +533,17 @@ body,
    ========================================================================== */
 
 .compact-rename-dialog {
+  /* Single card only: no extra background on the dialog wrapper */
+  background: transparent !important;
+  box-shadow: none !important;
+
+  /* Card fills wrapper so the outer div is never visible */
   .v-card {
-    width: fit-content;
-    min-width: min(320px, calc(100vw - 48px));
-    max-width: min(420px, calc(100vw - 48px));
-    margin: 0 auto;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    margin: 0;
   }
 }
 

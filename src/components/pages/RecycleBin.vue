@@ -1,11 +1,11 @@
 <template>
   <div class="recycle-bin d-flex flex-column">
-    <h1 class="page-title">Recycle Bin</h1>
-    <div class="d-flex flex-wrap align-center recycle-toolbar">
+    <h1 class="page-title recycle-toolbar-layer">Recycle Bin</h1>
+    <div class="d-flex flex-wrap align-center recycle-toolbar recycle-toolbar-layer">
         <v-btn
           class="recycle-toolbar-button"
           text
-          @click="$router.push({ name: 'SelectSession' })">
+          @click.prevent="$router.push({ name: 'SelectSession' })">
           <v-icon left>mdi-arrow-left</v-icon>
           Back to Sessions
         </v-btn>
@@ -13,7 +13,7 @@
           color="grey darken-4"
           dark
           class="recycle-toolbar-button"
-          @click="empty_bin_dialog = true">
+          @click.prevent="empty_bin_dialog = true">
           <v-icon left>mdi-delete-sweep</v-icon>
           Empty Recycle Bin
         </v-btn>
@@ -615,9 +615,16 @@ export default {
   }
 }
 
+.recycle-toolbar-layer {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+}
+
 .recycle-toolbar {
   padding: 10px 8px 14px;
   gap: 8px;
+  touch-action: manipulation;
 
   @media (max-width: 599px) {
     padding: 8px 6px 10px;
@@ -641,6 +648,8 @@ export default {
 }
 
 .recycle-content {
+  position: relative;
+  z-index: 1;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;

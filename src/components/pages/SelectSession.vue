@@ -1,11 +1,11 @@
 <template>
   <div class="select-session d-flex flex-column">
-    <h1 class="page-title">Sessions</h1>
-    <div class="d-flex flex-wrap align-center toolbar-container">
+    <h1 class="page-title sessions-toolbar-layer">Sessions</h1>
+    <div class="d-flex flex-wrap align-center toolbar-container sessions-toolbar-layer">
       <v-btn
         color="grey darken-4"
         dark
-        @click="$router.push({ name: 'RecordingMode' })"
+        @click.prevent="$router.push({ name: 'RecordingMode' })"
         class="toolbar-button">
         <v-icon left>mdi-plus</v-icon>
         New session
@@ -36,7 +36,7 @@
         color="grey darken-4"
         dark
         class="toolbar-button"
-        @click="$router.push({ name: 'Subjects' })">
+        @click.prevent="$router.push({ name: 'Subjects' })">
         <v-icon left>mdi-account-group-outline</v-icon>
         Subjects
       </v-btn>
@@ -45,7 +45,7 @@
         color="grey darken-4"
         dark
         class="toolbar-button"
-        @click="$router.push({ name: 'RecycleBin' })">
+        @click.prevent="$router.push({ name: 'RecycleBin' })">
         <v-icon left>mdi-delete-outline</v-icon>
         Recycle Bin
       </v-btn>
@@ -70,7 +70,7 @@
             color="grey darken-4"
             dark
             class="submit-btn"
-            @click="onClearSearch()">
+            @click.prevent="onClearSearch()">
             Clear
           </v-btn>
         </div>
@@ -804,11 +804,20 @@ export default {
   }
 }
 
+// Toolbar and title sit above the table in stacking order so taps on "New session"
+// (and other toolbar buttons) are never delivered to the table header on touch devices.
+.sessions-toolbar-layer {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+}
+
 .toolbar-container {
   padding: 10px 8px 14px;
   gap: 8px;
   justify-content: flex-start;
-  
+  touch-action: manipulation;
+
   @media (max-width: 599px) {
     padding: 8px 6px 10px;
     gap: 6px;
@@ -857,6 +866,7 @@ export default {
 
   .sessions-table-wrapper {
     position: relative;
+    z-index: 1;
     margin: 0 8px 16px 8px;
     overflow: hidden;
     display: flex;

@@ -46,6 +46,7 @@
 <script>
 import { mapActions, mapState } from 'vuex'
 import { notificationState, hideNotification } from '@/util/notificationStore.js'
+import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
 
@@ -85,26 +86,10 @@ export default {
       this.logout()
     },
     resetMainScroll () {
-      window.scrollTo(0, 0)
-      document.documentElement.scrollTop = 0
-      document.body.scrollTop = 0
-
-      const vMain = this.$el && this.$el.querySelector('.v-main')
-      if (vMain) {
-        vMain.scrollTop = 0
-      }
-
+      resetPageScroll()
       // Mobile Safari can apply scroll restoration after the route render.
       // Repeat reset on next frames so the new page always starts below navbar.
-      this.$nextTick(() => {
-        window.requestAnimationFrame(() => {
-          window.scrollTo(0, 0)
-          document.documentElement.scrollTop = 0
-          document.body.scrollTop = 0
-          const nextVMain = this.$el && this.$el.querySelector('.v-main')
-          if (nextVMain) nextVMain.scrollTop = 0
-        })
-      })
+      resetPageScrollDeferred(this)
     },
     onNotificationAction () {
       if (notificationState.actionOnClick) {
