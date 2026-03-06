@@ -2466,6 +2466,12 @@
     -webkit-user-select: none;
     user-select: none;
   }
+  .ui-no-zoom input,
+  .ui-no-zoom textarea,
+  .ui-no-zoom .v-text-field input {
+    -webkit-user-select: text;
+    user-select: text;
+  }
   
   .step-5 {
     position: fixed;
