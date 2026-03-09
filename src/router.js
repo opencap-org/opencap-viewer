@@ -172,9 +172,15 @@ router.beforeEach((to, from, next) => {
   if (store.state.auth.loggedIn) {
     // If the user has verified their identity.
     if(store.state.auth.verified) {
+      if (to.name === 'Verify') {
+        next({ name: 'SelectSession' })
+        return
+      }
+
       let institutionalUse = localStorage.getItem('institutional_use')
       if (to.name !== 'License' && (institutionalUse === '' || institutionalUse === 'patient_care' || institutionalUse === 'sports_performance_assessment' || institutionalUse === 'use_in_company')) {
         next({ name: 'License' })
+        return
       }
 
       // If there are no sessions and the next route requires at least one, go to ConnectDevices to create a session.
@@ -189,7 +195,7 @@ router.beforeEach((to, from, next) => {
       }
     // If the user has not verified their identity and is trying to access to a page that is not Verify.
     } else if (!store.state.auth.verified && to.name !== "Verify") {
-      next({ name: 'Login' })
+      next({ name: 'Verify' })
     // If the user has not verified their identity and is trying to access to verify, allow.
     } else {
       next()
