@@ -19,18 +19,18 @@
                 </v-btn>
             </template>
         </v-snackbar>
-        <!-- Mobile menu button -->
+        <!-- Mobile menu button (phones only) -->
         <v-btn
-            v-if="!leftMenuOpen && $vuetify.breakpoint.mdAndDown"
+            v-if="!leftMenuOpen && isPhone"
             class="mobile-menu-toggle ui-no-zoom"
             icon
             @click="leftMenuOpen = true">
             <v-icon>mdi-menu</v-icon>
         </v-btn>
         
-        <!-- Overlay for mobile -->
+        <!-- Overlay for mobile (phones only) -->
         <div 
-            v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
+            v-if="leftMenuOpen && isPhone"
             class="mobile-overlay"
             @click="leftMenuOpen = false">
         </div>
@@ -388,9 +388,9 @@
             </div>
           </div>
 
-            <!-- Mobile sidebar toggle - outside, right next to sidebar -->
+            <!-- Mobile sidebar toggle - outside, right next to sidebar (phones only) -->
             <v-btn
-                v-if="leftMenuOpen && $vuetify.breakpoint.mdAndDown"
+                v-if="leftMenuOpen && isPhone"
                 class="sidebar-toggle-btn ui-no-zoom"
                 icon
                 small
@@ -1134,6 +1134,18 @@
         isMobileOrTablet() {
           return this.$vuetify.breakpoint.smAndDown
         },
+        isIPad() {
+          if (typeof navigator === 'undefined') {
+            return false
+          }
+          const ua = navigator.userAgent || navigator.vendor || ''
+          const isIOSiPad = /iPad/.test(ua)
+          const isMacTouch = /Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document
+          return isIOSiPad || isMacTouch
+        },
+        isPhone() {
+          return this.$vuetify.breakpoint.smAndDown && !this.isIPad
+        },
         showCamSizeButton() {
           return this.$vuetify.breakpoint.mdAndDown
         },
@@ -1188,8 +1200,8 @@
       await this.loadSession(this.$route.params.id)
       this.persistSameDeviceSessionFlag()
 
-      // Open sidebar by default on tablets/mobile when not in same-device flow, or when a trial has been recorded
-      if (this.$vuetify.breakpoint.mdAndDown && (!this.showOpenInAppButton || this.hasRecordedTrial)) {
+      // Open sidebar by default on phones when not in same-device flow, or when a trial has been recorded
+      if (this.isPhone && (!this.showOpenInAppButton || this.hasRecordedTrial)) {
         this.leftMenuOpen = true
       }
 
@@ -1288,14 +1300,14 @@
       },
       showOpenInAppButton: {
         handler(val) {
-          if (val && this.$vuetify.breakpoint.mdAndDown && !this.hasRecordedTrial) {
+          if (val && this.isPhone && !this.hasRecordedTrial) {
             this.leftMenuOpen = false
           }
         }
       },
       hasRecordedTrial: {
         handler(val) {
-          if (val && this.$vuetify.breakpoint.mdAndDown && !this.showOpenInAppButton) {
+          if (val && this.isPhone && !this.showOpenInAppButton) {
             this.leftMenuOpen = true
           }
         }
