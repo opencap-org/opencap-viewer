@@ -45,7 +45,15 @@
           <p class="text-center option-description">
             I'll use a different phone to record. Show me a QR code to connect it.
           </p>
-          <v-btn color="grey darken-4" dark class="mt-4 select-button" large>Select</v-btn>
+          <v-btn
+            color="grey darken-4"
+            dark
+            class="mt-4 select-button"
+            large
+            :loading="loading"
+            :disabled="loading">
+            Select
+          </v-btn>
         </div>
       </div>
 

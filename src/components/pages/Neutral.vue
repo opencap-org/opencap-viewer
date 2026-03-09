@@ -787,7 +787,7 @@ export default {
         );
         switch (res.data.status) {
           case "done": {
-            this.$toasted.clear()
+            clearToastMessages()
             this.$router.push({
               name: "Session",
               params: {
@@ -799,7 +799,7 @@ export default {
           }
           case "error": {
             const resTrial = await axios.get(`/trials/${this.trialId}/`);
-            this.$toasted.clear();
+            clearToastMessages();
             apiErrorRes(resTrial, "Error in processing neutral pose");
             this.busy = false;
 
