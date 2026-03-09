@@ -87,7 +87,6 @@
       v-model="showLogoutDialog"
       content-class="confirm-dialog"
       max-width="500"
-      :fullscreen="$vuetify.breakpoint.smAndDown"
       :retain-focus="false">
       <v-card>
         <v-card-text class="pt-4">

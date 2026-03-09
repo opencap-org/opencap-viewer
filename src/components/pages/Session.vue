@@ -539,8 +539,7 @@
         <v-dialog
               v-model="trial_rename_dialog"
               content-class="compact-rename-dialog app-dialog"
-              max-width="420"
-              :fullscreen="$vuetify.breakpoint.smAndDown">
+              max-width="420">
           <v-card>
             <v-card-text class="pt-4">
               <v-row class="m-0">
@@ -581,8 +580,7 @@
         <v-dialog
           v-model="session_rename_dialog"
           content-class="compact-rename-dialog app-dialog"
-          max-width="420"
-          :fullscreen="$vuetify.breakpoint.smAndDown">
+          max-width="420">
           <v-card>
             <v-card-text class="pt-4">
               <v-row class="m-0">
