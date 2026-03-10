@@ -1,13 +1,17 @@
 \<template>
   <MainLayout
     :step="4"
-    :fixedHeight="false"
+    column
+    rightButton="Next"
     :rightDisabled="busy || disabledNextButton"
-    @left="$router.push(`/${session.id}/calibration`)">
-
-    <!-- Ensure MainLayout's own slots are effectively empty or hidden -->
-    <template v-slot:left><div class="d-none"></div></template>
-    <template v-slot:right><div class="d-none"></div></template>
+    :rightSpinner="busy && !imgs"
+    @right="isMonocularMode ? skipProcessingToMonocular() : onNext()">
+    <template v-slot:left>
+      <v-btn text @click="navigateBack">
+        <v-icon left>mdi-arrow-left</v-icon>
+        {{ backButtonLabel }}
+      </v-btn>
+    </template>
 
     <div class="neutral-wrapper">
       <div class="neutral-content">
@@ -353,23 +357,6 @@
           </v-card>
         </div>
       </div>
-
-      <!-- Custom navigation bar for Neutral page -->
-      <div class="custom-navigation page-navigation d-flex justify-space-between align-center w-100 flex-nowrap">
-            <v-btn text @click="navigateBack">
-              <v-icon left>mdi-arrow-left</v-icon>
-              {{ backButtonLabel }}
-            </v-btn>
-            <v-btn
-              color="grey darken-4"
-              dark
-              class="same-width"
-              :disabled="busy || disabledNextButton"
-              :loading="busy && !imgs"
-              @click="isMonocularMode ? skipProcessingToMonocular() : onNext()">
-              Next
-            </v-btn>
-          </div>
     </div>
   
     <DialogComponent
@@ -972,83 +959,6 @@ export default {
   width: 100%;
 }
 
-.custom-navigation {
-  width: 100%;
-  box-sizing: border-box;
-  flex-shrink: 0;
-  margin-top: 8px;
-  padding-top: 0;
-  padding-bottom: 8px;
-  flex-wrap: nowrap;
-  gap: 8px;
-  justify-content: space-between;
-
-  ::v-deep .v-btn {
-    min-width: 120px;
-  }
-
-  /* Ensure Back and Next are identical width/height */
-  .v-btn.same-width {
-    width: 140px;
-    min-width: 140px;
-    height: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
-  }
-
-  @media (max-width: 359px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    .custom-nav-slot {
-      width: 100%;
-      justify-content: center;
-    }
-    .custom-nav-left {
-      order: 1;
-    }
-    .custom-nav-right {
-      order: 2;
-      justify-content: center;
-    }
-  }
-}
-
-.custom-nav-slot {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 0;
-  margin: 0;
-  
-  ::v-deep .v-btn {
-    margin: 0;
-  }
-}
-
-.custom-nav-left {
-  justify-content: flex-start;
-  padding-left: 0;
-  margin-left: 0;
-  width: auto;
-  flex: 0 0 auto;
-}
-
-.custom-nav-right {
-  justify-content: flex-end;
-  padding-right: 0;
-  margin-right: 0;
-  width: auto;
-  flex: 0 0 auto;
-  
-  @media (max-width: 599px) {
-    justify-content: center;
-    padding-right: 0;
-    margin-right: 0;
-    width: 100%;
-  }
-}
-
 .neutral-layout {
   display: flex;
   flex-direction: row;
@@ -1325,10 +1235,6 @@ export default {
 .v-autocomplete__content,
 .v-menu__content {
   z-index: 999 !important;
-}
-
-.custom-navigation {
-  z-index: 10;
 }
 
 /* Advanced Settings Dialog Responsive Styles */
