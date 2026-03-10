@@ -64,10 +64,10 @@
         </div>
       </div>
 
-      <router-link class="recording-mode-back-link" :to="{ name: 'SelectSession' }">
-        <v-icon size="18" class="back-arrow">mdi-arrow-left</v-icon>
-        Back to sessions
-      </router-link>
+      <v-btn text class="mt-6" @click="$router.push({ name: 'SelectSession' })">
+        <v-icon left>mdi-arrow-left</v-icon>
+        {{ backLabel }}
+      </v-btn>
     </div>
   </MainLayout>
 </template>
@@ -79,6 +79,11 @@ export default {
   name: 'RecordingMode',
   components: {
     MainLayout
+  },
+  computed: {
+    backLabel() {
+      return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to sessions'
+    }
   },
   methods: {
     isIosDevice() {
@@ -249,18 +254,6 @@ export default {
   min-width: 120px;
   text-transform: none;
   font-weight: 600;
-}
-
-.recording-mode-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 24px;
-  font-size: 0.9375rem;
-
-  .back-arrow {
-    flex-shrink: 0;
-  }
 }
 
 @media (max-width: 959px) {
