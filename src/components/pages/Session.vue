@@ -1042,7 +1042,7 @@
               recordingStatusPoll: null,
 
               trialsPoll: null,
-              showSessionMenuButtons: true,
+              showSessionMenuButtons: false,
               leftMenuOpen: false,
   
               n_calibrated_cameras: 0,
@@ -1228,8 +1228,8 @@
   
       if (this.user_id == this.session.user) {
         this.show_controls = true
-        this.showSessionMenuButtons = true
-  
+        this.showSessionMenuButtons = !this.isTabletOrPhone
+
         await this.loadAnalysisFunctions()
         await this.loadAnalysisFunctionsPending()
         await this.loadAnalysisFunctionsStates()
