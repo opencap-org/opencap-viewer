@@ -24,7 +24,7 @@
         Place a checkerboard in the scene
       </v-card-title>
 
-      <v-card-text class="d-flex align-center">
+      <v-card-text class="d-flex align-center calibration-card-content">
         <ul class="flex-grow-1">
           <li>It should be visible by all cameras (nothing in the way of cameras' view when hitting Calibrate)</li>
           <li>It can be either perpendicular to the floor (default) or lying on the floor (beta feature; select Lying placement below)</li>
@@ -46,7 +46,7 @@
         Provide the checkerboard details
       </v-card-title>
 
-      <v-card-text class="d-flex">
+      <v-card-text class="d-flex calibration-card-content">
         <div class="d-flex flex-grow-1 align-center inputs">
           <v-text-field
             v-model="rows"
@@ -69,11 +69,23 @@
             label="Placement on the floor"
             class="mr-0"/>
 
-          <v-tooltip bottom="" max-width="500px">
+          <v-tooltip
+            bottom
+            max-width="500px"
+            content-class="calibration-tooltip"
+            open-on-click
+            :close-on-content-click="false">
             <template v-slot:activator="{ on }">
-              <v-icon v-on="on" class="ml-0">mdi-help-circle-outline</v-icon>
+              <v-btn
+                icon
+                small
+                class="calibration-help-btn ml-0"
+                :retain-focus-on-click="false"
+                v-on="on">
+                <v-icon>mdi-help-circle-outline</v-icon>
+              </v-btn>
             </template>
-            <div>
+            <div class="calibration-tooltip-content">
               The origin of the world frame is the top-left black-to-black corner of the board (red dot with a blue outline in the picture on the right).
               <br><br>
               When positioned perpendicular to the floor, transformations are applied so that in the processed data:
@@ -270,9 +282,50 @@ export default {
 }
 
 .step-2-2 {
+  .calibration-card-content {
+    @media (max-width: 599px) {
+      flex-wrap: wrap;
+    }
+  }
+
   .inputs {
+    flex-wrap: wrap;
+    min-width: 0;
+    gap: 8px;
+
     > * {
       flex: 0 0 150px;
+    }
+
+    /* Tablet: allow inputs to wrap and shrink */
+    @media (max-width: 900px) {
+      > * {
+        flex: 1 1 120px;
+        min-width: 0;
+      }
+    }
+
+    /* Mobile: stack vertically, all inputs same full width for alignment */
+    @media (max-width: 599px) {
+      flex-direction: column;
+      align-items: stretch;
+
+      > * {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .v-text-field,
+      .v-select {
+        width: 100% !important;
+        max-width: 100%;
+      }
+
+      /* Help button: keep compact, don't stretch full width */
+      .v-tooltip {
+        align-self: flex-start;
+      }
     }
   }
 
@@ -294,6 +347,41 @@ export default {
       max-width: 100%;
       max-height: 100%;
     }
+
+    @media (max-width: 599px) {
+      flex: 1 1 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+
+  /* Help tooltip: proper touch target on mobile, visible and tappable */
+  .calibration-help-btn {
+    flex-shrink: 0;
+
+    @media (max-width: 599px) {
+      min-width: 44px !important;
+      min-height: 44px !important;
+      width: 44px !important;
+      height: 44px !important;
+    }
+  }
+}
+
+/* Tooltip content: scrollable, fit viewport on mobile */
+.calibration-tooltip-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.calibration-tooltip {
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+}
+
+@media (max-width: 599px) {
+  .calibration-tooltip {
+    max-width: 90vw !important;
   }
 }
 </style>
