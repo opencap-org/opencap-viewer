@@ -267,5 +267,25 @@ export default {
       flex: 0 0 150px;
     }
   }
+
+  /* Fix Safari: calibration images must show fully, not zoomed/cropped.
+     Use max-width/max-height (no object-fit) for reliable Safari compatibility. */
+  .image-container {
+    flex-shrink: 0;
+    width: 280px;
+    min-width: 220px;
+    height: 200px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      width: auto !important;
+      height: auto !important;
+      max-width: 100%;
+      max-height: 100%;
+    }
+  }
 }
 </style>
