@@ -19,23 +19,23 @@
                 </v-btn>
             </template>
         </v-snackbar>
-        <!-- Mobile menu button (phones only) -->
+        <!-- Mobile menu button -->
         <v-btn
-            v-if="!leftMenuOpen && isPhone"
+            v-if="!leftMenuOpen && isTabletOrPhone"
             class="mobile-menu-toggle ui-no-zoom"
             icon
             @click="leftMenuOpen = true">
             <v-icon>mdi-menu</v-icon>
         </v-btn>
         
-        <!-- Overlay for mobile (phones only) -->
+        <!-- Overlay for mobile -->
         <div 
-            v-if="leftMenuOpen && isPhone"
+            v-if="leftMenuOpen && isTabletOrPhone"
             class="mobile-overlay"
             @click="leftMenuOpen = false">
         </div>
         
-        <div class="left-wrapper" :class="{ 'mobile-open': leftMenuOpen }">
+        <div class="left-wrapper" :class="{ 'mobile-open': leftMenuOpen || !isTabletOrPhone, 'mobile-drawer': isTabletOrPhone }">
             <div class="left ui-no-zoom d-flex flex-column pa-2">
             <div class="left-scroll d-flex flex-column">
             <!-- Open in app button for monocular sessions on mobile -->
@@ -82,7 +82,8 @@
                   <div class="flex-grow-1 min-width-0">
                     <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
                       <v-text-field v-show="show_controls && !showOpenInAppButton" v-model="trialName" label="Trial name" class="flex-grow-0"
-                          :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]" />
+                          :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]"
+                          autocomplete="off" />
                     </ValidationProvider>
                   </div>
                 </div>
@@ -284,7 +285,8 @@
                                   </ShareNetwork>
   
                                   <v-text-field label="Alternatively, copy this link"
-                                      v-model="sessionUrl" class="mt-5" readonly>
+                                      v-model="sessionUrl" class="mt-5" readonly
+                                      autocomplete="off">
                                       <template v-slot:append-outer>
                                           <v-btn icon small @click="copySessionUrlToClipboard" :disabled="!sessionUrl"
                                               title="Copy to clipboard">
@@ -388,9 +390,9 @@
             </div>
           </div>
 
-            <!-- Mobile sidebar toggle - outside, right next to sidebar (phones only) -->
+            <!-- Mobile sidebar toggle - outside, right next to sidebar -->
             <v-btn
-                v-if="leftMenuOpen && isPhone"
+                v-if="leftMenuOpen && isTabletOrPhone"
                 class="sidebar-toggle-btn ui-no-zoom"
                 icon
                 small
@@ -438,7 +440,8 @@
   
                   <div v-if="!videoControlsDisabled && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                          :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"/>
+                          :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"
+                          autocomplete="off" />
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
                           class="mb-2 flex-grow-1 timeline-slider" />
 
@@ -506,6 +509,7 @@
                     :disabled="state !== 'ready'"
                     dark
                     class="time-input mr-2"
+                    autocomplete="off"
                     @input="onChangeTime" />
                 <v-slider
                     :value="frame"
@@ -539,7 +543,8 @@
         <v-dialog
               v-model="trial_rename_dialog"
               content-class="compact-rename-dialog app-dialog"
-              max-width="420">
+              max-width="420"
+              :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
             <v-card-text class="pt-4">
               <v-row class="m-0">
@@ -560,6 +565,7 @@
                             :disabled="state !== 'ready' || session.trials[trial_rename_index]?.status === 'processing' || session.trials[trial_rename_index]?.status === 'uploading'"
                                       dark
                                       :error="errors.length > 0" :error-messages="errors[0]"
+                                      autocomplete="off"
                                       @keydown.enter.prevent="submitRenameTrial" />
                     </ValidationProvider>
   
@@ -580,7 +586,8 @@
         <v-dialog
           v-model="session_rename_dialog"
           content-class="compact-rename-dialog app-dialog"
-          max-width="420">
+          max-width="420"
+          :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
             <v-card-text class="pt-4">
               <v-row class="m-0">
@@ -599,6 +606,7 @@
                         dark
                         :error="errors.length > 0"
                         :error-messages="errors[0]"
+                        autocomplete="off"
                         @keydown.enter.prevent="submitRenameSession" />
                     </ValidationProvider>
                     <v-btn class="text-right" :disabled="invalid" @click="submitRenameSession">
@@ -643,6 +651,7 @@
                       :error="errors.length > 0"
                       :error-messages="errors[0]"
                       :search-input.sync="tag_search_input"
+                      autocomplete="off"
                       @change="tag_search_input = ''"
                   ></v-autocomplete>
                   </ValidationProvider>
@@ -1132,17 +1141,11 @@
         isMobileOrTablet() {
           return this.$vuetify.breakpoint.smAndDown
         },
-        isIPad() {
-          if (typeof navigator === 'undefined') {
-            return false
-          }
-          const ua = navigator.userAgent || navigator.vendor || ''
-          const isIOSiPad = /iPad/.test(ua)
-          const isMacTouch = /Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document
-          return isIOSiPad || isMacTouch
-        },
         isPhone() {
-          return this.$vuetify.breakpoint.smAndDown && !this.isIPad
+          return this.$vuetify.breakpoint.xsOnly
+        },
+        isTabletOrPhone() {
+          return this.$vuetify.breakpoint.mdAndDown
         },
         showCamSizeButton() {
           return this.$vuetify.breakpoint.mdAndDown
@@ -1198,8 +1201,10 @@
       await this.loadSession(this.$route.params.id)
       this.persistSameDeviceSessionFlag()
 
-      // Open sidebar by default on phones when not in same-device flow, or when a trial has been recorded
-      if (this.isPhone && (!this.showOpenInAppButton || this.hasRecordedTrial)) {
+      // Keep sidebar always open on tablet/desktop; preserve current drawer behavior on phones.
+      if (!this.isPhone) {
+        this.leftMenuOpen = true
+      } else if (!this.showOpenInAppButton || this.hasRecordedTrial) {
         this.leftMenuOpen = true
       }
 
@@ -2546,25 +2551,21 @@
       position: relative;
       z-index: 99;
       display: flex;
+    }
 
-      @media (min-width: 1280px) {
-        /* Desktop: just a flex container */
-      }
+    .left-wrapper.mobile-drawer {
+      position: fixed;
+      top: var(--app-bar-height, 56px);
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      max-width: 85vw;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      overflow: visible;
 
-      @media (max-width: 1279px) {
-        position: fixed;
-        top: var(--app-bar-height, 56px);
-        left: 0;
-        bottom: 0;
-        width: 280px;
-        max-width: 85vw;
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-        overflow: visible;
-
-        &.mobile-open {
-          transform: translateX(0);
-        }
+      &.mobile-open {
+        transform: translateX(0);
       }
     }
 
@@ -2575,21 +2576,20 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      width: 250px;
+      height: 100%;
+      background-color: #000000;
+    }
 
-      @media (min-width: 1280px) {
-        width: 250px;
-        height: 100%;
-        background-color: #000000;
-      }
+    .left-wrapper.mobile-drawer .left {
+      width: 100%;
+      height: 100%;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+      padding-top: 48px;
+      background-color: rgb(18, 18, 18);
+    }
 
-      @media (max-width: 1279px) {
-        width: 100%;
-        height: 100%;
-        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
-        padding-top: 48px;
-        background-color: rgb(18, 18, 18);
-      }
-
+    .left {
       .left-scroll {
         min-height: 0;
         flex: 1 1 auto;
