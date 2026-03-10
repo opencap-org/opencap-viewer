@@ -30,7 +30,7 @@
         
         <!-- Overlay for mobile -->
         <div 
-            v-if="leftMenuOpen && isTabletOrPhone"
+            v-if="leftMenuOpen && isPhone"
             class="mobile-overlay"
             @click="leftMenuOpen = false">
         </div>
