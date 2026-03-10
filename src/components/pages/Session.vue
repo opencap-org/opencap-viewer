@@ -65,17 +65,6 @@
               </div>
             </v-alert>
   
-            <!-- Session name (display + rename) -->
-            <div class="session-name-block mb-3">
-              <div class="session-name-label text-caption">Session name</div>
-              <div class="session-name-row d-flex align-center flex-wrap">
-                <span class="session-name-text text-body-2 flex-grow-1 min-width-0 text-truncate" :title="displaySessionName">{{ displaySessionName }}</span>
-                <v-btn icon dark small class="flex-shrink-0" @click="openSessionRenameDialog" title="Rename session">
-                  <v-icon small>mdi-pencil</v-icon>
-                </v-btn>
-              </div>
-            </div>
-
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
                 <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
@@ -2625,20 +2614,6 @@
         overflow: visible;
       }
 
-      .session-name-block {
-        padding: 8px 0;
-      }
-      .session-name-label {
-        color: rgba(255, 255, 255, 0.7);
-        margin-bottom: 4px;
-        font-size: 0.75rem;
-      }
-      .session-name-row {
-        gap: 4px;
-      }
-      .session-name-text {
-        opacity: 0.95;
-      }
       .trial-name-row {
         gap: 8px;
       }
