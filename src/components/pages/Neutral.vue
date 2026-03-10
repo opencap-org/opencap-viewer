@@ -316,13 +316,14 @@
             </div>
           </div>
 
-          <v-card v-if="!isMonocularMode" class="step-4-2 ml-4 d-flex images-box right-column">
-            <v-card class="mb-0">
-              <v-card-text style="padding-top: 5px; padding-bottom: 0; font-size: 16px;">
-              <p>{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
+          <div v-if="!isMonocularMode" class="right-column d-flex flex-column ml-4">
+            <v-card class="mb-4">
+              <v-card-text style="padding-top: 5px; padding-bottom: 5px; font-size: 16px;">
+                <p class="mb-0">{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
               </v-card-text>
             </v-card>
 
+            <v-card class="step-4-2 d-flex images-box">
             <v-card-title class="justify-center">
               Record neutral pose
             </v-card-title>
@@ -359,7 +360,8 @@
             <v-card-title class="justify-center record-pose-footer-title">
               If the subject cannot adopt the example neutral pose, select "Any pose" scaling setup under Advanced Settings
             </v-card-title>
-          </v-card>
+            </v-card>
+          </div>
         </div>
       </div>
     </div>
@@ -1075,7 +1077,7 @@ export default {
     padding-left: 0 !important;
     padding-right: 0 !important;
     
-    .step-4-2.ml-4 {
+    &.ml-4 {
       margin-left: 0 !important;
     }
   }

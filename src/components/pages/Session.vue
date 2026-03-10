@@ -1436,7 +1436,9 @@
                         this.trialInProcess.status = "error"
                         const timeoutMsg = this.n_cameras_connected > this.n_calibrated_cameras
                             ? (this.n_calibrated_cameras === 1 ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.` : `${this.n_cameras_connected} cameras connected. Too many for this session.`)
-                            : "Connected cameras do not match calibrated cameras. Timeout while waiting for cameras to connect."
+                            : (this.n_calibrated_cameras === 1 && this.n_cameras_connected === 0)
+                                ? "No camera connected. Please connect 1 camera to start recording."
+                                : `Expected ${this.n_calibrated_cameras} camera${this.n_calibrated_cameras === 1 ? '' : 's'} but ${this.n_cameras_connected} connected. Please connect the required cameras to start recording.`
                         throw new Error(timeoutMsg)
                     }
 
