@@ -54,13 +54,14 @@
                 type="info"
                 dense
                 outlined
+                :icon="false"
                 class="monocular-beta-alert mb-4"
                 border="left">
               <div class="monocular-beta-content">
-                <strong>Monocular mode is in beta.</strong>
+                <strong>Monocular mode is in beta.</strong><br>
                 <a href="https://www.opencap.ai/best-practices?variant=Monocular" target="_blank" rel="noopener noreferrer">Best practices</a>
                 ·
-                <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.
+                <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.<br>
                 Jumping is not supported yet. Camera must be static at 45° angle.
               </div>
             </v-alert>
