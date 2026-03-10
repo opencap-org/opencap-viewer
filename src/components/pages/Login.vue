@@ -266,6 +266,7 @@ export default {
 
 @media (max-width: 599px) {
   .login-main {
+    padding-top: 24px !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
   }

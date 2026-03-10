@@ -18,7 +18,7 @@
           v-slot="{ invalid }">
           
           <ValidationProvider
-            rules="required|digits:6"
+            rules="required"
             v-slot="{ errors }"
             name="Verification code"
             slim>
@@ -62,6 +62,7 @@
 <script>
 import { mapActions, mapState } from 'vuex'
 import { apiError } from '@/util/ErrorMessage.js'
+import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import axios from "axios";
 
 export default {
@@ -87,6 +88,10 @@ export default {
     }
   },
     mounted() {
+      // Ensure content starts below navbar (fixes content hidden behind navbar on mobile).
+      resetPageScroll()
+      this.$nextTick(() => resetPageScrollDeferred(this))
+
       if (!this.skip_forcing_otp) {
         let res = axios.post('/reset-otp-challenge/')
         this.set_skip_forcing_otp(false)
@@ -223,6 +228,7 @@ export default {
 
 @media (max-width: 599px) {
   .verify-main {
+    padding-top: 24px !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
   }
