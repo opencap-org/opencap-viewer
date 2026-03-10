@@ -1,12 +1,17 @@
 <template>
   <MainLayout
     column
-    leftButton="Back"
     :rightButton="rightButtonLabel"
     :step="2"
     :rightDisabled="busy"
     @left="$router.push(`/${session.id}/connect-devices`)"
     @right="onNext">
+    <template v-slot:left>
+      <v-btn text @click="$router.push(`/${session.id}/connect-devices`)">
+        <v-icon left>mdi-arrow-left</v-icon>
+        {{ backLabel }}
+      </v-btn>
+    </template>
 
     <v-card class="step-2-1">
       <v-card-text class="d-flex align-center">
@@ -134,6 +139,9 @@ export default {
       session: state => state.data.session,
       trialId: state => state.data.trialId
     }),
+    backLabel() {
+      return this.$vuetify.breakpoint.smAndDown ? 'Back' : 'Back to connect-devices'
+    },
     rightButtonLabel() {
       return this.busy ? 'Processing' : 'Calibrate'
     }
