@@ -453,14 +453,21 @@ export default {
     },
     tableHeightSubjects () {
       const isMobile = this.$vuetify.breakpoint.smAndDown
+      const isTabletLandscape = this.$vuetify.breakpoint.mdOnly
+      // Vuetify's `height` prop sets the scroll wrapper height (not including the footer),
+      // so subtract the footer bar to keep the footer visible in the viewport.
+      const footerBarPx = 44
       if (this.selected) {
-        return isMobile ? '40vh' : '44vh'
+        if (isMobile) return `calc(40vh - ${footerBarPx}px)`
+        return isTabletLandscape ? `calc(40vh - ${footerBarPx}px)` : `calc(44vh - ${footerBarPx}px)`
       }
-      return isMobile ? '50vh' : '70vh'
+      if (isMobile) return `calc(50vh - ${footerBarPx}px)`
+      return isTabletLandscape ? `calc(60vh - ${footerBarPx}px)` : `calc(70vh - ${footerBarPx}px)`
     },
     tableHeightSessions () {
       const isMobile = this.$vuetify.breakpoint.smAndDown
-      return isMobile ? '40vh' : '44vh'
+      const footerBarPx = 44
+      return isMobile ? `calc(40vh - ${footerBarPx}px)` : `calc(44vh - ${footerBarPx}px)`
     },
     displayHeaders () {
       if (!this.isPhone) {
@@ -776,7 +783,8 @@ export default {
     padding: 8px 4px;
   }
 
-  @media (max-width: 959px) {
+  /* Tablet widths can overflow due to vh-based table heights; allow page scroll so the footer isn't clipped. */
+  @media (max-width: 1264px) {
     overflow-y: auto;
   }
 }
@@ -1013,7 +1021,6 @@ export default {
     }
 
     ::v-deep .v-data-footer {
-      justify-content: center;
       font-size: 0.78rem;
     }
 
