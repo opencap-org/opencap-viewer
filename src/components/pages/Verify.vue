@@ -1,5 +1,5 @@
 <template>
-  <v-layout class="verify-main" ma-0 pa-3 row justify-center align-center fill-height>
+  <v-layout class="verify-main" ma-0 pa-3 row justify-center align-start fill-height>
     <v-flex
       xs12 sm6 md4 lg3 xl2 pa-3
       class="verify-wrapper d-flex flex-column align-stretch">
