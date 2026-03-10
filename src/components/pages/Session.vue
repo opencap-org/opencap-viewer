@@ -1218,7 +1218,7 @@
   
       if (this.user_id == this.session.user) {
         this.show_controls = true
-        this.showSessionMenuButtons = !this.isTabletOrPhone
+        this.showSessionMenuButtons = false
 
         await this.loadAnalysisFunctions()
         await this.loadAnalysisFunctionsPending()
