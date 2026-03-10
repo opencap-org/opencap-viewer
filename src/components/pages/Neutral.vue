@@ -159,7 +159,12 @@
                     <v-card class="advanced-settings-card">
                       <v-card-actions class="advanced-settings-header justify-space-between align-center">
                         <v-card-title class="advanced-settings-title">Advanced Settings</v-card-title>
-                        <v-btn @click="advancedSettingsDialog = false">✖</v-btn>
+                        <v-btn icon @click="advancedSettingsDialog = false" class="advanced-settings-close-btn" aria-label="Close">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="advanced-settings-close-icon">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </v-btn>
                       </v-card-actions>
 
                       <v-card-title class="justify-center data-title">
@@ -1454,6 +1459,13 @@ export default {
       justify-content: center;
       background: rgba(255,255,255,0.08) !important;
       color: #ffffff !important;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .v-btn.advanced-settings-close-btn .advanced-settings-close-icon,
+    .v-btn.advanced-settings-close-btn .advanced-settings-close-icon line {
+      stroke: #ffffff !important;
     }
     
     .v-btn .v-btn__content,
