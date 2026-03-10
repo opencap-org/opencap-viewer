@@ -88,7 +88,7 @@
 
 <script>
 import { mapMutations, mapActions, mapState } from 'vuex'
-import { apiInfo, clearToastMessages} from "@/util/ErrorMessage.js";
+import { clearToastMessages } from "@/util/ErrorMessage.js";
 import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
 import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import MainLayout from '@/layout/MainLayout'
@@ -109,10 +109,6 @@ export default {
     resetPageScroll()
     this.$nextTick(() => resetPageScrollDeferred(this))
 
-    if (!localStorage.getItem('iosAppNotificationShown')) {
-      apiInfo("The new iOS app (2.0) is available on the App Store.", 20000, {text : "Go to App Store", onClick : () => {window.open("https://apps.apple.com/us/app/opencap/id1630513242", "_blank");}, position: 'top-center'});
-      localStorage.setItem('iosAppNotificationShown', 'true');
-    }
     if (this.$router.params != undefined) {
         await this.loadSession(this.$route.params.id)
     } else {

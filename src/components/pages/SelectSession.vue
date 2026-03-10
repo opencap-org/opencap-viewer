@@ -1188,7 +1188,6 @@ export default {
       }
 
       ::v-deep .v-data-footer {
-        justify-content: center;
         font-size: 0.78rem;
       }
     }

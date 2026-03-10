@@ -30,7 +30,7 @@
         
         <!-- Overlay for mobile -->
         <div 
-            v-if="leftMenuOpen && isTabletOrPhone"
+            v-if="leftMenuOpen && isPhone"
             class="mobile-overlay"
             @click="leftMenuOpen = false">
         </div>
@@ -54,28 +54,18 @@
                 type="info"
                 dense
                 outlined
+                :icon="false"
                 class="monocular-beta-alert mb-4"
                 border="left">
               <div class="monocular-beta-content">
-                <strong>Monocular mode is in beta.</strong>
+                <strong>Monocular mode is in beta.</strong><br>
                 <a href="https://www.opencap.ai/best-practices?variant=Monocular" target="_blank" rel="noopener noreferrer">Best practices</a>
                 ·
-                <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.
+                <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.<br>
                 Jumping is not supported yet. Camera must be static at 45° angle.
               </div>
             </v-alert>
   
-            <!-- Session name (display + rename) -->
-            <div class="session-name-block mb-3">
-              <div class="session-name-label text-caption">Session name</div>
-              <div class="session-name-row d-flex align-center flex-wrap">
-                <span class="session-name-text text-body-2 flex-grow-1 min-width-0 text-truncate" :title="displaySessionName">{{ displaySessionName }}</span>
-                <v-btn icon dark small class="flex-shrink-0" @click="openSessionRenameDialog" title="Rename session">
-                  <v-icon small>mdi-pencil</v-icon>
-                </v-btn>
-              </div>
-            </div>
-
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
                 <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
@@ -1042,7 +1032,7 @@
               recordingStatusPoll: null,
 
               trialsPoll: null,
-              showSessionMenuButtons: true,
+              showSessionMenuButtons: false,
               leftMenuOpen: false,
   
               n_calibrated_cameras: 0,
@@ -1228,8 +1218,8 @@
   
       if (this.user_id == this.session.user) {
         this.show_controls = true
-        this.showSessionMenuButtons = true
-  
+        this.showSessionMenuButtons = false
+
         await this.loadAnalysisFunctions()
         await this.loadAnalysisFunctionsPending()
         await this.loadAnalysisFunctionsStates()
@@ -1446,7 +1436,9 @@
                         this.trialInProcess.status = "error"
                         const timeoutMsg = this.n_cameras_connected > this.n_calibrated_cameras
                             ? (this.n_calibrated_cameras === 1 ? `${this.n_cameras_connected} camera${this.n_cameras_connected === 1 ? '' : 's'} connected. Monocular mode works with 1 camera. Please use only one device.` : `${this.n_cameras_connected} cameras connected. Too many for this session.`)
-                            : "Connected cameras do not match calibrated cameras. Timeout while waiting for cameras to connect."
+                            : (this.n_calibrated_cameras === 1 && this.n_cameras_connected === 0)
+                                ? "No camera connected. Please connect 1 camera to start recording."
+                                : `Expected ${this.n_calibrated_cameras} camera${this.n_calibrated_cameras === 1 ? '' : 's'} but ${this.n_cameras_connected} connected. Please connect the required cameras to start recording.`
                         throw new Error(timeoutMsg)
                     }
 
@@ -2071,7 +2063,7 @@
                   // show3d
                   // add the plane
                   {
-                    const planeSize = 5;
+                    const planeSize = 10;
   
                     const loader = new THREE.TextureLoader();
                     const texture = loader.load('https://threejsfundamentals.org/threejs/resources/images/checker.png');
@@ -2625,20 +2617,6 @@
         overflow: visible;
       }
 
-      .session-name-block {
-        padding: 8px 0;
-      }
-      .session-name-label {
-        color: rgba(255, 255, 255, 0.7);
-        margin-bottom: 4px;
-        font-size: 0.75rem;
-      }
-      .session-name-row {
-        gap: 4px;
-      }
-      .session-name-text {
-        opacity: 0.95;
-      }
       .trial-name-row {
         gap: 8px;
       }

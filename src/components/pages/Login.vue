@@ -1,5 +1,5 @@
 <template>
-  <v-layout class="login-main" ma-0 pa-3 row justify-center align-center fill-height>
+  <v-layout class="login-main" ma-0 pa-3 row justify-center align-start fill-height>
     <v-flex
       xs12 sm6 md4 lg4 xl3 pa-3
       class="login-wrapper d-flex flex-column align-stretch scroll-y">
@@ -266,6 +266,7 @@ export default {
 
 @media (max-width: 599px) {
   .login-main {
+    padding-top: 24px !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
   }

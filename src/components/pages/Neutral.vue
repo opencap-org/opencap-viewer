@@ -1,13 +1,17 @@
 \<template>
   <MainLayout
     :step="4"
-    :fixedHeight="false"
+    column
+    rightButton="Next"
     :rightDisabled="busy || disabledNextButton"
-    @left="$router.push(`/${session.id}/calibration`)">
-
-    <!-- Ensure MainLayout's own slots are effectively empty or hidden -->
-    <template v-slot:left><div class="d-none"></div></template>
-    <template v-slot:right><div class="d-none"></div></template>
+    :rightSpinner="busy && !imgs"
+    @right="isMonocularMode ? skipProcessingToMonocular() : onNext()">
+    <template v-slot:left>
+      <v-btn text @click="navigateBack">
+        <v-icon left>mdi-arrow-left</v-icon>
+        {{ backButtonLabel }}
+      </v-btn>
+    </template>
 
     <div class="neutral-wrapper">
       <div class="neutral-content">
@@ -155,7 +159,12 @@
                     <v-card class="advanced-settings-card">
                       <v-card-actions class="advanced-settings-header justify-space-between align-center">
                         <v-card-title class="advanced-settings-title">Advanced Settings</v-card-title>
-                        <v-btn @click="advancedSettingsDialog = false">✖</v-btn>
+                        <v-btn icon @click="advancedSettingsDialog = false" class="advanced-settings-close-btn" aria-label="Close">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="advanced-settings-close-icon">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </v-btn>
                       </v-card-actions>
 
                       <v-card-title class="justify-center data-title">
@@ -307,13 +316,14 @@
             </div>
           </div>
 
-          <v-card v-if="!isMonocularMode" class="step-4-2 ml-4 d-flex images-box right-column">
-            <v-card class="mb-0">
-              <v-card-text style="padding-top: 5px; padding-bottom: 0; font-size: 16px;">
-              <p>{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
+          <div v-if="!isMonocularMode" class="right-column d-flex flex-column ml-4">
+            <v-card class="mb-4">
+              <v-card-text style="padding-top: 5px; padding-bottom: 5px; font-size: 16px;">
+                <p class="mb-0">{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
               </v-card-text>
             </v-card>
 
+            <v-card class="step-4-2 d-flex images-box">
             <v-card-title class="justify-center">
               Record neutral pose
             </v-card-title>
@@ -350,26 +360,10 @@
             <v-card-title class="justify-center record-pose-footer-title">
               If the subject cannot adopt the example neutral pose, select "Any pose" scaling setup under Advanced Settings
             </v-card-title>
-          </v-card>
+            </v-card>
+          </div>
         </div>
       </div>
-
-      <!-- Custom navigation bar for Neutral page -->
-      <div class="custom-navigation page-navigation d-flex justify-space-between align-center w-100 flex-nowrap">
-            <v-btn text @click="navigateBack">
-              <v-icon left>mdi-arrow-left</v-icon>
-              {{ backButtonLabel }}
-            </v-btn>
-            <v-btn
-              color="grey darken-4"
-              dark
-              class="same-width"
-              :disabled="busy || disabledNextButton"
-              :loading="busy && !imgs"
-              @click="isMonocularMode ? skipProcessingToMonocular() : onNext()">
-              Next
-            </v-btn>
-          </div>
     </div>
   
     <DialogComponent
@@ -972,83 +966,6 @@ export default {
   width: 100%;
 }
 
-.custom-navigation {
-  width: 100%;
-  box-sizing: border-box;
-  flex-shrink: 0;
-  margin-top: 8px;
-  padding-top: 0;
-  padding-bottom: 8px;
-  flex-wrap: nowrap;
-  gap: 8px;
-  justify-content: space-between;
-
-  ::v-deep .v-btn {
-    min-width: 120px;
-  }
-
-  /* Ensure Back and Next are identical width/height */
-  .v-btn.same-width {
-    width: 140px;
-    min-width: 140px;
-    height: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
-  }
-
-  @media (max-width: 359px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    .custom-nav-slot {
-      width: 100%;
-      justify-content: center;
-    }
-    .custom-nav-left {
-      order: 1;
-    }
-    .custom-nav-right {
-      order: 2;
-      justify-content: center;
-    }
-  }
-}
-
-.custom-nav-slot {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 0;
-  margin: 0;
-  
-  ::v-deep .v-btn {
-    margin: 0;
-  }
-}
-
-.custom-nav-left {
-  justify-content: flex-start;
-  padding-left: 0;
-  margin-left: 0;
-  width: auto;
-  flex: 0 0 auto;
-}
-
-.custom-nav-right {
-  justify-content: flex-end;
-  padding-right: 0;
-  margin-right: 0;
-  width: auto;
-  flex: 0 0 auto;
-  
-  @media (max-width: 599px) {
-    justify-content: center;
-    padding-right: 0;
-    margin-right: 0;
-    width: 100%;
-  }
-}
-
 .neutral-layout {
   display: flex;
   flex-direction: row;
@@ -1160,7 +1077,7 @@ export default {
     padding-left: 0 !important;
     padding-right: 0 !important;
     
-    .step-4-2.ml-4 {
+    &.ml-4 {
       margin-left: 0 !important;
     }
   }
@@ -1325,10 +1242,6 @@ export default {
 .v-autocomplete__content,
 .v-menu__content {
   z-index: 999 !important;
-}
-
-.custom-navigation {
-  z-index: 10;
 }
 
 /* Advanced Settings Dialog Responsive Styles */
@@ -1548,6 +1461,13 @@ export default {
       justify-content: center;
       background: rgba(255,255,255,0.08) !important;
       color: #ffffff !important;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .v-btn.advanced-settings-close-btn .advanced-settings-close-icon,
+    .v-btn.advanced-settings-close-btn .advanced-settings-close-icon line {
+      stroke: #ffffff !important;
     }
     
     .v-btn .v-btn__content,

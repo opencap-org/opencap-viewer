@@ -397,10 +397,50 @@ body,
   box-sizing: border-box;
   /* Match parent's bottom corners so footer fills to edges */
   border-radius: 0 0 12px 12px;
-  /* Consistent height across all table pages */
-  min-height: 40px;
-  padding: 8px 16px !important;
-  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+  /* Match header bar height and vertically center controls */
+  --v-data-table-bar-height: 44px;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: calc(var(--v-data-table-bar-height) + env(safe-area-inset-bottom, 0px)) !important;
+  padding: 0 16px !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+
+  .v-data-footer__pagination,
+  .v-data-footer__icons-before,
+  .v-data-footer__icons-after,
+  .v-data-footer__select {
+    display: flex;
+    align-items: center;
+    height: var(--v-data-table-bar-height);
+  }
+
+  /* Keep items-per-page selector on the left, pagination controls on the right */
+  .v-data-footer__select {
+    margin-right: auto;
+  }
+
+  /* Keep prev/next buttons from shifting as the pagination text changes width */
+  .v-data-footer__pagination {
+    min-width: 14ch;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .v-data-footer__select {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .v-data-footer__select .v-select {
+    margin-top: 0;
+    padding-top: 0;
+  }
 }
 
 .v-data-table__mobile-table-row {
@@ -655,11 +695,12 @@ body,
     font-size: 0.75rem !important;
   }
 
-  // Compact table footer on mobile – reduce height
+  // Table footer on mobile – match header bar height
   .v-data-footer {
-    min-height: 32px !important;
-    padding: 4px 12px !important;
-    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px)) !important;
+    --v-data-table-bar-height: 44px;
+    min-height: calc(var(--v-data-table-bar-height) + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 0 12px !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
     font-size: 0.75rem !important;
 
     .v-btn {

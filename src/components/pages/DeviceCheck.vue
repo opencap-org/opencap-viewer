@@ -76,10 +76,10 @@
         </v-btn>
       </div>
 
-      <router-link class="device-check-back-link" :to="{ name: 'RecordingMode' }">
-        <v-icon size="18" class="back-arrow">mdi-arrow-left</v-icon>
+      <v-btn text class="mt-6" @click="$router.push({ name: 'RecordingMode' })">
+        <v-icon left>mdi-arrow-left</v-icon>
         {{ backLabel }}
-      </router-link>
+      </v-btn>
     </div>
   </MainLayout>
 </template>
@@ -253,18 +253,6 @@ export default {
   min-width: 120px;
   text-transform: none;
   font-weight: 600;
-}
-
-.device-check-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 24px;
-  font-size: 0.9375rem;
-
-  .back-arrow {
-    flex-shrink: 0;
-  }
 }
 
 @media (max-width: 959px) {
