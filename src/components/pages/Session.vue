@@ -62,7 +62,7 @@
                 <a href="https://www.opencap.ai/best-practices?variant=Monocular" target="_blank" rel="noopener noreferrer">Best practices</a>
                 ·
                 <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.<br>
-                Jumping is not supported yet. Camera must be static at 45° angle.
+                Jumping is not supported yet. Camera should be static at 30-45° angle.
               </div>
             </v-alert>
   
@@ -2063,7 +2063,7 @@
                   // show3d
                   // add the plane
                   {
-                    const planeSize = 10;
+                    const planeSize = 8;
   
                     const loader = new THREE.TextureLoader();
                     const texture = loader.load('https://threejsfundamentals.org/threejs/resources/images/checker.png');
@@ -2071,13 +2071,15 @@
                     texture.wrapS = THREE.RepeatWrapping;
                     texture.wrapT = THREE.RepeatWrapping;
                     texture.magFilter = THREE.NearestFilter;
-                    const repeats = planeSize * 2;
+                    const repeats = planeSize*1.5;
                     texture.repeat.set(repeats, repeats);
   
                     const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
                     const planeMat = new THREE.MeshPhongMaterial({
                       map: texture,
                       side: THREE.DoubleSide,
+                      transparent: true,
+                      opacity: 0.5,
                     });
                     const mesh = new THREE.Mesh(planeGeo, planeMat);
                     mesh.rotation.x = Math.PI * -.5;
