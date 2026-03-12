@@ -655,13 +655,18 @@ export default {
     itemClasses (item) {
       return item.trashed ? 'trashed' : '';
     },
-    clickOutsideDialogSubjectHideMenu() {
+    clickOutsideDialogSubjectHideMenu(e) {
+      // Only close when clicking the overlay scrim (backdrop), not on every outside click.
+      // Otherwise, the same click that opens a dialog (e.g. delete button) is treated as
+      // "outside" and immediately closes it.
+      if (!e?.target?.classList?.contains('v-overlay__scrim')) {
+        return;
+      }
       for (let t of this.valid_subjects) {
         t.isMenuOpen = false;
       }
       this.showSubjectMenuSheet = false;
       this.selectedSubjectForMenu = null;
-      // Close dialogs when clicking outside
       this.remove_dialog = false;
       this.selectedSubjectForTrash = null;
       this.restore_dialog = false;
