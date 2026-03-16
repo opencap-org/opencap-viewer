@@ -127,6 +127,14 @@ var router = new Router({
   ]
 })
 
+// Routes that only guests (non–logged-in users) should access. Logged-in users are redirected away.
+const guestOnlyRoutes = [
+  'Login',
+  'Register',
+  'ResetPassword',
+  'NewPassword'
+]
+
 const routesWithOutAuth = [
   'Login',
   'Register',
@@ -170,6 +178,11 @@ const acceptedRoutes = [
 router.beforeEach((to, from, next) => {
   //If the user has log in.
   if (store.state.auth.loggedIn) {
+    // Logged-in users must not access guest-only pages (login, register, reset password, etc.)
+    if (guestOnlyRoutes.includes(to.name)) {
+      next(store.state.auth.verified ? { name: 'SelectSession' } : { name: 'Verify' })
+      return
+    }
     // If the user has verified their identity.
     if(store.state.auth.verified) {
       if (to.name === 'Verify') {
