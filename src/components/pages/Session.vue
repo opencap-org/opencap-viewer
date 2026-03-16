@@ -143,8 +143,8 @@
                                 <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
                                   <v-list-item-title>Restore</v-list-item-title>
                                 </v-list-item>
-                                <v-list-item link v-if="!t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
-                                  <v-list-item-title>Delete</v-list-item-title>
+                                <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
+                                  <v-list-item-title>Delete permanently</v-list-item-title>
                                 </v-list-item>
                               </v-list>
                             </v-menu>
@@ -206,12 +206,12 @@
                         </div>
                       </v-list-item-content>
                     </v-list-item>
-                    <v-divider v-if="!selectedTrialForMenu.trashed"></v-divider>
-                    <v-list-item link v-if="!selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
+                    <v-divider v-if="selectedTrialForMenu.trashed"></v-divider>
+                    <v-list-item link v-if="selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
                       <v-list-item-content>
                         <div class="d-flex flex-row align-center justify-center">
                           <v-icon class="mr-3">mdi-delete-forever</v-icon>
-                          <span>Delete</span>
+                          <span>Delete permanently</span>
                         </div>
                       </v-list-item-content>
                     </v-list-item>
@@ -423,7 +423,7 @@
         </div>
 
         <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
-            <div v-if="trial" class="d-flex flex-column h-100">
+            <div v-if="trial" class="d-flex flex-column" style="flex: 1 1 0; min-height: 0; height: 100%;">
   
                 <div id="mocap" ref="mocap" class="flex-grow-1" />
   
@@ -586,9 +586,8 @@
                 </v-col>
                 <v-col cols="12" sm="10">
                   <p class="mb-1">Enter a new name for this session:</p>
-                  <small class="mt-0">Only alphanumeric characters and underscores are allowed.</small>
                   <ValidationObserver tag="div" class="d-flex flex-column" ref="observer_session_rename" v-slot="{ invalid }">
-                    <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Session name">
+                    <ValidationProvider rules="required" v-slot="{ errors }" name="Session name">
                       <v-text-field
                         v-model="sessionNewName"
                         label="Session name"
@@ -646,7 +645,8 @@
                   ></v-autocomplete>
                   </ValidationProvider>
                   <v-spacer></v-spacer>
-                  <v-btn class="text-right" :disabled="trialNewTags.length === 0"
+                  <v-btn class="text-right"
+                         :disabled="session.trials[trial_modify_tags_index]?.status === 'processing' || session.trials[trial_modify_tags_index]?.status === 'uploading'"
                          @click="trial_modify_tags = false; modifyTagsTrial(session.trials[trial_modify_tags_index], trial_modify_tags_index, trialNewTags);">
                       Apply Tags
                   </v-btn>
@@ -751,7 +751,7 @@
               <v-col cols="12" sm="10">
                 <p>
                   Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
-                  This action cannot be undone. Use Trash to keep the ability to restore the trial.
+                  This action cannot be undone.
                 </p>
               </v-col>
             </v-row>
@@ -1865,7 +1865,7 @@
         this.$refs.observer_session_rename?.validate().then(valid => {
           if (valid) {
             this.session_rename_dialog = false;
-            this.renameSession(this.sessionNewName);
+            this.renameSession(this.sessionNewName.trim());
           }
         });
       },
@@ -2047,15 +2047,18 @@
                   // setup3d
                   const container = this.$refs.mocap
   
-                  let ratio = container.clientWidth / container.clientHeight
+                  const ratio = container.clientHeight > 0
+                    ? container.clientWidth / container.clientHeight
+                    : 16 / 9
                   this.camera = new THREE.PerspectiveCamera(45, ratio, 0.1, 125)
                   this.camera.position.x = 4.5
                   this.camera.position.z = -3
                   this.camera.position.y = 3
-  
+
                   this.scene = new THREE.Scene()
                   this.renderer = new THREE.WebGLRenderer({antialias: true})
                   this.renderer.shadowMap.enabled = true;
+                  this.renderer.setPixelRatio(window.devicePixelRatio)
                   this.onResize()
                   container.appendChild(this.renderer.domElement)
                   this.controls = new THREE_OC.OrbitControls(this.camera, this.renderer.domElement)
@@ -2205,13 +2208,13 @@
       },
       animateOneFrame() {
         let cframe
-  
+
         let frames = this.frames.length
         let duration = 0
         if (this.vid0()) duration = this.vid0().duration
         if (this.vid0() && !isNaN(this.vid0().duration)) {
           let framerate = frames / duration
-  
+
           if (this.videos.length > 0) {
             let t = 0
             if (this.vid0()) t = this.vid0().currentTime;
@@ -2220,13 +2223,13 @@
             if (this.vid0()) this.time = this.frame == 0 ? 0 : parseFloat(this.vid0().currentTime.toFixed(2))
           } else {
             cframe = this.frame++
-  
+
             if (this.frame >= this.frames.length) {
               this.frame = this.frames.length - 1
               this.time = this.vid0().duration
             }
           }
-  
+
           if (cframe < this.frames.length) {
             // display the frame
             let json = this.animation_json;
@@ -2246,9 +2249,15 @@
               })
             }
           }
-  
-          this.renderer.render(this.scene, this.camera)
+
           this.syncVideos()
+        }
+
+        // Always render the 3D scene regardless of video metadata state.
+        // On iOS Safari, video.duration stays NaN until metadata loads, which
+        // would otherwise leave the canvas permanently black.
+        if (this.renderer && this.scene && this.camera) {
+          this.renderer.render(this.scene, this.camera)
         }
       },
       syncVideos() {
@@ -2497,6 +2506,7 @@
 .main-content {
       min-width: 0;
       flex: 1 1 auto;
+      height: 100%;
       display: flex;
       flex-direction: row;
       overflow: hidden;
@@ -2700,6 +2710,7 @@
   
     .viewer {
       flex: 1 1 auto;
+      height: 100%;
       min-height: 0;
       min-width: 0;
       display: flex;

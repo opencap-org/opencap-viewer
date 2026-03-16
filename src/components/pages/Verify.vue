@@ -1,7 +1,7 @@
 <template>
   <v-layout class="verify-main" ma-0 pa-3 row justify-center align-start fill-height>
     <v-flex
-      xs12 sm6 md4 lg3 xl2 pa-3
+      xs12 sm6 md4 lg4 xl3 pa-3
       class="verify-wrapper d-flex flex-column align-stretch">
 
       <div class="verify-card">
@@ -163,7 +163,15 @@ export default {
 }
 
 .verify-wrapper {
-  max-width: 420px;
+  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .verify-card {
@@ -231,6 +239,12 @@ export default {
     padding-top: 24px !important;
     padding-left: 8px !important;
     padding-right: 8px !important;
+  }
+
+  .verify-wrapper {
+    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
+    padding-left: 4px !important;
+    padding-right: 4px !important;
   }
 
   .verify-card {

@@ -82,7 +82,7 @@
                       <v-icon x-small class="profile-info-icon">mdi-web</v-icon>
                       Website
                     </span>
-                    <a :href="website" target="_blank" class="profile-info-link">{{ website }}</a>
+                    <a :href="websiteHref" target="_blank" class="profile-info-link">{{ website }}</a>
                   </div>
                   <div v-if="reason_of_use" class="profile-info-row">
                     <span class="profile-info-label">
@@ -172,25 +172,46 @@
                   </div>
 
                   <div class="row">
-                    <div class="col-md-6 d-flex align-items-center">
-                      <div class="form-outline datepicker w-100">
+                    <div class="col-12">
+                      <div class="form-outline">
                         <ValidationProvider
                           rules="required|email"
                           v-slot="{ errors }"
+                          vid="emailField"
                           name="Email">
                           <v-text-field
                             label="Email (will be used for two-factor authentication)"
                             v-model="email"
                             class="ma-0"
                             dark
-                            v-bind:readonly="false"
-                            v-bind:disabled="false"
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
                       </div>
                     </div>
+                  </div>
 
+                  <div class="row" v-if="email !== original_email">
+                    <div class="col-12">
+                      <div class="form-outline">
+                        <ValidationProvider
+                          rules="required|confirmed:emailField"
+                          v-slot="{ errors }"
+                          name="Confirm Email">
+                          <v-text-field
+                            label="Confirm new email"
+                            v-model="confirm_email"
+                            class="ma-0"
+                            dark
+                            @paste.prevent
+                            :error="errors.length > 0"
+                            :error-messages="errors[0]"/>
+                        </ValidationProvider>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
                     <div class="col-md-6">
                       <vue-country-dropdown
                         ref="vcd"
@@ -444,6 +465,10 @@ export default {
       username: state => state.auth.username,
       profile_picture_url: state => state.auth.profile_picture_url
     }),
+    websiteHref() {
+      if (!this.website) return '';
+      return /^https?:\/\//i.test(this.website) ? this.website : `https://${this.website}`;
+    },
   },
   data() {
     return {
@@ -454,6 +479,8 @@ export default {
       first_name: '',
       last_name: '',
       email: '',
+      confirm_email: '',
+      original_email: '',
       country: '',
       reason_of_use: '',
       website: '',
@@ -502,6 +529,8 @@ export default {
       this.editing_profile = false;
       this.editing_settings = false;
       this.changingImage = false;
+      this.email = this.original_email;
+      this.confirm_email = '';
       document.body.removeEventListener('click', this.closePopupOnClickOutside);
     },
     handleDiscardDeleteAccount() {
@@ -600,6 +629,8 @@ export default {
         this.first_name = res.data.first_name;
         this.last_name = res.data.last_name;
         this.email = res.data.email;
+        this.original_email = res.data.email;
+        this.confirm_email = '';
         this.country = res.data.country;
         this.reason_of_use = res.data.reason;
         this.website = res.data.website;
@@ -658,6 +689,8 @@ export default {
 
           apiSuccess("Profile updated.");
 
+          this.original_email = this.email;
+          this.confirm_email = '';
           this.editing_profile = false;
           this.loading = false;
         }
@@ -1032,5 +1065,43 @@ export default {
 <style>
 .v-main:has(.profile-page-wrapper) {
   overflow: visible;
+}
+
+/* vue-country-dropdown dark theme for Edit Profile */
+.profile-page-wrapper .vue-country-select .country-name {
+  color: hsla(0, 0%, 100%, 0.7) !important;
+}
+.profile-page-wrapper div.dropdown.open {
+  background-color: black !important;
+}
+.profile-page-wrapper .vue-country-select .country-name:hover {
+  color: hsla(0, 0%, 100%, 0.7) !important;
+}
+.profile-page-wrapper .dropdown:hover {
+  background-color: black !important;
+}
+.profile-page-wrapper li.dropdown-item {
+  background-color: black !important;
+}
+.profile-page-wrapper li.dropdown-item:hover {
+  background-color: rgb(46, 46, 46) !important;
+}
+.profile-page-wrapper li.dropdown-item > strong {
+  font-weight: normal !important;
+  color: hsla(0, 0%, 100%, 0.7);
+}
+.profile-page-wrapper .vue-country-select {
+  width: 100%;
+  border-color: hsla(0, 0%, 100%, 0.7) !important;
+}
+.profile-page-wrapper .vue-country-select:hover {
+  border-color: white !important;
+}
+.profile-page-wrapper .vue-country-select:focus,
+.profile-page-wrapper .vue-country-select:active {
+  border-color: white !important;
+}
+.profile-page-wrapper li.dropdown-item > span {
+  display: none;
 }
 </style>

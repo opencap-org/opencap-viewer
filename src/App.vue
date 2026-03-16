@@ -32,7 +32,7 @@
 
       <div class="navbar-actions d-flex align-center">
         <QRCodeDialog class="navbar-qr"/>
-        <profile-dropdown v-if="verified" class="navbar-profile"></profile-dropdown>
+        <profile-dropdown v-if="verified && $route.name !== 'NewPassword'" class="navbar-profile"></profile-dropdown>
       </div>
 
     </v-app-bar>

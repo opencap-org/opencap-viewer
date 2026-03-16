@@ -1,4 +1,5 @@
 <template>
+  <div>
     <v-dialog v-model="edit_dialog"
       content-class="app-dialog"
       :width="$vuetify.breakpoint.smAndDown ? '100%' : '520'"
@@ -27,29 +28,61 @@
             :error-messages="formErrors.name"
           ></v-text-field>
 
-          <ValidationProvider rules="required|weightRule" v-slot="{ errors }" name="Weight" :immediate="false">
-            <v-text-field
-              v-model="edited_subject.weight"
-              label="Weight (kg)"
-              type="number"
-              hide-spin-buttons
-              required
-              :error="errors.length > 0"
-              :error-messages="errors[0]"
-            ></v-text-field>
-          </ValidationProvider>
+          <div class="d-flex align-start">
+            <ValidationProvider :rules="weightValidationRules" v-slot="{ errors }" name="Weight" :immediate="false" class="flex-grow-1">
+              <v-text-field
+                v-model="weightDisplay"
+                :label="`Weight (${weightUnitLabel})`"
+                type="number"
+                :min="weightMin"
+                :step="weightStep"
+                hide-spin-buttons
+                required
+                @wheel="$event.target.blur()"
+                @keydown="restrictToNumbersAndDot"
+                :error="errors.length > 0 || !!weightWarningMessage"
+                :error-messages="errors[0] || weightWarningMessage"
+              ></v-text-field>
+            </ValidationProvider>
+            <v-select
+              v-model="weight_unit"
+              :items="weightUnitOptions"
+              label="Unit"
+              dense
+              outlined
+              hide-details
+              class="ml-2"
+              style="max-width: 110px;"
+            ></v-select>
+          </div>
 
-          <ValidationProvider rules="required|heightRule" v-slot="{ errors }" name="Height" :immediate="false">
-            <v-text-field
-              v-model="edited_subject.height"
-              label="Height (m)"
-              type="number"
-              hide-spin-buttons
-              required
-              :error="errors.length > 0"
-              :error-messages="errors[0]"
-            ></v-text-field>
-          </ValidationProvider>
+          <div class="d-flex align-start">
+            <ValidationProvider :rules="heightValidationRules" v-slot="{ errors }" name="Height" :immediate="false" class="flex-grow-1">
+              <v-text-field
+                v-model="heightDisplay"
+                :label="`Height (${heightUnitLabel})`"
+                type="number"
+                :min="heightMin"
+                :step="heightStep"
+                hide-spin-buttons
+                required
+                @wheel="$event.target.blur()"
+                @keydown="restrictToNumbersAndDot"
+                :error="errors.length > 0"
+                :error-messages="errors[0]"
+              ></v-text-field>
+            </ValidationProvider>
+            <v-select
+              v-model="height_unit"
+              :items="heightUnitOptions"
+              label="Unit"
+              dense
+              outlined
+              hide-details
+              class="ml-2"
+              style="max-width: 110px;"
+            ></v-select>
+          </div>
 
           <ValidationProvider rules="required|birthYearRule" v-slot="{ errors }" name="Birth Year" :immediate="false">
             <v-text-field
@@ -162,6 +195,21 @@
       </v-form>
       </ValidationObserver>
     </v-dialog>
+    <v-dialog v-model="low_weight_confirm_dialog" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
+      <v-card>
+        <v-card-title class="justify-center">Confirm low subject weight</v-card-title>
+        <v-card-text>
+          The entered weight is {{ lowWeightDisplayValue }} {{ weightUnitLabel }}, which is lower than {{ lowWeightThresholdDisplayValue }} {{ weightUnitLabel }}.
+          Please confirm this value is intentional before saving.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="error darken-4" text @click="low_weight_confirm_dialog = false">Cancel</v-btn>
+          <v-btn color="grey darken-4" dark @click="confirmAndSubmitLowWeight">Confirm and save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
 
 <script>
@@ -205,6 +253,15 @@ export default {
                 birth_year: null,
                 subject_tags: null,
             },
+            low_weight_warning_threshold: 20,
+            low_weight_confirm_dialog: false,
+            low_weight_confirmed_for_current_value: false,
+            weight_unit: 'kg',
+            kg_to_lbs: 2.20462,
+            weight_raw: '',
+            height_unit: 'm',
+            m_to_ft: 3.28084,
+            height_raw: '',
         }
     },
     computed: {
@@ -222,6 +279,175 @@ export default {
         },
         sexesOptions () {
             return Object.entries(this.sexes).map((s) => ({ text: s[1], value: s[0] }))
+        },
+        weightUnitOptions () {
+            return [
+                { text: 'kg', value: 'kg' },
+                { text: 'lbs', value: 'lbs' }
+            ]
+        },
+        weightUnitLabel () {
+            return this.weight_unit;
+        },
+        weightMin () {
+            return this.weight_unit === 'lbs' ? 0.2 : 0.1;
+        },
+        weightStep () {
+            return this.weight_unit === 'lbs' ? 0.2 : 0.1;
+        },
+        weightValidationRules () {
+            return this.weight_unit === 'lbs' ? 'required|weightRuleLbs' : 'required|weightRule';
+        },
+        weightDisplay: {
+            get () {
+                // Return the raw typed buffer — never round-trip through kg
+                return this.weight_raw;
+            },
+            set (value) {
+                // Update the display buffer immediately (no conversion = no glitches while typing)
+                this.weight_raw = value;
+
+                // Also keep the backing kg value in sync for validation and saving
+                if (typeof value === "string" && !value.trim()) {
+                    this.edited_subject.weight = "";
+                    return;
+                }
+                const parsedValue = parseFloat(value);
+                if (isNaN(parsedValue)) {
+                    this.edited_subject.weight = value;
+                    return;
+                }
+                if (this.weight_unit === 'lbs') {
+                    this.edited_subject.weight = this.roundWeight(parsedValue / this.kg_to_lbs);
+                } else {
+                    this.edited_subject.weight = parsedValue;
+                }
+            }
+        },
+        heightUnitOptions () {
+            return [
+                { text: 'm', value: 'm' },
+                { text: 'ft', value: 'ft' }
+            ]
+        },
+        heightUnitLabel () {
+            return this.height_unit;
+        },
+        heightMin () {
+            return this.height_unit === 'ft' ? 0.3 : 0.1;
+        },
+        heightStep () {
+            return this.height_unit === 'ft' ? 0.1 : 0.01;
+        },
+        heightValidationRules () {
+            return this.height_unit === 'ft' ? 'required|heightRuleFt' : 'required|heightRule';
+        },
+        heightDisplay: {
+            get () {
+                return this.height_raw;
+            },
+            set (value) {
+                this.height_raw = value;
+
+                if (typeof value === "string" && !value.trim()) {
+                    this.edited_subject.height = "";
+                    return;
+                }
+                const parsedValue = parseFloat(value);
+                if (isNaN(parsedValue)) {
+                    this.edited_subject.height = value;
+                    return;
+                }
+                if (this.height_unit === 'ft') {
+                    this.edited_subject.height = this.roundHeight(parsedValue / this.m_to_ft);
+                } else {
+                    this.edited_subject.height = parsedValue;
+                }
+            }
+        },
+        weightWarningMessage () {
+            const weightKg = parseFloat(this.edited_subject.weight);
+            if (isNaN(weightKg) || weightKg <= 0 || weightKg >= this.low_weight_warning_threshold)
+                return "";
+
+            const displayWeight = this.weight_unit === 'lbs'
+                ? this.roundLbs(weightKg * this.kg_to_lbs)
+                : this.roundWeight(weightKg);
+
+            return `The subject's weight (${displayWeight} ${this.weightUnitLabel}) is unusually low. Please double-check this value and confirm that the selected unit is correct.`;
+        },
+        lowWeightDisplayValue () {
+            const weightKg = parseFloat(this.edited_subject.weight);
+            if (isNaN(weightKg))
+                return this.edited_subject.weight;
+
+            if (this.weight_unit === 'lbs')
+                return this.roundLbs(weightKg * this.kg_to_lbs);
+
+            return this.roundWeight(weightKg);
+        },
+        lowWeightThresholdDisplayValue () {
+            if (this.weight_unit === 'lbs')
+                return this.roundLbs(this.low_weight_warning_threshold * this.kg_to_lbs);
+
+            return this.roundWeight(this.low_weight_warning_threshold);
+        }
+    },
+    watch: {
+        'edited_subject.weight'() {
+            this.low_weight_confirmed_for_current_value = false;
+        },
+        weight_unit(newUnit) {
+            this.low_weight_confirmed_for_current_value = false;
+            // Re-express the current kg value in the new unit
+            const weightKg = parseFloat(this.edited_subject.weight);
+            if (!isNaN(weightKg) && weightKg > 0) {
+                this.weight_raw = String(
+                    newUnit === 'lbs'
+                        ? this.roundLbs(weightKg * this.kg_to_lbs)
+                        : this.roundWeight(weightKg)
+                );
+            } else {
+                this.weight_raw = '';
+            }
+        },
+        height_unit(newUnit) {
+            const heightM = parseFloat(this.edited_subject.height);
+            if (!isNaN(heightM) && heightM > 0) {
+                this.height_raw = String(
+                    newUnit === 'ft'
+                        ? this.roundHeight(heightM * this.m_to_ft)
+                        : this.roundHeight(heightM)
+                );
+            } else {
+                this.height_raw = '';
+            }
+        },
+        edit_dialog(isOpen) {
+            if (isOpen) {
+                // Populate display buffers when dialog opens (handles edit mode)
+                const weightKg = parseFloat(this.edited_subject.weight);
+                if (!isNaN(weightKg) && weightKg > 0) {
+                    this.weight_raw = String(
+                        this.weight_unit === 'lbs'
+                            ? this.roundLbs(weightKg * this.kg_to_lbs)
+                            : this.roundWeight(weightKg)
+                    );
+                } else {
+                    this.weight_raw = '';
+                }
+
+                const heightM = parseFloat(this.edited_subject.height);
+                if (!isNaN(heightM) && heightM > 0) {
+                    this.height_raw = String(
+                        this.height_unit === 'ft'
+                            ? this.roundHeight(heightM * this.m_to_ft)
+                            : this.roundHeight(heightM)
+                    );
+                } else {
+                    this.height_raw = '';
+                }
+            }
         }
     },
     mounted () {
@@ -238,6 +464,12 @@ export default {
         },
         async cancelSubjectForm() {
             this.edit_dialog = false;
+            this.low_weight_confirm_dialog = false;
+            this.low_weight_confirmed_for_current_value = false;
+            this.weight_unit = 'kg';
+            this.weight_raw = '';
+            this.height_unit = 'm';
+            this.height_raw = '';
             this.edited_subject = this.empty_subject;
             this.formErrors = {
                 name: null,
@@ -248,13 +480,21 @@ export default {
             }
         },
         async submitSubjectForm() {
-            this.edit_dialog = false;
-
             if (this.edited_subject.subject_tags == null || this.edited_subject.subject_tags == "") {
                 this.edit_dialog = true;
                 this.formErrors.subject_tags = ["You must add at least one subject tag. For subjects with no conditions, select 'Unimpaired'."]
                 return;
             }
+
+            if (
+                this.weightWarningMessage &&
+                !this.low_weight_confirmed_for_current_value
+            ) {
+                this.low_weight_confirm_dialog = true;
+                return;
+            }
+
+            this.edit_dialog = false;
 
             this.formErrors = {
                 name: null,
@@ -319,9 +559,20 @@ export default {
             this.edited_subject.gender = "";
             this.edited_subject.subject_tags = null;
             this.edited_subject.characteristics = "";
+            this.low_weight_confirmed_for_current_value = false;
+            this.weight_unit = 'kg';
+            this.weight_raw = '';
+            this.height_unit = 'm';
+            this.height_raw = '';
         },
         async addSubject() {
             this.edit_dialog = true;
+            this.low_weight_confirm_dialog = false;
+            this.low_weight_confirmed_for_current_value = false;
+            this.weight_unit = 'kg';
+            this.weight_raw = '';
+            this.height_unit = 'm';
+            this.height_raw = '';
             this.edited_subject = this.empty_subject;
             this.formErrors = {
                 name: null,
@@ -331,6 +582,27 @@ export default {
                 subject_tags: null,
             }
             console.log('add subject')
+        },
+        async confirmAndSubmitLowWeight() {
+            this.low_weight_confirmed_for_current_value = true;
+            this.low_weight_confirm_dialog = false;
+            await this.submitSubjectForm();
+        },
+        restrictToNumbersAndDot(e) {
+            const allowed = ['0','1','2','3','4','5','6','7','8','9','.'];
+            const control = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+            if (!allowed.includes(e.key) && !control.includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+            }
+        },
+        roundWeight(value) {
+            return Math.round(value);
+        },
+        roundLbs(value) {
+            return Math.round(value);
+        },
+        roundHeight(value) {
+            return parseFloat(Number(value).toFixed(2));
         }
     },
 }
