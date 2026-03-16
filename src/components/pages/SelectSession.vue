@@ -291,11 +291,8 @@
               <p class="mb-1">
                 Insert a new name for session {{ selectedSessionForRename.sessionName }}:
               </p>
-              <small class="mt-0">
-                Only alphanumeric characters and underscores are allowed.
-              </small>
               <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
-                <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Session name">
+                <ValidationProvider rules="required" v-slot="{ errors }" name="Session name">
                   <v-text-field v-model="sessionNewName" label="Session new name" class="flex-grow-0"
                     dark :error="errors.length > 0" :error-messages="errors[0]">
                   </v-text-field>
@@ -674,7 +671,7 @@ export default {
     },
     confirmRenameSession() {
       if (this.selectedSessionForRename) {
-        this.renameSession(this.selectedSessionForRename, this.sessionNewName);
+        this.renameSession(this.selectedSessionForRename, this.sessionNewName.trim());
         this.rename_dialog = false;
         this.selectedSessionForRename = null;
       }

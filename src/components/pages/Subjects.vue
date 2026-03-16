@@ -692,7 +692,9 @@ export default {
     closeSheetAndDownload(item) { this.showSubjectMenuSheet = false; this.selectedSubjectForMenu = null; this.selectedSubjectForDownload = item; this.download_dialog = true; },
     async editSubject(subject) {
       this.$refs.dialogRef.edit_dialog = true;
-      this.$refs.dialogRef.edited_subject = JSON.parse(JSON.stringify(subject));  // A trick to deep copy
+      const subjectCopy = JSON.parse(JSON.stringify(subject));
+      subjectCopy.terms = true;
+      this.$refs.dialogRef.edited_subject = subjectCopy;
       this.$refs.dialogRef.formErrors = {
           name: null,
           weight: null,
