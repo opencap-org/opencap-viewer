@@ -479,13 +479,17 @@
                   class="video-element" />
             </div>
 
-            <v-btn
+            <v-btn-toggle
                 v-if="showCamSizeButton && !videoControlsDisabled"
-                x-small
+                :value="mobileVideoSizeIndex"
+                mandatory
+                dense
                 class="cam-size-overlay ui-no-zoom"
-                @click="cycleMobileVideoSize">
-              Cam {{ mobileVideoSizeLabel }}
-            </v-btn>
+                @change="mobileVideoSizeIndex = $event">
+              <v-btn x-small class="cam-size-segment">S</v-btn>
+              <v-btn x-small class="cam-size-segment">M</v-btn>
+              <v-btn x-small class="cam-size-segment">L</v-btn>
+            </v-btn-toggle>
 
             <div v-if="isMobileOrTablet" class="right-spacer" />
 
@@ -2762,23 +2766,43 @@
 
       .cam-size-overlay {
         position: absolute;
-        bottom: 8px;
+        top: 8px;
         right: 8px;
         z-index: 10;
-        text-transform: none;
-        min-width: unset !important;
-        width: auto !important;
+        background-color: rgba(0, 0, 0, 0.65) !important;
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 6px !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+
+        /* Vuetify btn-toggle resets */
         height: auto !important;
         min-height: unset !important;
-        font-size: 0.7rem;
-        white-space: nowrap;
-        background-color: rgba(0, 0, 0, 0.7) !important;
-        backdrop-filter: blur(4px);
-        padding: 4px 10px !important;
 
-        @media (max-width: 959px) {
-          bottom: calc(142px + env(safe-area-inset-bottom, 0px));
-          padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+        .cam-size-segment {
+          min-width: 26px !important;
+          width: 26px !important;
+          height: 22px !important;
+          min-height: unset !important;
+          font-size: 0.65rem !important;
+          font-weight: 600 !important;
+          letter-spacing: 0.02em;
+          text-transform: none !important;
+          padding: 0 !important;
+          color: rgba(255, 255, 255, 0.6) !important;
+          background-color: transparent !important;
+          border-radius: 0 !important;
+          border: none !important;
+
+          &.v-btn--active {
+            color: #fff !important;
+            background-color: rgba(255, 255, 255, 0.2) !important;
+          }
+
+          &:not(:last-child) {
+            border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+          }
         }
       }
   
