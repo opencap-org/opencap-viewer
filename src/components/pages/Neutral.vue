@@ -2,7 +2,7 @@
   <MainLayout
     :step="4"
     column
-    rightButton="Next"
+    :rightButton="rightButtonCaption"
     :rightDisabled="busy || disabledNextButton"
     :rightSpinner="busy && !imgs"
     @right="isMonocularMode ? skipProcessingToMonocular() : onNext()">
@@ -488,6 +488,7 @@ export default {
       return this.subjectsMapped;
     },
     rightButtonCaption() {
+      if (this.isMonocularMode) return "Next";
       return this.imgs
         ? "Confirm"
         : this.busy
