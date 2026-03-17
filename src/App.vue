@@ -32,7 +32,7 @@
 
       <div class="navbar-actions d-flex align-center">
         <QRCodeDialog class="navbar-qr"/>
-        <profile-dropdown v-if="verified && $route.name !== 'NewPassword'" class="navbar-profile"></profile-dropdown>
+        <profile-dropdown v-if="showProfileInNavbar" class="navbar-profile"></profile-dropdown>
       </div>
 
     </v-app-bar>
@@ -103,6 +103,10 @@ export default {
       verified: state => state.auth.verified,
       sessionTime: state => state.auth.sessionTime
     }),
+    showProfileInNavbar () {
+      const authRouteNames = ['Login', 'Register', 'Verify', 'ResetPassword', 'NewPassword']
+      return this.verified && !authRouteNames.includes(this.$route.name)
+    },
     appStyle () {
       return {
         background: this.$vuetify.theme.themes.dark.background
