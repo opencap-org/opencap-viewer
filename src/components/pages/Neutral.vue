@@ -654,6 +654,12 @@ export default {
         return false;
       }
 
+      const validPattern = /^[a-zA-Z0-9-_]+$/;
+      if (!validPattern.test(trimmedSessionName)) {
+        this.formErrors.name = "Only alphanumeric, hyphen and underscore characters allowed.";
+        return false;
+      }
+
       this.sessionName = trimmedSessionName;
       this.formErrors.name = null;
       return true;

@@ -413,7 +413,7 @@
                 border="left">
               <div class="monocular-beta-content">
                 <strong>Monocular mode is in beta.</strong>
-                Jumping is not supported yet. Camera must be static at 45° angle.
+                Jumping is not supported yet. Camera must be static at 30-45° angle.
                 <div class="d-flex flex-wrap mt-2">
                   <v-btn x-small outlined class="mr-2 mb-1" @click="window.open('https://www.opencap.ai/best-practices?variant=Monocular', '_blank')">Best practices</v-btn>
                   <v-btn x-small outlined class="mb-1" @click="window.open('https://www.opencap.ai/get-started?variant=monocular', '_blank')">Get started</v-btn>
@@ -591,16 +591,16 @@
                 <v-col cols="12" sm="10">
                   <p class="mb-1">Enter a new name for this session:</p>
                   <ValidationObserver tag="div" class="d-flex flex-column" ref="observer_session_rename" v-slot="{ invalid }">
-                    <ValidationProvider rules="required" v-slot="{ errors }" name="Session name">
-                      <v-text-field
-                        v-model="sessionNewName"
-                        label="Session name"
-                        class="flex-grow-0"
-                        dark
-                        :error="errors.length > 0"
-                        :error-messages="errors[0]"
-                        autocomplete="off"
-                        @keydown.enter.prevent="submitRenameSession" />
+            <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Session name">
+              <v-text-field
+                v-model="sessionNewName"
+                label="Session name"
+                class="flex-grow-0"
+                dark
+                :error="errors.length > 0"
+                :error-messages="errors[0]"
+                autocomplete="off"
+                @keydown.enter.prevent="submitRenameSession" />
                     </ValidationProvider>
                     <v-btn class="text-right" :disabled="invalid" @click="submitRenameSession">
                       Rename Session
