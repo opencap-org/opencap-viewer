@@ -4,6 +4,16 @@
       xs12 sm6 md4 lg4 xl3 pa-3
       class="login-wrapper d-flex flex-column align-stretch scroll-y">
 
+      <a
+        href="https://www.opencap.ai"
+        target="_blank"
+        rel="noopener"
+        class="login-banner">
+        <span class="login-banner-highlight">OpenCap 2.0 is here</span>
+        <span class="login-banner-details">New UI/UX · New mobile app · Monocular support</span>
+        <span class="login-banner-cta">Learn more at <strong>opencap.ai</strong> →</span>
+      </a>
+
       <div class="login-card">
         <h1 class="login-title">Login</h1>
 
@@ -199,6 +209,45 @@ export default {
   }
 }
 
+.login-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.18) 0%, rgba(56, 142, 60, 0.12) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.35);
+  border-radius: 10px;
+  text-align: center;
+  text-decoration: none !important;
+  transition: background 0.2s, border-color 0.2s;
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.24) 0%, rgba(56, 142, 60, 0.18) 100%);
+    border-color: rgba(76, 175, 80, 0.5);
+  }
+
+  .login-banner-highlight {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 1);
+    letter-spacing: 0.01em;
+  }
+
+  .login-banner-details {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.01em;
+  }
+
+  .login-banner-cta {
+    font-size: 0.875rem;
+    color: rgba(160, 220, 160, 0.95);
+    margin-top: 2px;
+  }
+}
+
 .login-card {
   background: rgba(30, 30, 30, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -275,6 +324,14 @@ export default {
     max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
     padding-left: 4px !important;
     padding-right: 4px !important;
+  }
+
+  .login-banner {
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    .login-banner-highlight { font-size: 0.95rem; }
+    .login-banner-details { font-size: 0.8rem; }
+    .login-banner-cta { font-size: 0.8rem; }
   }
 
   .login-card {
