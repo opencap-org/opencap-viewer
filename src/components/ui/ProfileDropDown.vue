@@ -61,7 +61,7 @@
             </a>
           </li>
           <li class="dropdown-element">
-            <a target="_blank" rel="noopener noreferrer" href="https://docs.google.com/document/d/1DBw9LVAuUwgz713037VQjsaD8sj2-AN_hzga_7kXtXI/edit">
+            <a target="_blank" rel="noopener noreferrer" href="https://docs.google.com/document/d/1HGp_BoW9H5mFfcE8NkP7QykcgxF7t-RGb4FtOJzNA4M">
               <i class="mdi mdi-eye inline-icon"></i>
               Data Privacy and Security
             </a>
