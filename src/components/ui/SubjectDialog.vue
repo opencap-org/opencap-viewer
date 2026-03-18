@@ -158,7 +158,7 @@
                     and
                     <v-tooltip location="bottom">
                       <template v-slot:activator="{ props }">
-                        <a href="https://docs.google.com/document/d/1HGp_BoW9H5mFfcE8NkP7QykcgxF7t-RGb4FtOJzNA4M"
+                        <a href="https://docs.google.com/document/d/1DBw9LVAuUwgz713037VQjsaD8sj2-AN_hzga_7kXtXI"
                            target="_blank"
                            v-bind="props"
                            @click.stop>Privacy Policy</a>
