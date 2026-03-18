@@ -14,6 +14,7 @@ registerFilters(Vue)
 // vee-validate 3
 import { ValidationProvider, ValidationObserver, extend } from "vee-validate";
 import { required, confirmed, min, email, alpha_dash } from "vee-validate/dist/rules";
+import { digits } from "vee-validate/dist/rules";
 
 // fa-icons
 import '@fortawesome/fontawesome-free/css/all.css';
@@ -28,6 +29,10 @@ extend('confirmed', confirmed)
 extend('min', min)
 extend('email', email)
 extend('alpha_dash', alpha_dash)
+extend('digits', {
+  ...digits,
+  message: 'Must be exactly 6 digits.'
+})
 
 // Custom rules
 extend('no_spaces', {
@@ -60,29 +65,6 @@ extend('unique_trial_name', {
 
 Vue.component("ValidationProvider", ValidationProvider);
 Vue.component("ValidationObserver", ValidationObserver);
-
-import Toasted from 'vue-toasted'
-Vue.use(Toasted, { 
-  position: 'bottom-center', 
-  duration: 10000,
-  className: 'vue-toasted',
-  // Show all toasts with Close button
-  action : {
-    text : 'Close',
-    onClick : (e, toastObject) => {
-        toastObject.goAway(0)
-    }
-  }
-})
-
-Vue.toasted.register('warning', (message) => {
-  Vue.toasted.show(message, {
-    type: 'warning',
-    theme: 'toasted-primary',
-    position: 'top-right',
-    className: 'warning-toast'
-  });
-});
 
 Vue.config.productionTip = false
 

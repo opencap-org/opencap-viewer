@@ -1,18 +1,19 @@
 <template>
   <div
-    class="main-layout d-flex flex-column pa-4"
+    class="main-layout d-flex flex-column pa-2 pa-sm-4"
     :class="{ 'fixed-height': fixedHeight }">
 
     <div
-      class="content-wrapper flex-grow-1 d-flex"
+      class="content-wrapper d-flex"
       :class="{ 'flex-column': column }">
       <slot/>
     </div>
 
-    <div class="navigation d-flex justify-space-between align-center mt-5 w-100">
+    <div class="navigation page-navigation d-flex justify-space-between align-center w-100" v-show="showNavigation">
       <div class="slot">
         <v-btn
           v-if="leftButton"
+          text
           @click="$emit('left')">
           {{ leftButton}}
         </v-btn>
@@ -22,9 +23,11 @@
           name="left"/>
       </div>
 
-      <div class="slot d-flex justify-end">
+      <div class="slot">
         <v-btn
           v-if="rightButton"
+          color="grey darken-4"
+          dark
           :disabled="rightDisabled || rightSpinner"
           @click="$emit('right')">
 
@@ -84,6 +87,10 @@ export default {
     fixedHeight: {
       type: Boolean,
       default: true
+    },
+    showNavigation: {
+      type: Boolean,
+      default: true
     }
   },
   computed: {
@@ -108,20 +115,44 @@ export default {
 
 <style lang="scss" scoped>
 .main-layout {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--app-bar-top-offset, 64px));
+  min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
 
   &.fixed-height {
-    height: calc(100vh - 64px);
-    max-height: calc(100vh - 64px);
+    height: calc(100vh - var(--app-bar-top-offset, 64px));
+    height: calc(100dvh - var(--app-bar-top-offset, 64px));
+    max-height: calc(100vh - var(--app-bar-top-offset, 64px));
+    max-height: calc(100dvh - var(--app-bar-top-offset, 64px));
   }
 
   .content-wrapper {
     overflow-x: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .navigation {
+    flex-wrap: wrap;
+    gap: 8px;
+    
     .slot {
-      width: 150px;
+      flex: 1 1 calc(50% - 4px);
+      margin-bottom: 0;
+      
+      @media (min-width: 600px) {
+        flex: none;
+      }
+
+      button {
+        width: 100%;
+        height: 48px;
+
+        @media (min-width: 600px) {
+          width: auto;
+          height: 48px;
+          min-width: 120px;
+        }
+      }
     }
   }
 }

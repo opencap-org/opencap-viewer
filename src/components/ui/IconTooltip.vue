@@ -33,20 +33,33 @@ export default {
   display: flex;
   justify-content: center; /* Horizontally centers the items */
   align-items: center; /* Vertically centers the items */
+  overflow: visible;
 }
 .tooltip {
   position: absolute;
-  top: -130px; /* Adjust the distance from the icon as needed */
-  right: 0;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
   background-color: #555;
   color: #fff;
-  padding: 5px;
+  padding: 8px 10px;
   border-radius: 8px;
   font-size: 12px;
-  white-space: nowrap;
+  line-height: 1.35;
+  white-space: normal;
+  max-width: min(260px, calc(100vw - 24px));
+  word-wrap: break-word;
+  z-index: 9999;
 }
 
 .tooltip-icon {
   cursor: pointer;
+}
+
+/* Hide tooltip on mobile */
+@media (max-width: 960px) {
+  .tooltip-container {
+    display: none;
+  }
 }
 </style>

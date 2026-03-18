@@ -1,48 +1,60 @@
 <template>
-  <v-layout class="login-main" ma-0 pa-3 row justify-center align-center fill-height>
+  <v-layout class="verify-main" ma-0 pa-3 row justify-center align-start fill-height>
     <v-flex
-      xs12 sm6 md4 lg3 xl2 pa-3
-      class="d-flex flex-column align-stretch">
+      xs12 sm6 md4 lg4 xl3 pa-3
+      class="verify-wrapper d-flex flex-column align-stretch">
 
-      <h1 class="white--text text-center">E-mail verification code</h1>
-      <p>
-        We've just sent you a 6-digit verification code by e-mail. Please copy paste the code below to access the website. If you don't see the e-mail in your mailbox, please check the spam folder.
-      </p>
+      <div class="verify-card">
+        <h1 class="verify-title">E-mail verification code</h1>
+        <p class="verify-instructions">
+          We've sent you a 6-digit verification code by email. Enter it below to continue. If you don't see the email, check your spam folder.
+        </p>
 
-      <ValidationObserver
-        tag="div"
-        class="d-flex flex-column"
-        ref="observer"
-        v-slot="{ invalid }">
-        
-        <ValidationProvider
-          rules="required"
-          v-slot="{ errors }"
-          name="Verification code"
-          slim>
+        <ValidationObserver
+          tag="form"
+          class="verify-form d-flex flex-column"
+          ref="observer"
+          @submit.native.prevent="onLogin()"
+          v-slot="{ invalid }">
+          
+          <ValidationProvider
+            rules="required"
+            v-slot="{ errors }"
+            name="Verification code"
+            slim>
+            <v-text-field
+              label="Verification code" 
+              v-model="otp_token_model"
+              @keydown="onOtpKeydown"
+              dark
+              outlined
+              dense
+              placeholder="000000"
+              maxlength="6"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              :error="errors.length > 0"
+              :error-messages="errors[0]"
+              class="verify-code-input"
+            />
+          </ValidationProvider>
 
-          <v-text-field
-            label="Verification code" 
-            v-model="otp_token"
-            dark
-            :error="errors.length > 0"
-            :error-messages="errors[0]"/>
-        </ValidationProvider>
+          <v-btn
+            type="submit"
+            class="verify-btn"
+            :loading="loading"
+            :disabled="(submitted && invalid) || loading"
+            @click="onLogin()">Verify</v-btn>            
+        </ValidationObserver>
 
-        <v-btn
-          type="submit"
-          class="white--text mx-0 align-self-center"
-          :disabled="(submitted && invalid) || loading"
-          @click="onLogin()">Verify</v-btn>            
-      </ValidationObserver>
-
-      <router-link class="text-center mt-6" @click.native="handleGoBack" :to="{ name: 'Login' }">
-        Back to Login
-      </router-link>
-
-      <!--router-link
-        class="mt-4 text-center"
-        :to="{ name: 'Register' }">Don't have an account yet? Sign Up</router-link-->
+        <router-link
+          class="verify-back-link"
+          @click.native="handleGoBack"
+          :to="{ name: 'Login' }">
+          <v-icon size="18" class="back-arrow">mdi-arrow-left</v-icon>
+          Back to Login
+        </router-link>
+      </div>
     </v-flex>
   </v-layout>
 </template>
@@ -50,6 +62,7 @@
 <script>
 import { mapActions, mapState } from 'vuex'
 import { apiError } from '@/util/ErrorMessage.js'
+import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import axios from "axios";
 
 export default {
@@ -66,9 +79,19 @@ export default {
       sessions: state => state.data.sessions,
       remember_device_flag: state => state.auth.remember_device_flag,
       skip_forcing_otp: state => state.auth.skip_forcing_otp
-    })
+    }),
+    otp_token_model: {
+      get () { return this.otp_token },
+      set (val) {
+        this.otp_token = String(val || '').replace(/\D/g, '').slice(0, 6)
+      }
+    }
   },
     mounted() {
+      // Ensure content starts below navbar (fixes content hidden behind navbar on mobile).
+      resetPageScroll()
+      this.$nextTick(() => resetPageScrollDeferred(this))
+
       if (!this.skip_forcing_otp) {
         let res = axios.post('/reset-otp-challenge/')
         this.set_skip_forcing_otp(false)
@@ -77,6 +100,16 @@ export default {
     methods: {
     ...mapActions('auth', ['verify', 'set_skip_forcing_otp', 'logout']),
     ...mapActions('data', ['loadExistingSessions']),
+    onOtpKeydown (e) {
+      if (/^[0-9]$/.test(e.key)) {
+        if (this.otp_token.length >= 6) e.preventDefault()
+        return
+      }
+      const allowed = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter']
+      if (allowed.includes(e.key)) return
+      if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) return
+      e.preventDefault()
+    },
     async onLogin () {
       this.loading = true
 
@@ -101,10 +134,7 @@ export default {
             this.$router.push({ name: 'ConnectDevices' })
           }
         } else {
-          if (this.password) {
-            this.password = ''
-            this.$refs.observer.reset()
-          }
+          this.$refs.observer.reset()
         }
       } catch (error) {
         apiError(error, 'logging in')
@@ -119,18 +149,116 @@ export default {
 }
 </script>
 
-<style lang="scss">
-.login-main {
-  button {
-    width: 200px;
-  }
-
+<style lang="scss" scoped>
+.verify-main {
   a {
     text-decoration: none !important;
+    color: rgba(255, 255, 255, 0.85);
 
     &:hover {
       text-decoration: underline !important;
+      color: rgba(255, 255, 255, 1);
     }
+  }
+}
+
+.verify-wrapper {
+  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
+  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.verify-card {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.verify-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  margin: 0 0 16px 0;
+}
+
+.verify-instructions {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 24px 0;
+  text-align: center;
+}
+
+.verify-form {
+  gap: 4px;
+}
+
+.verify-code-input {
+  ::v-deep input {
+    font-size: 1.25rem;
+    letter-spacing: 0.3em;
+    text-align: center;
+  }
+}
+
+.verify-btn {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 16px !important;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.verify-back-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.9375rem;
+
+  .back-arrow {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 599px) {
+  .verify-main {
+    padding-top: 24px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .verify-wrapper {
+    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  .verify-card {
+    padding: 24px 20px;
+  }
+
+  .verify-title {
+    font-size: 1.25rem;
+    margin-bottom: 12px;
+  }
+
+  .verify-instructions {
+    font-size: 0.875rem;
+    margin-bottom: 20px;
   }
 }
 </style>

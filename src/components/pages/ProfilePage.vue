@@ -1,121 +1,116 @@
 <template>
-  <div class="d-flex flex-column">
-    <div class="pa-2 d-flex">
-      <div class="container">
+  <div class="d-flex flex-column profile-page-wrapper">
+    <div class="profile-page-inner pa-4 pa-md-6">
+      <div class="container profile-container">
 
         <div v-if="userExist">
 
-        <div v-if="!editing_profile && !editing_settings" class="row">
-          <div class="col-lg-4">
-            <v-card class="d-flex align-center justify-center pb-4">
-              <v-row align="center" justify="center">
-                <v-col align="center" justify="center">
-                  <v-img
-                    max-width="50%"
-                    :src="current_user_page_profile_url"
-                    alt="Profile Picture"
-                    class="rounded-circle img-fluid mt-4 mb-8">
-                  </v-img>
-                  <v-btn v-if="editable" @click="handleChangeImage">Change image</v-btn>
-                  <br v-if="editable"/>
-                  <button @click="handleShareProfileClick">
-                    <v-card-title align="center" justify="center" class="justify-center pb-0">
-                      {{ username_param }} <i class="mdi mdi-share ml-1 me-1 vertical-middle"></i>
-                    </v-card-title>
-                  </button>
-                  <v-card-text class="pa-1">
-                    {{institution}}
-                  </v-card-text>
-                  <v-card-text class="pa-1">
-                    <a :href="'mailto:' + email" target="_blank" class="link-primary mb-1" rel="noreferrer">
-                      <p class="mb-1">
-                        <i class="mdi mdi-email-box me-1 vertical-middle"></i>
-                          Contact
-                      </p>
-                    </a>
-                  </v-card-text>
-                  <v-row align="center" justify="center">
-                    <v-btn v-if="editable" class="my-4" @click="handleEditProfile">
-                      Edit Profile
+        <div v-if="!editing_profile && !editing_settings" class="profile-view">
+          <div class="row">
+            <div class="col-lg-4 col-12 mb-4 mb-lg-0">
+              <v-card class="profile-card profile-sidebar elevation-0">
+                <div class="profile-avatar-section">
+                  <div class="profile-avatar-wrapper">
+                    <v-img
+                      :src="current_user_page_profile_url"
+                      alt="Profile Picture"
+                      class="profile-avatar">
+                    </v-img>
+                    <v-btn
+                      v-if="editable"
+                      class="profile-avatar-edit"
+                      icon
+                      small
+                      @click="handleChangeImage">
+                      <v-icon small>mdi-camera</v-icon>
                     </v-btn>
-                  </v-row>
-                  <v-row align="center" justify="center">
-                    <v-btn v-if="editable" class="mb-2" @click="handleEditSettings">
-                      Settings
-                    </v-btn>
-                  </v-row>
-                </v-col>
-              </v-row>
-            </v-card>
-          </div>
+                  </div>
+                  <h2 class="profile-username" @click="handleShareProfileClick">
+                    {{ username_param }}
+                    <v-icon small class="profile-share-icon">mdi-share-variant</v-icon>
+                  </h2>
+                  <p v-if="institution" class="profile-institution">{{ institution }}</p>
+                  <a
+                    v-if="email"
+                    :href="'mailto:' + email"
+                    target="_blank"
+                    class="profile-contact-link"
+                    rel="noreferrer">
+                    <v-icon small>mdi-email-outline</v-icon>
+                    Contact
+                  </a>
+                </div>
+                <div v-if="editable" class="profile-actions">
+                  <v-btn
+                    block
+                    outlined
+                    class="profile-action-btn mb-2"
+                    @click="handleEditProfile">
+                    Edit Profile
+                  </v-btn>
+                  <v-btn
+                    block
+                    outlined
+                    class="profile-action-btn mb-0"
+                    @click="handleEditSettings">
+                    Settings
+                  </v-btn>
+                </div>
+              </v-card>
+            </div>
 
-          <div class="col-lg-8">
-            <v-card class="d-flex align-center justify-center">
-              <v-card-text>
-
-                <v-row>
-                  <v-col class="col-lg-4">
-                    <strong>
-                      <i class="mdi mdi-account me-1 vertical-middle"></i>
+            <div class="col-lg-8 col-12">
+              <v-card class="profile-card profile-details elevation-0">
+                <v-card-title class="profile-details-title">Profile Information</v-card-title>
+                <v-card-text class="profile-details-content">
+                  <div class="profile-info-row">
+                    <span class="profile-info-label">
+                      <v-icon x-small class="profile-info-icon">mdi-account</v-icon>
                       Full Name
-                    </strong>
-                  </v-col>
-                  <v-col class="col-lg-8">{{ first_name }} {{ last_name }} </v-col>
-                </v-row>
-
-                <v-row v-if="profession">
-                  <v-col class="col-lg-4">
-                    <strong>
-                      <i class="mdi mdi-briefcase me-1 vertical-middle"></i>
+                    </span>
+                    <span class="profile-info-value">{{ first_name }} {{ last_name }}</span>
+                  </div>
+                  <div v-if="profession" class="profile-info-row">
+                    <span class="profile-info-label">
+                      <v-icon x-small class="profile-info-icon">mdi-briefcase-outline</v-icon>
                       Profession
-                    </strong>
-                  </v-col>
-                  <v-col class="col-lg-8">{{ profession }} </v-col>
-                </v-row>
-
-                <v-row v-if="website">
-                  <v-col class="col-lg-4">
-                    <strong>
-                      <i class="mdi mdi-web me-1 vertical-middle"></i>
-                      Personal Website
-                    </strong>
-                  </v-col>
-                  <v-col class="col-lg-8">
-                    <a :href="website" target="_blank">
-                      {{ website }}
-                    </a>
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="reason_of_use">
-                  <v-col class="col-lg-4">
-                    <strong>
-                      <i class="mdi mdi-information me-1 vertical-middle"></i>
+                    </span>
+                    <span class="profile-info-value">{{ profession }}</span>
+                  </div>
+                  <div v-if="website" class="profile-info-row">
+                    <span class="profile-info-label">
+                      <v-icon x-small class="profile-info-icon">mdi-web</v-icon>
+                      Website
+                    </span>
+                    <a :href="websiteHref" target="_blank" class="profile-info-link">{{ website }}</a>
+                  </div>
+                  <div v-if="reason_of_use" class="profile-info-row">
+                    <span class="profile-info-label">
+                      <v-icon x-small class="profile-info-icon">mdi-information-outline</v-icon>
                       Reason of use
-                    </strong>
-                  </v-col>
-                  <v-col class="col-lg-8">{{ reason_of_use }} </v-col>
-                </v-row>
-
-                <v-row v-if="country">
-                  <v-col class="col-lg-4">
-                    <strong>
-                      <i class="mdi mdi-flag me-1 vertical-middle"></i>
+                    </span>
+                    <span class="profile-info-value">{{ reason_of_use }}</span>
+                  </div>
+                  <div v-if="country" class="profile-info-row">
+                    <span class="profile-info-label">
+                      <v-icon x-small class="profile-info-icon">mdi-map-marker-outline</v-icon>
                       Country
-                    </strong>
-                  </v-col>
-                  <v-col class="col-lg-8">{{ country }} </v-col>
-                </v-row>
-
-              </v-card-text>
-            </v-card>
+                    </span>
+                    <span class="profile-info-value">{{ country }}</span>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </div>
           </div>
         </div>
 
-        <div v-else-if="editing_profile" class="row">
-          <div class="col-lg-12">
-            <h1 class="white--text text-center col-md-12">Editing Profile</h1>
-
+        <div v-else-if="editing_profile" class="profile-edit-view">
+          <v-card class="profile-card profile-edit-card elevation-0">
+            <v-card-title class="profile-edit-title">
+              <v-icon left>mdi-pencil</v-icon>
+              Edit Profile
+            </v-card-title>
+            <v-card-text>
               <ValidationObserver
                 tag="div"
                 class="d-flex flex-column"
@@ -177,25 +172,46 @@
                   </div>
 
                   <div class="row">
-                    <div class="col-md-6 d-flex align-items-center">
-                      <div class="form-outline datepicker w-100">
+                    <div class="col-12">
+                      <div class="form-outline">
                         <ValidationProvider
                           rules="required|email"
                           v-slot="{ errors }"
+                          vid="emailField"
                           name="Email">
                           <v-text-field
                             label="Email (will be used for two-factor authentication)"
                             v-model="email"
                             class="ma-0"
                             dark
-                            v-bind:readonly="false"
-                            v-bind:disabled="false"
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
                       </div>
                     </div>
+                  </div>
 
+                  <div class="row" v-if="email !== original_email">
+                    <div class="col-12">
+                      <div class="form-outline">
+                        <ValidationProvider
+                          rules="required|confirmed:emailField"
+                          v-slot="{ errors }"
+                          name="Confirm Email">
+                          <v-text-field
+                            label="Confirm new email"
+                            v-model="confirm_email"
+                            class="ma-0"
+                            dark
+                            @paste.prevent
+                            :error="errors.length > 0"
+                            :error-messages="errors[0]"/>
+                        </ValidationProvider>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
                     <div class="col-md-6">
                       <vue-country-dropdown
                         ref="vcd"
@@ -283,124 +299,149 @@
                     </div>
                   </div>
 
-                  <div class="pt-2">
+                  <div class="profile-edit-actions">
                     <v-btn
                       type="submit"
-                      class="white--text mx-0 align-self-center mb-6"
+                      outlined
                       :disabled="(submitted && invalid) || loading"
+                      :loading="loading"
                       @click="onChangeProfile()">
-                        Save Changes
+                      Save Changes
                     </v-btn>
+                    <router-link
+                      class="profile-edit-discard"
+                      @click.native="handleDiscard"
+                      :to="{ name: 'ProfilePage', params: { username: username_param } }">
+                      Discard
+                    </router-link>
                   </div>
                 </ValidationObserver>
-
-                <router-link class="text-center mt-6" @click.native="handleDiscard" :to="{ name: 'ProfilePage' }">
-                  Discard Changes
-                </router-link>
-
-          </div>
+            </v-card-text>
+          </v-card>
         </div>
 
-        <div v-else-if="editing_settings" class="row">
-          <v-col align="center" justify="center" class="mt-8">
-
-            <v-row align="center" justify="center">
-              <p>
-                  <label>
-                    <input
-                      type="checkbox"
-                      v-model="isAuditoryFeedbackEnabled"
-                      @change="updateLocalStorage"
-                    />
-                    Enable Voice Auditory Feedback (audio updates for start and completion events).
-                  </label>
-
-              </p>
-            </v-row>
-
-            <v-row align="center" justify="center">
-              <p>
-                Remove your account and all associated data. This includes every session, trial, subject, and result that you have ever created. This process is irreversible.
-              </p>
-            </v-row>
-            <v-row align="center" justify="center">
-              <v-btn v-if="editable" class="mb-2 red--text" @click="handleOpenDeleteAccount">
-                Delete Account
-              </v-btn>
-            </v-row>
-            <v-row align="center" justify="center">
-              <router-link class="text-center mt-6" @click.native="handleFinished" :to="{ name: 'ProfilePage' }">
-                Go Back
+        <div v-else-if="editing_settings" class="profile-settings-view">
+          <v-card class="profile-card profile-settings-card elevation-0">
+            <v-card-title class="profile-settings-title">
+              <v-icon left>mdi-cog</v-icon>
+              Settings
+            </v-card-title>
+            <v-card-text>
+              <div class="profile-settings-section">
+                <v-switch
+                  v-model="isAuditoryFeedbackEnabled"
+                  @change="updateLocalStorage"
+                  label="Enable Voice Auditory Feedback"
+                  hint="Audio updates for start and completion events"
+                  persistent-hint
+                  color="primary"
+                  class="profile-settings-switch"
+                />
+              </div>
+              <v-divider class="my-4" />
+              <div class="profile-settings-section profile-settings-danger">
+                <p class="profile-settings-warning">
+                  Remove your account and all associated data. This includes every session, trial, subject, and result that you have ever created. This process is irreversible.
+                </p>
+                <v-btn
+                  v-if="editable"
+                  outlined
+                  color="error"
+                  class="mt-2"
+                  @click="handleOpenDeleteAccount">
+                  <v-icon left small>mdi-delete-outline</v-icon>
+                  Delete Account
+                </v-btn>
+              </div>
+              <router-link
+                class="profile-settings-back"
+                @click.native="handleFinished"
+                :to="{ name: 'ProfilePage', params: { username: username_param } }">
+                <v-icon small left>mdi-arrow-left</v-icon>
+                Back to Profile
               </router-link>
-            </v-row>
-          </v-col>
+            </v-card-text>
+          </v-card>
         </div>
 
-          <div v-if="deletingAccount" class="popup" @click="function(){deletingAccount = false;}">
-              <div class="popup-content" @click.stop>
-                <h2 style="color: #f44336!important;">Delete Account</h2>
-                <br/>
-                <span style="color: #f44336!important;">WARNING!</span> This action will permanently remove your account and all associated data. 
-                <br/>
-                This includes every session, trial, subject, and result you have ever created.
-                <br/>
-                This process is irreversible.
-                <br/>
-                <br/>
-                If you wish to proceed, please type in your username and click on "Delete Account".
-                <br/>
+          <div v-if="deletingAccount" class="profile-popup" @click="handleDiscardDeleteAccount">
+            <div class="profile-popup-content profile-popup-danger" @click.stop>
+              <div class="profile-popup-header">
+                <v-icon color="error" large>mdi-alert-circle-outline</v-icon>
+                <h2 class="profile-popup-title">Delete Account</h2>
+              </div>
+              <p class="profile-popup-text">
+                <strong class="error--text">WARNING:</strong> This action will permanently remove your account and all associated data, including every session, trial, subject, and result you have ever created. This process is irreversible.
+              </p>
+              <p class="profile-popup-text">Type your username below to confirm:</p>
+              <ValidationProvider
+                rules="required"
+                v-slot="{ errors }"
+                name="delete-user-confirm">
+                <v-text-field
+                  label="Username"
+                  v-model="confirm_username"
+                  outlined
+                  dense
+                  :error="errors.length > 0"
+                  :error-messages="errors[0]"
+                  class="mb-3"
+                />
+              </ValidationProvider>
+              <div class="profile-popup-actions">
+                <v-btn color="error" @click="handleDeleteAccount" :disabled="confirm_username !== username_param">
+                  Delete Account
+                </v-btn>
+                <span class="profile-popup-cancel" @click="handleDiscardDeleteAccount">Cancel</span>
+              </div>
+            </div>
+          </div>
 
-                <div class="col-md-12">
-                  <div class="form-outline">
-                    <ValidationProvider
-                      rules="required"
-                      v-slot="{ errors }"
-                      name="delete-user-confirm">
-                      <v-text-field
-                        label="Type in your username to confirm the deletion of your account"
-                        v-model="confirm_username"
-                        class="ma-0"
-                        dark
-                        :error="errors.length > 0"
-                        :error-messages="errors[0]"/>
-                    </ValidationProvider>
-
-                    <br/>
-                    <v-btn v-if="editable" class="mb-2 red--text" @click="handleDeleteAccount">
-                      Delete Account
-                    </v-btn>
-                  </div>
+          <div v-if="changingImage" class="profile-popup" @click="handleDiscard">
+            <div class="profile-popup-content" @click.stop>
+              <h2 class="profile-popup-title">Change Profile Photo</h2>
+              <div class="profile-image-upload-area">
+                <v-img
+                  v-if="selectedImage"
+                  :src="selectedImage"
+                  class="profile-image-preview"
+                  alt="Preview"
+                />
+                <div v-else class="profile-image-placeholder">
+                  <v-icon size="64">mdi-account-circle</v-icon>
+                  <span>No image selected</span>
                 </div>
-
-                <br/>
-                <router-link class="text-center mt-6" @click.native="handleDiscardDeleteAccount" :to="{ name: 'ProfilePage', params: { username: this.username } }">
-                  Do not remove my account
-                </router-link>
               </div>
-          </div>
-
-          <div v-if="changingImage" class="popup" @click="function(){changingImage = false;}">
-              <div class="popup-content" @click.stop>
-                <h2>Upload Image</h2>
-                <img class="profile-image-preview rounded-circle img-fluid mt-4" v-if="selectedImage" :src="selectedImage" alt="Uploaded Image">
-                <br/>
-                <input type="file" @change="handleImageUploaded" accept="image/*">
-                <br/>
-                <v-btn class="my-4" @click="handleSaveImage()">Save Image</v-btn>
-                <br/>
-                <router-link class="text-center mt-6" @click.native="handleDiscard" :to="{ name: 'ProfilePage', params: { username: this.username } }">
-                  Discard Changes
-                </router-link>
+              <input
+                ref="fileInput"
+                class="profile-file-input"
+                type="file"
+                @change="handleImageUploaded"
+                accept="image/*"
+              />
+              <v-btn outlined class="mb-2" @click="triggerFileInput">
+                <v-icon left small>mdi-upload</v-icon>
+                Choose Image
+              </v-btn>
+              <div class="profile-popup-actions">
+                <v-btn outlined :loading="loading" :disabled="!selectedImage" @click="handleSaveImage">
+                  Save
+                </v-btn>
+                <span class="profile-popup-cancel" @click="handleDiscard">Cancel</span>
               </div>
+            </div>
           </div>
 
         </div>
 
-        <div v-else>
-          The user "{{username_param}}" does not exist.
+        <div v-else class="profile-not-found">
+          <v-card class="profile-card elevation-0">
+            <v-card-text class="text-center py-8">
+              <v-icon size="64" color="grey" class="mb-4">mdi-account-off-outline</v-icon>
+              <p class="text-h6 mb-0">User "{{ username_param }}" not found</p>
+            </v-card-text>
+          </v-card>
         </div>
-
-
 
       </div>
     </div>
@@ -424,6 +465,10 @@ export default {
       username: state => state.auth.username,
       profile_picture_url: state => state.auth.profile_picture_url
     }),
+    websiteHref() {
+      if (!this.website) return '';
+      return /^https?:\/\//i.test(this.website) ? this.website : `https://${this.website}`;
+    },
   },
   data() {
     return {
@@ -434,6 +479,8 @@ export default {
       first_name: '',
       last_name: '',
       email: '',
+      confirm_email: '',
+      original_email: '',
       country: '',
       reason_of_use: '',
       website: '',
@@ -482,9 +529,13 @@ export default {
       this.editing_profile = false;
       this.editing_settings = false;
       this.changingImage = false;
+      this.email = this.original_email;
+      this.confirm_email = '';
+      document.body.removeEventListener('click', this.closePopupOnClickOutside);
     },
     handleDiscardDeleteAccount() {
       this.deletingAccount = false;
+      document.body.removeEventListener('click', this.closePopupOnClickOutside);
     },
     handleChangeImage() {
       this.changingImage = true;
@@ -493,6 +544,9 @@ export default {
       } else {
         document.body.removeEventListener('click', this.closePopupOnClickOutside);
       }
+    },
+    triggerFileInput() {
+      this.$refs.fileInput && this.$refs.fileInput.click();
     },
     async handleOpenDeleteAccount() {
       this.deletingAccount = true;
@@ -575,6 +629,8 @@ export default {
         this.first_name = res.data.first_name;
         this.last_name = res.data.last_name;
         this.email = res.data.email;
+        this.original_email = res.data.email;
+        this.confirm_email = '';
         this.country = res.data.country;
         this.reason_of_use = res.data.reason;
         this.website = res.data.website;
@@ -633,6 +689,8 @@ export default {
 
           apiSuccess("Profile updated.");
 
+          this.original_email = this.email;
+          this.confirm_email = '';
           this.editing_profile = false;
           this.loading = false;
         }
@@ -660,36 +718,390 @@ export default {
 };
 </script>
 
-<style>
-/* Style your popup as needed */
-.popup {
-  position: fixed;
-  top: 0;
-  left: 0;
+<style scoped>
+.profile-page-wrapper {
   width: 100%;
+  min-height: calc(100vh - var(--app-bar-height, 64px));
+  min-height: calc(100dvh - var(--app-bar-height, 64px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.profile-page-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.profile-container {
+  max-width: 100%;
+}
+
+/* Profile cards */
+.profile-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.profile-sidebar {
+  padding: 24px;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+}
+
+.profile-avatar-section {
+  text-align: center;
+  padding-bottom: 16px;
+}
+
+.profile-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  width: 120px !important;
+  height: 120px !important;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+}
+
+.profile-avatar-edit {
+  position: absolute !important;
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6) !important;
+}
+
+.profile-username {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-username:hover {
+  opacity: 0.9;
+}
+
+.profile-share-icon {
+  opacity: 0.7;
+}
+
+.profile-institution {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin: 0 0 12px 0;
+}
+
+.profile-contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.profile-contact-link:hover {
+  text-decoration: underline;
+}
+
+.profile-actions {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.profile-action-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 0 0 auto;
+}
+
+/* Profile details */
+.profile-details {
+  padding: 24px;
+}
+
+.profile-details-title {
+  font-size: 1rem;
+  font-weight: 600;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-details-content {
+  padding-top: 20px !important;
+}
+
+.profile-info-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  gap: 12px;
+}
+
+.profile-info-row:last-child {
+  border-bottom: none;
+}
+
+.profile-info-label {
+  flex: 0 0 140px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-info-icon {
+  opacity: 0.8;
+}
+
+.profile-info-value {
+  flex: 1;
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.profile-info-link {
+  flex: 1;
+  color: rgb(144, 202, 249);
+  text-decoration: none;
+}
+
+.profile-info-link:hover {
+  text-decoration: underline;
+}
+
+/* Edit profile */
+.profile-edit-view,
+.profile-settings-view {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.profile-edit-card,
+.profile-settings-card {
+  padding: 24px;
+}
+
+.profile-edit-title,
+.profile-settings-title {
+  font-size: 1.25rem;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding-top: 16px;
+}
+
+.profile-edit-discard {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.profile-edit-discard:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Settings */
+.profile-settings-section {
+  margin-bottom: 8px;
+}
+
+.profile-settings-switch {
+  margin: 0;
+}
+
+.profile-settings-danger {
+  margin-top: 16px;
+}
+
+.profile-settings-warning {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.profile-settings-back {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.profile-settings-back:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Popups */
+.profile-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 100;
+  padding: 16px;
 }
 
-.popup-content {
-  background: #222;
-  padding: 20px;
-  border-radius: 8px;
+.profile-popup-content {
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
+.profile-popup-danger {
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.profile-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.profile-popup-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.profile-popup-text {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+}
+
+.profile-popup-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.profile-popup-cancel {
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.profile-popup-cancel:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.profile-image-upload-area {
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .profile-image-preview {
-  width: 20em;
-  height: 20em;
+  width: 100% !important;
+  height: 100% !important;
   border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.profile-image-upload-area ::v-deep .v-image {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.profile-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+}
+
+.profile-file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.profile-not-found {
+  max-width: 480px;
+  margin: 0 auto;
+}
+</style>
+
+<style>
+.v-main:has(.profile-page-wrapper) {
+  overflow: visible;
+}
+
+/* vue-country-dropdown dark theme for Edit Profile */
+.profile-page-wrapper .vue-country-select .country-name {
+  color: hsla(0, 0%, 100%, 0.7) !important;
+}
+.profile-page-wrapper div.dropdown.open {
+  background-color: black !important;
+}
+.profile-page-wrapper .vue-country-select .country-name:hover {
+  color: hsla(0, 0%, 100%, 0.7) !important;
+}
+.profile-page-wrapper .dropdown:hover {
+  background-color: black !important;
+}
+.profile-page-wrapper li.dropdown-item {
+  background-color: black !important;
+}
+.profile-page-wrapper li.dropdown-item:hover {
+  background-color: rgb(46, 46, 46) !important;
+}
+.profile-page-wrapper li.dropdown-item > strong {
+  font-weight: normal !important;
+  color: hsla(0, 0%, 100%, 0.7);
+}
+.profile-page-wrapper .vue-country-select {
+  width: 100%;
+  border-color: hsla(0, 0%, 100%, 0.7) !important;
+}
+.profile-page-wrapper .vue-country-select:hover {
+  border-color: white !important;
+}
+.profile-page-wrapper .vue-country-select:focus,
+.profile-page-wrapper .vue-country-select:active {
+  border-color: white !important;
+}
+.profile-page-wrapper li.dropdown-item > span {
+  display: none;
 }
 </style>

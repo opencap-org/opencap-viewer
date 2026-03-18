@@ -2,19 +2,18 @@
   <div class="scalar-wrapper">
     <div v-for="(row, row_idx) in sortedMetrics"
          :key="row_idx"
-         :class="row.classes">
+         :class="['metric-row', row.classes]">
       <h2 class="h5 plot-caption">
-        {{ row.label }}
-
-        <v-tooltip bottom v-if="row.info">
+        <span class="plot-title">{{ row.label }}</span>
+        <v-tooltip bottom max-width="320" content-class="metric-tooltip" v-if="row.info">
           <template v-slot:activator="{ on }">
-            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+            <v-icon class="metric-help-icon" v-on="on"> mdi-help-circle-outline </v-icon>
           </template>
-          <p v-html="row.info.replace(/\n/g, '<br>')" />
+          <p class="metric-tooltip-text" v-html="row.info.replace(/\n/g, '<br>')" />
         </v-tooltip>
       </h2>
 
-      <div class="scalar-plot-container d-flex" style="margin-top: 45px;margin-bottom: 55px;">
+      <div class="scalar-plot-container d-flex" style="margin-top: 40px;margin-bottom: 30px;">
         <div class="scalar-plot-bar scalar-plot-bar-left text-right" :style="buildBarStyles(row, 'left')">
           <div style="position: relative;margin-top: 20px;">{{row.min_limit}}</div>
         </div>
@@ -114,11 +113,44 @@ export default {
 }
 
 .plot-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin: 0;
   padding: 0;
+  text-align: left;
+}
+
+.plot-title {
+  flex: 1;
   text-align: center;
 }
 .scalar-plot-bar {
   height: 10px;
+}
+
+.metric-row {
+  position: relative;
+}
+
+.metric-help-icon {
+  font-size: 20px !important;
+  line-height: 1;
+  margin-left: 8px;
+}
+
+.metric-tooltip-text {
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+/* Hide help icon on mobile */
+@media (max-width: 960px) {
+  .metric-help-icon {
+    display: none;
+  }
 }
 </style>

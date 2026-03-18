@@ -38,13 +38,16 @@ export default {
     async checkToken ({ commit, dispatch }) {
       const token = localStorage.getItem('auth_token')
       const date = new Date(localStorage.getItem('valid_till'))
-      const verified = localStorage.getItem('auth_verified')
+      const verifiedStored = localStorage.getItem('auth_verified') === 'true'
+      const hasValidToken = token && !isNaN(date.getTime()) && new Date() < date
+      const verified = verifiedStored && hasValidToken
 
-      commit('setVerified', {
-        verified: verified
-      })
+      if (!hasValidToken && verifiedStored) {
+        localStorage.removeItem('auth_verified')
+      }
+      commit('setVerified', { verified })
 
-      if (verified && token && new Date() < date) {
+      if (verified) {
         axios.defaults.headers.common['Authorization'] = 'Token ' + token
         commit('setLoggedIn', {
             loggedIn: true,
@@ -86,6 +89,8 @@ export default {
       localStorage.setItem('institutional_use', res.data.institutional_use)
       localStorage.setItem('auth_user', username)
       localStorage.setItem('auth_user_id', res.data.user_id)
+      localStorage.removeItem('auth_verified')
+      commit('setVerified', { verified: false })
       commit('setSkipForcingOTP', { value: res.data.otp_challenge_sent })
 
       axios.defaults.headers.common['Authorization'] = `Token ${res.data.token}`

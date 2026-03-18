@@ -33,7 +33,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="submit(true)" :disabled="institutionalUse == '' || notPermitted">Submit</v-btn>
+          <v-btn color="grey darken-4" dark @click="submit(true)" :disabled="institutionalUse == '' || notPermitted">Submit</v-btn>
         </v-card-actions>
       </v-card>
 
