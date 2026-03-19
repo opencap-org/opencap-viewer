@@ -50,16 +50,18 @@
               <v-btn color="grey darken-4" dark block @click="openInApp">Open app with this session (v2.0+)</v-btn>
             </div>
             <h1 class="my-4">3. Mount your phone vertically or horizontally (unlock portrait orientation) on a tripod</h1>
-            <h1 class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>
+            <h1 v-if="isMonocularMode" class="my-4">4. Position the tripod and camera to capture the volume of interest. Keep the subject within 5 meters of the camera.</h1>
+            <h1 v-else class="my-4">4. Position the tripod and camera to capture the volume of interest</h1>
             <h1
               v-if="!isMonocularMode"
               class="my-4">
               5. Repeat 1-4 for all phones you want to connect
             </h1>
-            <h1 class="my-4">
-              6. Have the person practice the activity and verify that they are fully in view of
-              <span v-if="isMonocularMode"> the camera</span>
-              <span v-else> at least 2 cameras</span>
+            <h1 v-if="isMonocularMode" class="my-4">
+              6. Have the person practice the activity and verify their whole body is fully in frame and clearly visible to the camera—not cut off, and not hidden behind other objects (e.g. furniture or people)
+            </h1>
+            <h1 v-else class="my-4">
+              6. Have the person practice the activity and verify that they are fully in view of at least 2 cameras
             </h1>
             <p
               v-if="isMonocularMode"
