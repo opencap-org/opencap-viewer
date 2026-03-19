@@ -62,7 +62,7 @@
                 <a href="https://www.opencap.ai/best-practices?variant=Monocular" target="_blank" rel="noopener noreferrer">Best practices</a>
                 ·
                 <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.<br>
-                Jumping is not supported yet. Camera should be static at 30-45° angle.
+                Jumping is not supported yet. Camera should be static at 30-45° angle. Keep the full body in frame, clearly visible (not blocked by objects or people), within 5 meters of the camera.
               </div>
             </v-alert>
   
@@ -413,7 +413,7 @@
                 border="left">
               <div class="monocular-beta-content">
                 <strong>Monocular mode is in beta.</strong>
-                Jumping is not supported yet. Camera must be static at 30-45° angle.
+                Jumping is not supported yet. Camera must be static at 30-45° angle. Keep the full body in frame, clearly visible (not blocked by objects or people), within 5 meters of the camera.
                 <div class="d-flex flex-wrap mt-2">
                   <v-btn x-small outlined class="mr-2 mb-1" @click="window.open('https://www.opencap.ai/best-practices?variant=Monocular', '_blank')">Best practices</v-btn>
                   <v-btn x-small outlined class="mb-1" @click="window.open('https://www.opencap.ai/get-started?variant=monocular', '_blank')">Get started</v-btn>
