@@ -11,7 +11,7 @@
 
 <script>
 import axios from 'axios'
-import { apiSuccess, apiErrorRes, apiInfo } from '@/util/ErrorMessage.js'
+import { apiSuccess, apiErrorRes, apiInfo, clearToastMessages } from '@/util/ErrorMessage.js'
 
 export default {
   name: 'Status',
@@ -23,21 +23,25 @@ export default {
       console.log(JSON.stringify(this.value))
       switch (this.value.status) {
         case 'recording': {
+          clearToastMessages()
           apiInfo('The trial is being recorded')
           break          
         }
 
         case 'processing': {
+          clearToastMessages()
           apiInfo('Trial is in the queue to be processed.')
           break          
         }
 
         case 'reprocess': {
+          clearToastMessages()
           apiInfo('Trial is in the queue to be reprocessed.')
           break          
         }
         
         case 'error': {
+          clearToastMessages()
           const res = await axios.get(`/trials/${this.value.id}/`)
           apiErrorRes(res, 'Error in processing, you may want to re-record this trial.')
           this.$emit('click')

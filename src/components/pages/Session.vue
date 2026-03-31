@@ -425,7 +425,12 @@
         <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
             <div v-if="trial" class="d-flex flex-column" style="flex: 1 1 0; min-height: 0; height: 100%;">
   
-                <div id="mocap" ref="mocap" class="flex-grow-1" />
+                <div v-if="has3DData" id="mocap" ref="mocap" class="flex-grow-1" />
+                <div v-else class="session-empty-state d-flex flex-column align-center justify-center text-center flex-grow-1">
+                  <v-icon size="56" color="grey lighten-1" class="mb-3">mdi-cube-off-outline</v-icon>
+                  <h3 class="mb-2">No 3D motion data for this trial</h3>
+                  <p class="mb-0 px-4">This trial doesn’t have motion data to visualize. If videos exist, you can still preview them on the right.</p>
+                </div>
   
   
                   <div v-if="!videoControlsDisabled && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
@@ -469,7 +474,7 @@
             <div class="videos d-flex flex-column">
               <video 
                   v-for="(video, index) in videos" 
-                  :key="`video-${index}`" 
+                  :key="videoKey(video, index)" 
                   :ref="`video-${index}`" 
                   muted
                   playsinline 
@@ -918,7 +923,7 @@
   import momentDurationFormatSetup from 'moment-duration-format'
   import axios from 'axios'
   import { mapState, mapMutations, mapActions } from 'vuex'
-  import { apiError, apiErrorRes, apiSuccess } from '@/util/ErrorMessage.js'
+  import { apiError, apiErrorRes, apiSuccess, clearToastMessages } from '@/util/ErrorMessage.js'
   import { playRecordingSound, playRecordingFinishedSound } from "@/util/SoundMessage.js";
   import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
   import Status from '@/components/ui/Status'
@@ -1112,6 +1117,9 @@
         videoControlsDisabled() {
           return !this.trial || this.frames.length === 0
         },
+        has3DData() {
+          return !!this.trial && Array.isArray(this.frames) && this.frames.length > 0
+        },
         hasKinematicsAvailable() {
           if (!this.trial || !this.trial.results) return false
           return this.trial.results.some(r => r.tag === 'visualizerTransforms-json')
@@ -1257,7 +1265,9 @@
       this.cancelTrialsPoll()
   
       if (this.resizeObserver) {
-        this.resizeObserver.unobserve(this.$refs.mocap)
+        if (this.$refs.mocap) {
+          this.resizeObserver.unobserve(this.$refs.mocap)
+        }
       }
 
       // Remove keyboard event listener
@@ -1274,13 +1284,17 @@
         }
       },
       trial() {
-        if (this.trial) {
+        if (this.trial && this.has3DData) {
           this.$nextTick(() => {
             this.resizeObserver = new ResizeObserver(this.onResize)
-            this.resizeObserver.observe(this.$refs.mocap)
+            if (this.$refs.mocap) {
+              this.resizeObserver.observe(this.$refs.mocap)
+            }
           })
         } else {
-          this.resizeObserver.unobserve(this.$refs.mocap)
+          if (this.resizeObserver && this.$refs.mocap) {
+            this.resizeObserver.unobserve(this.$refs.mocap)
+          }
         }
       },
       playSpeed() {
@@ -1374,6 +1388,13 @@
         document.removeEventListener('gesturechange', this.controlGestureGuard)
         document.removeEventListener('touchmove', this.controlGestureGuard)
         this.controlGestureGuard = null
+      },
+      videoKey(video, index) {
+        const trialId = this.trial?.id ?? 'no-trial'
+        const media = video?.media ?? video?.video ?? ''
+        const id = video?.id ?? ''
+        // Tie key to the active trial so DOM can't be reused across trials.
+        return `trial-${trialId}-video-${id || media || index}`
       },
       async changeState() {
         switch (this.state) {
@@ -1982,13 +2003,21 @@
       },
       async loadTrial(trial) {
         console.log('loadTrial')
+        // Clear any previous toast/errors when switching trials.
+        // For "error" trials, Status.vue shows the toast before it triggers this load, so don't clear here.
+        if (trial?.status !== 'error') {
+          clearToastMessages()
+        }
+        this.sessionNotification = { show: false, text: '', type: 'error' }
         this.time = 0
 
         if (!this.trialLoading) {
           this.frame = 0
           this.trial = null
+          this.videos = []
           this.synced = false
           this.trialLoading = true
+          this.togglePlay(false)
 
           try {
             const {data} = await axios.get(`/trials/${trial.id}/`)
@@ -2033,15 +2062,36 @@
             if (this.videos.length === 0) {
               this.frame = 0
               this.time = 0
-              this.videos = data.videos
-              this.videos.forEach(videoObj => {
-                videoObj.media = videoObj.video;
-                delete videoObj.video;
-              });
+              // IMPORTANT: Don't blindly fall back to `data.videos` because it may not be trial-scoped
+              // (e.g., session-level videos). Only use it if each entry explicitly references this trial id.
+              const fallback = Array.isArray(data?.videos) ? data.videos : []
+              const trialId = data?.id
+              const scopedFallback = fallback.filter(v => {
+                const ref =
+                  v?.trial_id ?? v?.trialId ?? v?.trialID ?? v?.trial ?? v?.trial_pk ?? v?.trialPk
+                return trialId != null && ref != null && String(ref) === String(trialId)
+              })
+
+              if (scopedFallback.length > 0) {
+                this.videos = scopedFallback.map(v => ({
+                  ...v,
+                  media: v.media ?? v.video,
+                }))
+              } else if (fallback.length > 0) {
+                this.videos = []
+                this.sessionNotification = {
+                  show: true,
+                  type: 'warning',
+                  text: 'This trial has videos but no synced previews available (likely QC/low-confidence). Not showing unscoped videos to avoid mixing trials.',
+                }
+              }
+
               render_skeleton = false
             }
 
-            if (this.frames.length > 0 || this.videos.length > 0) {
+            // Only initialize the Three.js 3D scene when we have motion frames to render.
+            // When there are only videos (or no data), keep the viewer empty-state and let users preview videos.
+            if (this.frames.length > 0) {
               this.$nextTick(() => {
                 try {
                   while (this.$refs.mocap.lastChild) {
@@ -2152,8 +2202,6 @@
                         })
                       })
                     }
-                  } else {
-                    apiErrorRes(null, 'Showing uploaded videos (not synchronized).')
                   }
                 } finally {
                   this.trialLoading = false
