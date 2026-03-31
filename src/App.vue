@@ -45,7 +45,7 @@
 
 <script>
 import { mapActions, mapState } from 'vuex'
-import { notificationState, hideNotification } from '@/util/notificationStore.js'
+import { notificationState, hideNotification, clearNotifications } from '@/util/notificationStore.js'
 import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
@@ -126,7 +126,7 @@ export default {
   },
   watch: {
     $route () {
-      hideNotification()
+      clearNotifications()
       this.cancelTimer()
       this.startTimer()
       this.resetMainScroll()
