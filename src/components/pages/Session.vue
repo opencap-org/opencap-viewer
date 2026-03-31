@@ -474,7 +474,7 @@
             <div class="videos d-flex flex-column">
               <video 
                   v-for="(video, index) in videos" 
-                  :key="`video-${index}`" 
+                  :key="videoKey(video, index)" 
                   :ref="`video-${index}`" 
                   muted
                   playsinline 
@@ -1389,6 +1389,13 @@
         document.removeEventListener('touchmove', this.controlGestureGuard)
         this.controlGestureGuard = null
       },
+      videoKey(video, index) {
+        const trialId = this.trial?.id ?? 'no-trial'
+        const media = video?.media ?? video?.video ?? ''
+        const id = video?.id ?? ''
+        // Tie key to the active trial so DOM can't be reused across trials.
+        return `trial-${trialId}-video-${id || media || index}`
+      },
       async changeState() {
         switch (this.state) {
           case 'ready': {
@@ -2007,6 +2014,7 @@
         if (!this.trialLoading) {
           this.frame = 0
           this.trial = null
+          this.videos = []
           this.synced = false
           this.trialLoading = true
           this.togglePlay(false)
@@ -2054,11 +2062,30 @@
             if (this.videos.length === 0) {
               this.frame = 0
               this.time = 0
-              this.videos = data.videos
-              this.videos.forEach(videoObj => {
-                videoObj.media = videoObj.video;
-                delete videoObj.video;
-              });
+              // IMPORTANT: Don't blindly fall back to `data.videos` because it may not be trial-scoped
+              // (e.g., session-level videos). Only use it if each entry explicitly references this trial id.
+              const fallback = Array.isArray(data?.videos) ? data.videos : []
+              const trialId = data?.id
+              const scopedFallback = fallback.filter(v => {
+                const ref =
+                  v?.trial_id ?? v?.trialId ?? v?.trialID ?? v?.trial ?? v?.trial_pk ?? v?.trialPk
+                return trialId != null && ref != null && String(ref) === String(trialId)
+              })
+
+              if (scopedFallback.length > 0) {
+                this.videos = scopedFallback.map(v => ({
+                  ...v,
+                  media: v.media ?? v.video,
+                }))
+              } else if (fallback.length > 0) {
+                this.videos = []
+                this.sessionNotification = {
+                  show: true,
+                  type: 'warning',
+                  text: 'This trial has videos but no synced previews available (likely QC/low-confidence). Not showing unscoped videos to avoid mixing trials.',
+                }
+              }
+
               render_skeleton = false
             }
 

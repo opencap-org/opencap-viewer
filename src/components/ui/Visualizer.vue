@@ -23,7 +23,7 @@
 
         <div class="right d-flex flex-column">
             <div class="videos flex-grow-1 d-flex flex-column">
-                <video v-for="(video, index) in videos" :key="`video-${index}`" :ref="`video-${index}`"
+                <video v-for="(video, index) in videos" :key="videoKey(video, index)" :ref="`video-${index}`"
                        muted
                        playsinline :src="video.media" crossorigin="anonymous"
                        @loadedmetadata="onVideoLoadMetadata(index)"
@@ -116,6 +116,12 @@ export default {
         }
     },
     methods: {
+        videoKey(video, index) {
+            const trialId = this.trial?.id ?? this.trialID ?? 'no-trial'
+            const media = video?.media ?? video?.video ?? ''
+            const id = video?.id ?? ''
+            return `trial-${trialId}-video-${id || media || index}`
+        },
         initResizeObserver() {
             if (typeof ResizeObserver === 'undefined' || !this.$refs.mocap) {
                 return
