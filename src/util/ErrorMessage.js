@@ -2,7 +2,7 @@
  * Error message processing
  * @module util/ErrorMessage
  */
-import { showNotification, hideNotification } from '@/util/notificationStore.js'
+import { showNotification, clearNotifications } from '@/util/notificationStore.js'
 
 /**
  * Format object field depending on field type
@@ -131,7 +131,7 @@ function apiErrorRes (axiosRes, defaultText) {
 }
 
 function clearToastMessages () {
-  hideNotification()
+  clearNotifications()
 }
 
 export {

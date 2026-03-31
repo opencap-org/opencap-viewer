@@ -62,7 +62,7 @@
                 <a href="https://www.opencap.ai/best-practices?variant=Monocular" target="_blank" rel="noopener noreferrer">Best practices</a>
                 ·
                 <a href="https://www.opencap.ai/get-started?variant=monocular" target="_blank" rel="noopener noreferrer">Get started</a>.<br>
-                Jumping is not supported yet. Camera should be static at 30-45° angle.
+                Jumping is not supported yet. Camera should be static at 30-45° angle. Keep the full body in frame, clearly visible (not blocked by objects or people), within 5 meters of the camera.
               </div>
             </v-alert>
   
@@ -413,7 +413,7 @@
                 border="left">
               <div class="monocular-beta-content">
                 <strong>Monocular mode is in beta.</strong>
-                Jumping is not supported yet. Camera must be static at 30-45° angle.
+                Jumping is not supported yet. Camera must be static at 30-45° angle. Keep the full body in frame, clearly visible (not blocked by objects or people), within 5 meters of the camera.
                 <div class="d-flex flex-wrap mt-2">
                   <v-btn x-small outlined class="mr-2 mb-1" @click="window.open('https://www.opencap.ai/best-practices?variant=Monocular', '_blank')">Best practices</v-btn>
                   <v-btn x-small outlined class="mb-1" @click="window.open('https://www.opencap.ai/get-started?variant=monocular', '_blank')">Get started</v-btn>
@@ -425,7 +425,12 @@
         <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
             <div v-if="trial" class="d-flex flex-column" style="flex: 1 1 0; min-height: 0; height: 100%;">
   
-                <div id="mocap" ref="mocap" class="flex-grow-1" />
+                <div v-if="has3DData" id="mocap" ref="mocap" class="flex-grow-1" />
+                <div v-else class="session-empty-state d-flex flex-column align-center justify-center text-center flex-grow-1">
+                  <v-icon size="56" color="grey lighten-1" class="mb-3">mdi-cube-off-outline</v-icon>
+                  <h3 class="mb-2">No 3D motion data for this trial</h3>
+                  <p class="mb-0 px-4">This trial doesn’t have motion data to visualize. If videos exist, you can still preview them on the right.</p>
+                </div>
   
   
                   <div v-if="!videoControlsDisabled && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
@@ -918,7 +923,7 @@
   import momentDurationFormatSetup from 'moment-duration-format'
   import axios from 'axios'
   import { mapState, mapMutations, mapActions } from 'vuex'
-  import { apiError, apiErrorRes, apiSuccess } from '@/util/ErrorMessage.js'
+  import { apiError, apiErrorRes, apiSuccess, clearToastMessages } from '@/util/ErrorMessage.js'
   import { playRecordingSound, playRecordingFinishedSound } from "@/util/SoundMessage.js";
   import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
   import Status from '@/components/ui/Status'
@@ -1112,6 +1117,9 @@
         videoControlsDisabled() {
           return !this.trial || this.frames.length === 0
         },
+        has3DData() {
+          return !!this.trial && Array.isArray(this.frames) && this.frames.length > 0
+        },
         hasKinematicsAvailable() {
           if (!this.trial || !this.trial.results) return false
           return this.trial.results.some(r => r.tag === 'visualizerTransforms-json')
@@ -1257,7 +1265,9 @@
       this.cancelTrialsPoll()
   
       if (this.resizeObserver) {
-        this.resizeObserver.unobserve(this.$refs.mocap)
+        if (this.$refs.mocap) {
+          this.resizeObserver.unobserve(this.$refs.mocap)
+        }
       }
 
       // Remove keyboard event listener
@@ -1274,13 +1284,17 @@
         }
       },
       trial() {
-        if (this.trial) {
+        if (this.trial && this.has3DData) {
           this.$nextTick(() => {
             this.resizeObserver = new ResizeObserver(this.onResize)
-            this.resizeObserver.observe(this.$refs.mocap)
+            if (this.$refs.mocap) {
+              this.resizeObserver.observe(this.$refs.mocap)
+            }
           })
         } else {
-          this.resizeObserver.unobserve(this.$refs.mocap)
+          if (this.resizeObserver && this.$refs.mocap) {
+            this.resizeObserver.unobserve(this.$refs.mocap)
+          }
         }
       },
       playSpeed() {
@@ -1982,6 +1996,12 @@
       },
       async loadTrial(trial) {
         console.log('loadTrial')
+        // Clear any previous toast/errors when switching trials.
+        // For "error" trials, Status.vue shows the toast before it triggers this load, so don't clear here.
+        if (trial?.status !== 'error') {
+          clearToastMessages()
+        }
+        this.sessionNotification = { show: false, text: '', type: 'error' }
         this.time = 0
 
         if (!this.trialLoading) {
@@ -1989,6 +2009,7 @@
           this.trial = null
           this.synced = false
           this.trialLoading = true
+          this.togglePlay(false)
 
           try {
             const {data} = await axios.get(`/trials/${trial.id}/`)
@@ -2041,7 +2062,9 @@
               render_skeleton = false
             }
 
-            if (this.frames.length > 0 || this.videos.length > 0) {
+            // Only initialize the Three.js 3D scene when we have motion frames to render.
+            // When there are only videos (or no data), keep the viewer empty-state and let users preview videos.
+            if (this.frames.length > 0) {
               this.$nextTick(() => {
                 try {
                   while (this.$refs.mocap.lastChild) {
@@ -2152,8 +2175,6 @@
                         })
                       })
                     }
-                  } else {
-                    apiErrorRes(null, 'Showing uploaded videos (not synchronized).')
                   }
                 } finally {
                   this.trialLoading = false
