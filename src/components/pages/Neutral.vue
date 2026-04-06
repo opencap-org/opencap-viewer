@@ -1339,10 +1339,10 @@ export default {
   }
   
   .v-card__text.checkbox-wrapper {
-    padding: 8px 16px 20px 16px !important;
+    padding: 8px 16px 28px 16px !important;
     width: 100% !important;
     box-sizing: border-box;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     align-items: flex-start !important;
     flex-shrink: 0;
     min-height: auto;
@@ -1351,7 +1351,7 @@ export default {
     background-color: #252525 !important;
     
     @media (max-width: 599px) {
-      padding: 6px 12px 16px 12px !important;
+      padding: 6px 12px 24px 12px !important;
     }
     
     &:last-of-type {
@@ -1420,12 +1420,15 @@ export default {
   .v-card__title + .v-card__text {
     margin-top: 0;
   }
-  
-  .v-card__text + .v-card__title {
-    margin-top: 16px;
-    
+
+  /* Clear gap after each control so the next section title does not crowd the field (outlined inputs + global .app-dialog title styles). */
+  .v-card__text.checkbox-wrapper + .v-card__title.data-title {
+    margin-top: 28px;
+    padding-top: 8px;
+
     @media (max-width: 599px) {
-      margin-top: 12px;
+      margin-top: 22px;
+      padding-top: 6px;
     }
   }
   
