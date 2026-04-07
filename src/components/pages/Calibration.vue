@@ -254,7 +254,9 @@ export default {
               }
             }
             this.lastPolledStatus = res.data.status;
-            window.setTimeout(this.pollStatus, 1000);
+            if (this.busy) {
+              window.setTimeout(this.pollStatus, 1000);
+            }
             break;
           }
         }
