@@ -139,6 +139,7 @@ export default {
       n_cameras_connected: 0,
       n_videos_uploaded: 0,
       isAuditoryFeedbackEnabled: false,
+      timeoutID: null,
     }
   },
   created() {
@@ -206,6 +207,7 @@ export default {
         const res = await axios.get(`/sessions/${this.session.id}/calibration_img/`)
         switch (res.data.status) {
           case "done": {
+            clearTimeout(this.timeoutID);
             clearToastMessages()
 
             const resCalibratedCameras = await axios.get(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
@@ -227,6 +229,7 @@ export default {
             break;
           }
           case "error": {
+            clearTimeout(this.timeoutID);
             clearToastMessages()
             const res_trial = await axios.get(`/trials/${this.trialId}/`)
             apiErrorRes(res_trial, 'Finished with error')
@@ -245,6 +248,7 @@ export default {
               this.n_calibrated_cameras = resCalibratedCameras.data.data
 
               if (this.n_calibrated_cameras < 2) {
+                clearTimeout(this.timeoutID);
                 clearToastMessages()
                 apiError(this.n_calibrated_cameras + " device(s) connected to the session and 2+ devices are required, please re-pair the devices using qr code at top of page.", 10000);
                 this.busy = false
@@ -255,7 +259,7 @@ export default {
             }
             this.lastPolledStatus = res.data.status;
             if (this.busy) {
-              window.setTimeout(this.pollStatus, 1000);
+              this.timeoutID = window.setTimeout(this.pollStatus, 1000);
             }
             break;
           }
