@@ -227,6 +227,7 @@ export default {
             break;
           }
           case "error": {
+            clearToastMessages()
             const res_trial = await axios.get(`/trials/${this.trialId}/`)
             apiErrorRes(res_trial, 'Finished with error')
             this.busy = false;
@@ -244,9 +245,11 @@ export default {
               this.n_calibrated_cameras = resCalibratedCameras.data.data
 
               if (this.n_calibrated_cameras < 2) {
+                clearToastMessages()
                 apiError(this.n_calibrated_cameras + " device(s) connected to the session and 2+ devices are required, please re-pair the devices using qr code at top of page.", 10000);
                 this.busy = false
               } else {
+                clearToastMessages()
                 apiInfo("Processing.", 0);
               }
             }
@@ -262,6 +265,7 @@ export default {
         this.n_videos_uploaded = res_status.data.n_videos_uploaded
         this.n_cameras_connected = res_status.data.n_cameras_connected
       } catch (error) {
+        clearToastMessages()
         apiError(error);
         this.busy = false;
       }
