@@ -143,7 +143,7 @@
                                 <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenRestoreDialog(t)">
                                   <v-list-item-title>Restore</v-list-item-title>
                                 </v-list-item>
-                                <v-list-item link v-if="t.trashed" @click="closeMenuAndOpenDeleteDialog(t)">
+                                <v-list-item link @click="closeMenuAndOpenDeleteDialog(t)">
                                   <v-list-item-title>Delete permanently</v-list-item-title>
                                 </v-list-item>
                               </v-list>
@@ -206,8 +206,8 @@
                         </div>
                       </v-list-item-content>
                     </v-list-item>
-                    <v-divider v-if="selectedTrialForMenu.trashed"></v-divider>
-                    <v-list-item link v-if="selectedTrialForMenu.trashed" @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
+                    <v-divider></v-divider>
+                    <v-list-item link @click="closeSheetAndOpenDeleteDialog(selectedTrialForMenu)">
                       <v-list-item-content>
                         <div class="d-flex flex-row align-center justify-center">
                           <v-icon class="mr-3">mdi-delete-forever</v-icon>
@@ -227,10 +227,10 @@
             </v-btn>
 
             <div v-if="showSessionMenuButtons" class="session-actions-panel">
-                  <v-btn small class="w-100 session-action-btn" v-show="show_controls && !isMonocularSession" :disabled="busy || state !== 'ready'"
+                  <v-btn small class="w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'"
                       @click="newSessionSameSetup">
                       <v-icon left small>mdi-plus-box-multiple</v-icon>
-                      New session, same setup
+                      {{ isMonocularSession ? 'New session same camera' : 'New session, same setup' }}
                   </v-btn>
   
                   <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">
@@ -761,6 +761,7 @@
                 <p>
                   Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
                   This action cannot be undone.
+                  <span v-if="!trialForPermanentDeleteDialog.trashed"> Use Trash to keep the ability to restore the trial.</span>
                 </p>
               </v-col>
             </v-row>
@@ -1749,8 +1750,10 @@
         }
       },
       async newSessionSameSetup() {
+        // Snapshot before initSessionSameSetup: new_subject response may omit isMono on the new session.
+        const wasMonocular = !!(this.session?.isMono ?? this.session?.is_mono)
         await this.initSessionSameSetup()
-        const query = this.isMonocularSession ? { isMono: 'true', fromDevice: 'true' } : {}
+        const query = wasMonocular ? { isMono: 'true', fromDevice: 'true' } : {}
         this.$router.push({name: 'Neutral', params: {id: this.session.id}, query})
       },
       startPoll() {
@@ -2545,7 +2548,7 @@
   
   .step-5 {
     position: fixed;
-    top: var(--app-bar-height, 64px);
+    top: var(--app-bar-top-offset, 64px);
     left: 0;
     right: 0;
     bottom: 0;
@@ -2567,7 +2570,7 @@
   
     .mobile-menu-toggle {
       position: fixed;
-      top: calc(var(--app-bar-height, 56px) + 8px);
+      top: calc(var(--app-bar-top-offset, 56px) + 8px);
       left: 8px;
       z-index: 100;
       background-color: #424242 !important;
@@ -2611,7 +2614,7 @@
 
     .left-wrapper.mobile-drawer {
       position: fixed;
-      top: var(--app-bar-height, 56px);
+      top: var(--app-bar-top-offset, 56px);
       left: 0;
       bottom: 0;
       width: 280px;
