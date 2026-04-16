@@ -1,0 +1,551 @@
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import { makeRequestWithRetry } from '../src/util/network.js';
+
+// Mock console.log to avoid cluttering test output
+global.console = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn(),
+  debug: jest.fn()
+};
+
+describe('makeRequestWithRetry', () => {
+  let mockAxios;
+
+  beforeEach(() => {
+    mockAxios = new MockAdapter(axios);
+    jest.clearAllMocks();
+    jest.setTimeout(10000);
+  });
+
+  afterEach(() => {
+    mockAxios.restore();
+  });
+
+  describe('successful requests', () => {
+    it('should return response on first attempt for GET request', async () => {
+      const mockData = { id: 1, name: 'Test User' };
+      mockAxios.onGet('/api/users/1').reply(200, mockData);
+
+      const response = await makeRequestWithRetry('GET', '/api/users/1', { retries: 0 });
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual(mockData);
+      expect(mockAxios.history.get.length).toBe(1);
+    });
+
+    it('should handle query parameters correctly', async () => {
+      mockAxios.onGet('/api/users').reply(200, { users: [] });
+
+      await makeRequestWithRetry('GET', '/api/users', {
+        params: { page: 1, limit: 10, sort: 'desc' },
+        retries: 0
+      });
+
+      expect(mockAxios.history.get[0].params).toEqual({
+        page: 1,
+        limit: 10,
+        sort: 'desc'
+      });
+    });
+
+    it('should handle request headers correctly', async () => {
+      mockAxios.onGet('/api/secure').reply(200, {});
+
+      await makeRequestWithRetry('GET', '/api/secure', {
+        headers: {
+          Authorization: 'Bearer token123',
+          'X-Custom-Header': 'custom-value'
+        },
+        retries: 0
+      });
+
+      expect(mockAxios.history.get[0].headers.Authorization).toBe('Bearer token123');
+      expect(mockAxios.history.get[0].headers['X-Custom-Header']).toBe('custom-value');
+    });
+
+    it('should handle POST requests with data payload', async () => {
+      const postData = { name: 'John Doe', email: 'john@example.com', age: 30 };
+      mockAxios.onPost('/api/users').reply(201, { id: 1, ...postData });
+
+      const response = await makeRequestWithRetry('POST', '/api/users', {
+        data: postData,
+        headers: { 'Content-Type': 'application/json' },
+        retries: 0
+      });
+
+      expect(response.status).toBe(201);
+      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual(postData);
+      expect(response.data).toHaveProperty('id', 1);
+    });
+
+    it('should handle PUT requests with update data', async () => {
+      const updateData = { name: 'Jane Doe' };
+      mockAxios.onPut('/api/users/1').reply(200, { id: 1, ...updateData });
+
+      const response = await makeRequestWithRetry('PUT', '/api/users/1', {
+        data: updateData,
+        retries: 0
+      });
+
+      expect(response.status).toBe(200);
+      expect(JSON.parse(mockAxios.history.put[0].data)).toEqual(updateData);
+    });
+
+    it('should handle DELETE requests', async () => {
+      mockAxios.onDelete('/api/users/1').reply(204, null);
+
+      const response = await makeRequestWithRetry('DELETE', '/api/users/1', { retries: 0 });
+
+      expect(response.status).toBe(204);
+      expect(mockAxios.history.delete.length).toBe(1);
+    });
+  });
+
+  describe('retry logic for server errors', () => {
+    it('should retry on 500 error and succeed on second attempt', async () => {
+      mockAxios
+        .onGet('/api/unstable')
+        .replyOnce(500, { error: 'Internal Server Error' })
+        .onGet('/api/unstable')
+        .replyOnce(200, { success: true, data: 'Recovered data' });
+
+      const response = await makeRequestWithRetry('GET', '/api/unstable', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({ success: true, data: 'Recovered data' });
+      expect(mockAxios.history.get.length).toBe(2);
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Retrying')
+      );
+    });
+
+    it('should retry on 502 Bad Gateway error', async () => {
+      mockAxios
+        .onGet('/api/gateway')
+        .replyOnce(502, { error: 'Bad Gateway' })
+        .onGet('/api/gateway')
+        .replyOnce(200, { status: 'ok' });
+
+      const response = await makeRequestWithRetry('GET', '/api/gateway', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(2);
+    });
+
+    it('should retry on 503 Service Unavailable error', async () => {
+      mockAxios
+        .onGet('/api/service')
+        .replyOnce(503, { error: 'Service Unavailable' })
+        .onGet('/api/service')
+        .replyOnce(200, { healthy: true });
+
+      const response = await makeRequestWithRetry('GET', '/api/service', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(2);
+    });
+
+    it('should retry on 504 Gateway Timeout error', async () => {
+      mockAxios
+        .onGet('/api/timeout')
+        .replyOnce(504, { error: 'Gateway Timeout' })
+        .onGet('/api/timeout')
+        .replyOnce(200, { completed: true });
+
+      const response = await makeRequestWithRetry('GET', '/api/timeout', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(2);
+    });
+
+    it('should retry on 429 Too Many Requests error', async () => {
+      mockAxios
+        .onGet('/api/rate-limited')
+        .replyOnce(429, { error: 'Too Many Requests', retryAfter: 1 })
+        .onGet('/api/rate-limited')
+        .replyOnce(200, { success: true });
+
+      const response = await makeRequestWithRetry('GET', '/api/rate-limited', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(2);
+    });
+
+    it('should retry on network errors', async () => {
+      mockAxios
+        .onGet('/api/network-error')
+        .networkErrorOnce()
+        .onGet('/api/network-error')
+        .replyOnce(200, { recovered: true });
+
+      const response = await makeRequestWithRetry('GET', '/api/network-error', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(2);
+    });
+
+    it('should retry multiple times before succeeding', async () => {
+      mockAxios
+        .onGet('/api/retry-multiple')
+        .replyOnce(500)
+        .onGet('/api/retry-multiple')
+        .replyOnce(502)
+        .onGet('/api/retry-multiple')
+        .replyOnce(503)
+        .onGet('/api/retry-multiple')
+        .replyOnce(200, { finally: 'success' });
+
+      const response = await makeRequestWithRetry('GET', '/api/retry-multiple', {
+        retries: 3,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(4);
+    });
+  });
+
+  describe('non-retryable errors', () => {
+    it('should not retry on 400 Bad Request', async () => {
+      mockAxios.onGet('/api/bad-request').reply(400, { error: 'Bad Request' });
+
+      await expect(makeRequestWithRetry('GET', '/api/bad-request', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.get.length).toBe(1);
+    });
+
+    it('should not retry on 401 Unauthorized', async () => {
+      mockAxios.onGet('/api/unauthorized').reply(401, { error: 'Unauthorized' });
+
+      await expect(makeRequestWithRetry('GET', '/api/unauthorized', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.get.length).toBe(1);
+    });
+
+    it('should not retry on 403 Forbidden', async () => {
+      mockAxios.onGet('/api/forbidden').reply(403, { error: 'Forbidden' });
+
+      await expect(makeRequestWithRetry('GET', '/api/forbidden', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.get.length).toBe(1);
+    });
+
+    it('should not retry on 404 Not Found', async () => {
+      mockAxios.onGet('/api/not-found').reply(404, { error: 'Not Found' });
+
+      await expect(makeRequestWithRetry('GET', '/api/not-found', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.get.length).toBe(1);
+    });
+
+    it('should not retry on 409 Conflict', async () => {
+      mockAxios.onPost('/api/conflict').reply(409, { error: 'Conflict' });
+
+      await expect(makeRequestWithRetry('POST', '/api/conflict', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.post.length).toBe(1);
+    });
+  });
+
+  describe('idempotent methods', () => {
+    it('should NOT retry GET method on client errors (403)', async () => {
+      mockAxios.onGet('/api/forbidden-get').reply(403, { error: 'Forbidden' });
+
+      await expect(makeRequestWithRetry('GET', '/api/forbidden-get', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.get.length).toBe(1); // Only 1 attempt
+    });
+
+    it('should not retry POST method on non-retryable status codes', async () => {
+      mockAxios.onPost('/api/forbidden-post').reply(403, { error: 'Forbidden' });
+
+      await expect(makeRequestWithRetry('POST', '/api/forbidden-post', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.post.length).toBe(1);
+    });
+
+    it('should not retry PUT method on non-retryable status codes', async () => {
+      mockAxios.onPut('/api/forbidden-put').reply(403, { error: 'Forbidden' });
+
+      await expect(makeRequestWithRetry('PUT', '/api/forbidden-put', {
+        retries: 3,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.put.length).toBe(1);
+    });
+  });
+
+  describe('retry configuration options', () => {
+    it('should respect custom retry count', async () => {
+      mockAxios.onGet('/api/always-fail').reply(500);
+
+      await expect(makeRequestWithRetry('GET', '/api/always-fail', {
+        retries: 2,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      // Initial attempt + 2 retries = 3 total requests
+      expect(mockAxios.history.get.length).toBe(3);
+    });
+
+    it('should handle zero retries (no retry attempts)', async () => {
+      mockAxios.onGet('/api/fail-once').reply(500);
+
+      await expect(makeRequestWithRetry('GET', '/api/fail-once', {
+        retries: 0,
+        backoffFactor: 0.1
+      })).rejects.toThrow();
+
+      expect(mockAxios.history.get.length).toBe(1);
+    });
+
+    it('should use exponential backoff with custom backoff factor', async () => {
+      mockAxios.onGet('/api/backoff-test').reply(500);
+
+      const startTime = Date.now();
+      const promise = makeRequestWithRetry('GET', '/api/backoff-test', {
+        retries: 2,
+        backoffFactor: 0.5,
+        maxJitterMs: 0 // Disable jitter for predictable testing
+      });
+
+      await expect(promise).rejects.toThrow();
+      const duration = Date.now() - startTime;
+
+      // Expected delays: 500ms + 1000ms = 1500ms minimum (with backoffFactor 0.5: 250ms + 500ms = 750ms)
+      expect(duration).toBeGreaterThanOrEqual(750);
+      expect(mockAxios.history.get.length).toBe(3);
+    });
+
+    it('should add random jitter to delays', async () => {
+      mockAxios.onGet('/api/jitter-test').reply(500);
+
+      const delays = [];
+      for (let i = 0; i < 3; i++) {
+        const startTime = Date.now();
+        try {
+          await makeRequestWithRetry('GET', '/api/jitter-test', {
+            retries: 1,
+            backoffFactor: 0.1,
+            maxJitterMs: 500
+          });
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          delays.push(duration);
+        }
+        mockAxios.resetHistory();
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Delays should vary due to jitter
+      const uniqueDelays = new Set(delays.map(d => Math.floor(d / 100) * 100));
+      expect(uniqueDelays.size).toBeGreaterThan(1);
+    });
+  });
+
+  describe('error handling', () => {
+    it('should throw error after exhausting all retries', async () => {
+      mockAxios.onGet('/api/exhaust-retries').reply(500);
+
+      try {
+        await makeRequestWithRetry('GET', '/api/exhaust-retries', {
+          retries: 1,
+          backoffFactor: 0.1
+        });
+        expect(true).toBe(false);
+      } catch (error) {
+        expect(error).toBeDefined();
+        expect(error.response.status).toBe(500);
+        expect(mockAxios.history.get.length).toBe(2);
+      }
+    });
+
+    it('should preserve the original error object', async () => {
+      const errorResponse = {
+        error: 'Server Error',
+        code: 'ERR_500',
+        timestamp: new Date().toISOString()
+      };
+      mockAxios.onGet('/api/preserve-error').reply(500, errorResponse);
+
+      try {
+        await makeRequestWithRetry('GET', '/api/preserve-error', {
+          retries: 1,
+          backoffFactor: 0.1
+        });
+      } catch (error) {
+        expect(error.response.status).toBe(500);
+        expect(error.response.data).toEqual(errorResponse);
+        expect(error.config).toBeDefined();
+      }
+    });
+
+    it('should handle timeout errors correctly', async () => {
+      mockAxios.onGet('/api/timeout').timeout();
+
+      try {
+        await makeRequestWithRetry('GET', '/api/timeout', {
+          retries: 1,
+          backoffFactor: 0.1
+        });
+      } catch (error) {
+        expect(error.code).toBe('ECONNABORTED');
+        expect(mockAxios.history.get.length).toBe(2);
+      }
+    });
+
+    it('should handle connection refused errors', async () => {
+      mockAxios.onGet('/api/connection-refused').networkError();
+
+      try {
+        await makeRequestWithRetry('GET', '/api/connection-refused', {
+          retries: 1,
+          backoffFactor: 0.1
+        });
+      } catch (error) {
+        expect(error.message).toBeDefined();
+        expect(mockAxios.history.get.length).toBe(2);
+      }
+    });
+  });
+
+  describe('logging behavior', () => {
+    it('should log successful request attempts', async () => {
+      mockAxios.onGet('/api/log-success').reply(200, { data: 'test' });
+
+      await makeRequestWithRetry('GET', '/api/log-success', { retries: 0 });
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringMatching(/\[Attempt 1\/1\] Request to GET \/api\/log-success succeeded in \d+ms/)
+      );
+    });
+
+    it('should log retry attempts', async () => {
+      mockAxios
+        .onGet('/api/log-retry')
+        .replyOnce(500)
+        .onGet('/api/log-retry')
+        .replyOnce(200);
+
+      await makeRequestWithRetry('GET', '/api/log-retry', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Retry Attempt 2/2')
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Retrying in')
+      );
+    });
+
+    it('should log when no more retries are available', async () => {
+      mockAxios.onGet('/api/no-more-retries').reply(500);
+
+      try {
+        await makeRequestWithRetry('GET', '/api/no-more-retries', {
+          retries: 1,
+          backoffFactor: 0.1
+        });
+      } catch (error) {
+        expect(console.log).toHaveBeenCalledWith(
+          expect.stringContaining('No more retries')
+        );
+      }
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle empty response data', async () => {
+      mockAxios.onGet('/api/empty').reply(204, null);
+
+      const response = await makeRequestWithRetry('GET', '/api/empty', { retries: 0 });
+
+      expect(response.status).toBe(204);
+      expect(response.data).toBeNull();
+    });
+
+    it('should handle large response payloads', async () => {
+      const largeData = { items: Array(1000).fill({ id: 1, name: 'Test' }) };
+      mockAxios.onGet('/api/large').reply(200, largeData);
+
+      const response = await makeRequestWithRetry('GET', '/api/large', { retries: 0 });
+
+      expect(response.data.items.length).toBe(1000);
+    });
+
+    it('should handle special characters in URLs', async () => {
+      const specialUrl = '/api/users?filter=name:John%20Doe&tags=javascript,nodejs';
+      mockAxios.onGet(specialUrl).reply(200, {});
+
+      await makeRequestWithRetry('GET', specialUrl, { retries: 0 });
+
+      expect(mockAxios.history.get[0].url).toBe(specialUrl);
+    });
+
+    it('should handle concurrent requests independently', async () => {
+      mockAxios
+        .onGet('/api/request1')
+        .replyOnce(500)
+        .onGet('/api/request1')
+        .replyOnce(200, { id: 1 })
+        .onGet('/api/request2')
+        .replyOnce(500)
+        .onGet('/api/request2')
+        .replyOnce(200, { id: 2 });
+
+      const [response1, response2] = await Promise.all([
+        makeRequestWithRetry('GET', '/api/request1', { retries: 1, backoffFactor: 0.1 }),
+        makeRequestWithRetry('GET', '/api/request2', { retries: 1, backoffFactor: 0.1 })
+      ]);
+
+      expect(response1.data).toEqual({ id: 1 });
+      expect(response2.data).toEqual({ id: 2 });
+      expect(mockAxios.history.get.length).toBe(4);
+    });
+  });
+});
