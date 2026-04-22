@@ -318,6 +318,110 @@ describe('makeRequestWithRetry', () => {
     });
   });
 
+  describe('timeout parameter', () => {
+    it('should stop retrying when overall timeout is reached', async () => {
+      mockAxios.onGet('/api/slow').reply(500);
+
+      const startTime = Date.now();
+
+      await expect(makeRequestWithRetry('GET', '/api/slow', {
+        retries: 5,
+        backoffFactor: 0.5,
+        timeout: 1000
+      })).rejects.toThrow('Request failed with status code 500');
+
+      const duration = Date.now() - startTime;
+      expect(duration).toBeLessThan(1500);
+      expect(mockAxios.history.get.length).toBeLessThan(6);
+    });
+
+    it('should succeed if timeout not reached', async () => {
+      mockAxios
+        .onGet('/api/recovers')
+        .replyOnce(500)
+        .onGet('/api/recovers')
+        .replyOnce(200, { success: true });
+
+      const response = await makeRequestWithRetry('GET', '/api/recovers', {
+        retries: 3,
+        backoffFactor: 0.1,
+        timeout: 5000
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(2);
+    });
+
+    it('should stop retrying when delay would exceed timeout', async () => {
+      mockAxios.onGet('/api/long-delay').reply(500);
+
+      const startTime = Date.now();
+
+      await expect(
+        makeRequestWithRetry('GET', '/api/long-delay', {
+          retries: 3,
+          backoffFactor: 2,
+          maxJitterMs: 0,
+          timeout: 1000
+        })
+      ).rejects.toThrow();
+
+      const duration = Date.now() - startTime;
+
+      expect(mockAxios.history.get.length).toBeLessThan(4);
+
+      expect(duration).toBeLessThan(1500);
+    });
+
+    it('should respect timeout on individual request', async () => {
+      mockAxios.onGet('/api/slow-response').timeout();
+
+      await expect(
+        makeRequestWithRetry('GET', '/api/slow-response', {
+          retries: 1,
+          backoffFactor: 0.1,
+          timeout: 500
+        })
+      ).rejects.toThrow();
+
+      expect(mockAxios.history.get.length).toBeGreaterThanOrEqual(1);
+      expect(mockAxios.history.get.length).toBeLessThanOrEqual(2);
+    });
+
+    it('should not retry after timeout even on retryable error', async () => {
+      let requestCount = 0;
+      mockAxios.onGet('/api/retry-after-timeout').reply(() => {
+        requestCount++;
+        return [500, { error: 'Server Error' }];
+      });
+
+      await expect(makeRequestWithRetry('GET', '/api/retry-after-timeout', {
+        retries: 10,
+        backoffFactor: 0.5,
+        timeout: 800
+      })).rejects.toThrow();
+
+      expect(requestCount).toBeLessThan(5);
+      expect(requestCount).toBeGreaterThan(0);
+    });
+
+    it('should work without timeout parameter (backward compatible)', async () => {
+      mockAxios
+        .onGet('/api/no-timeout')
+        .replyOnce(500)
+        .onGet('/api/no-timeout')
+        .replyOnce(200, { success: true });
+
+      const response = await makeRequestWithRetry('GET', '/api/no-timeout', {
+        retries: 1,
+        backoffFactor: 0.1
+      });
+
+      expect(response.status).toBe(200);
+      expect(mockAxios.history.get.length).toBe(2);
+    });
+    });
+
   describe('retry configuration options', () => {
     it('should respect custom retry count', async () => {
       mockAxios.onGet('/api/always-fail').reply(500);
@@ -380,7 +484,7 @@ describe('makeRequestWithRetry', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      // Delays should vary due to jitter
+      // Delays should vary due to jitter. Note: If randomness produces identical values by chance, this will fail.
       const uniqueDelays = new Set(delays.map(d => Math.floor(d / 100) * 100));
       expect(uniqueDelays.size).toBeGreaterThan(1);
     });
@@ -424,6 +528,7 @@ describe('makeRequestWithRetry', () => {
     });
 
     it('should handle timeout errors correctly', async () => {
+      // Simulates a network timeout (request aborted due to taking too long), not an HTTP 408 response from the server.
       mockAxios.onGet('/api/timeout').timeout();
 
       try {
@@ -433,6 +538,21 @@ describe('makeRequestWithRetry', () => {
         });
       } catch (error) {
         expect(error.code).toBe('ECONNABORTED');
+        expect(mockAxios.history.get.length).toBe(2);
+      }
+    });
+
+    it('should handle 408 errors correctly', async () => {
+      // Simulates a 408 Request Timeout error
+      mockAxios.onGet('/api/timeout').reply(408);
+
+      try {
+        await makeRequestWithRetry('GET', '/api/timeout', {
+          retries: 1,
+          backoffFactor: 0.1
+        });
+      } catch (error) {
+        expect(error.response.status).toBe(408);
         expect(mockAxios.history.get.length).toBe(2);
       }
     });
