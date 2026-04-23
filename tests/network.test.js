@@ -1,6 +1,6 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { makeRequestWithRetry, axiosGetWithRetry, axiosPostWithRetry } from '../src/util/network.js';
+import { axiosRequestWithRetry, axiosGetWithRetry, axiosPostWithRetry } from '../src/util/network.js';
 
 // Mock console.log to avoid cluttering test output
 global.console = {
@@ -11,7 +11,7 @@ global.console = {
   debug: jest.fn()
 };
 
-describe('makeRequestWithRetry', () => {
+describe('axiosRequestWithRetry', () => {
   let mockAxios;
 
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe('makeRequestWithRetry', () => {
       const mockData = { id: 1, name: 'Test User' };
       mockAxios.onGet('/api/users/1').reply(200, mockData);
 
-      const response = await makeRequestWithRetry('GET', '/api/users/1', { retries: 0 });
+      const response = await axiosRequestWithRetry('GET', '/api/users/1', { retries: 0 });
 
       expect(response.status).toBe(200);
       expect(response.data).toEqual(mockData);
@@ -39,7 +39,7 @@ describe('makeRequestWithRetry', () => {
     it('should handle query parameters correctly', async () => {
       mockAxios.onGet('/api/users').reply(200, { users: [] });
 
-      await makeRequestWithRetry('GET', '/api/users', {
+      await axiosRequestWithRetry('GET', '/api/users', {
         params: { page: 1, limit: 10, sort: 'desc' },
         retries: 0
       });
@@ -54,7 +54,7 @@ describe('makeRequestWithRetry', () => {
     it('should handle request headers correctly', async () => {
       mockAxios.onGet('/api/secure').reply(200, {});
 
-      await makeRequestWithRetry('GET', '/api/secure', {
+      await axiosRequestWithRetry('GET', '/api/secure', {
         headers: {
           Authorization: 'Bearer token123',
           'X-Custom-Header': 'custom-value'
@@ -70,7 +70,7 @@ describe('makeRequestWithRetry', () => {
       const postData = { name: 'John Doe', email: 'john@example.com', age: 30 };
       mockAxios.onPost('/api/users').reply(201, { id: 1, ...postData });
 
-      const response = await makeRequestWithRetry('POST', '/api/users', {
+      const response = await axiosRequestWithRetry('POST', '/api/users', {
         data: postData,
         headers: { 'Content-Type': 'application/json' },
         retries: 0
@@ -85,7 +85,7 @@ describe('makeRequestWithRetry', () => {
       const updateData = { name: 'Jane Doe' };
       mockAxios.onPut('/api/users/1').reply(200, { id: 1, ...updateData });
 
-      const response = await makeRequestWithRetry('PUT', '/api/users/1', {
+      const response = await axiosRequestWithRetry('PUT', '/api/users/1', {
         data: updateData,
         retries: 0
       });
@@ -97,7 +97,7 @@ describe('makeRequestWithRetry', () => {
     it('should handle DELETE requests', async () => {
       mockAxios.onDelete('/api/users/1').reply(204, null);
 
-      const response = await makeRequestWithRetry('DELETE', '/api/users/1', { retries: 0 });
+      const response = await axiosRequestWithRetry('DELETE', '/api/users/1', { retries: 0 });
 
       expect(response.status).toBe(204);
       expect(mockAxios.history.delete.length).toBe(1);
@@ -112,7 +112,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/unstable')
         .replyOnce(200, { success: true, data: 'Recovered data' });
 
-      const response = await makeRequestWithRetry('GET', '/api/unstable', {
+      const response = await axiosRequestWithRetry('GET', '/api/unstable', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -132,7 +132,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/gateway')
         .replyOnce(200, { status: 'ok' });
 
-      const response = await makeRequestWithRetry('GET', '/api/gateway', {
+      const response = await axiosRequestWithRetry('GET', '/api/gateway', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -148,7 +148,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/service')
         .replyOnce(200, { healthy: true });
 
-      const response = await makeRequestWithRetry('GET', '/api/service', {
+      const response = await axiosRequestWithRetry('GET', '/api/service', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -164,7 +164,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/timeout')
         .replyOnce(200, { completed: true });
 
-      const response = await makeRequestWithRetry('GET', '/api/timeout', {
+      const response = await axiosRequestWithRetry('GET', '/api/timeout', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -180,7 +180,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/rate-limited')
         .replyOnce(200, { success: true });
 
-      const response = await makeRequestWithRetry('GET', '/api/rate-limited', {
+      const response = await axiosRequestWithRetry('GET', '/api/rate-limited', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -196,7 +196,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/network-error')
         .replyOnce(200, { recovered: true });
 
-      const response = await makeRequestWithRetry('GET', '/api/network-error', {
+      const response = await axiosRequestWithRetry('GET', '/api/network-error', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -216,7 +216,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/retry-multiple')
         .replyOnce(200, { finally: 'success' });
 
-      const response = await makeRequestWithRetry('GET', '/api/retry-multiple', {
+      const response = await axiosRequestWithRetry('GET', '/api/retry-multiple', {
         retries: 3,
         backoffFactor: 0.1
       });
@@ -230,7 +230,7 @@ describe('makeRequestWithRetry', () => {
     it('should not retry on 400 Bad Request', async () => {
       mockAxios.onGet('/api/bad-request').reply(400, { error: 'Bad Request' });
 
-      await expect(makeRequestWithRetry('GET', '/api/bad-request', {
+      await expect(axiosRequestWithRetry('GET', '/api/bad-request', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -241,7 +241,7 @@ describe('makeRequestWithRetry', () => {
     it('should not retry on 401 Unauthorized', async () => {
       mockAxios.onGet('/api/unauthorized').reply(401, { error: 'Unauthorized' });
 
-      await expect(makeRequestWithRetry('GET', '/api/unauthorized', {
+      await expect(axiosRequestWithRetry('GET', '/api/unauthorized', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -252,7 +252,7 @@ describe('makeRequestWithRetry', () => {
     it('should not retry on 403 Forbidden', async () => {
       mockAxios.onGet('/api/forbidden').reply(403, { error: 'Forbidden' });
 
-      await expect(makeRequestWithRetry('GET', '/api/forbidden', {
+      await expect(axiosRequestWithRetry('GET', '/api/forbidden', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -263,7 +263,7 @@ describe('makeRequestWithRetry', () => {
     it('should not retry on 404 Not Found', async () => {
       mockAxios.onGet('/api/not-found').reply(404, { error: 'Not Found' });
 
-      await expect(makeRequestWithRetry('GET', '/api/not-found', {
+      await expect(axiosRequestWithRetry('GET', '/api/not-found', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -274,7 +274,7 @@ describe('makeRequestWithRetry', () => {
     it('should not retry on 409 Conflict', async () => {
       mockAxios.onPost('/api/conflict').reply(409, { error: 'Conflict' });
 
-      await expect(makeRequestWithRetry('POST', '/api/conflict', {
+      await expect(axiosRequestWithRetry('POST', '/api/conflict', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -287,7 +287,7 @@ describe('makeRequestWithRetry', () => {
     it('should NOT retry GET method on client errors (403)', async () => {
       mockAxios.onGet('/api/forbidden-get').reply(403, { error: 'Forbidden' });
 
-      await expect(makeRequestWithRetry('GET', '/api/forbidden-get', {
+      await expect(axiosRequestWithRetry('GET', '/api/forbidden-get', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -298,7 +298,7 @@ describe('makeRequestWithRetry', () => {
     it('should not retry POST method on non-retryable status codes', async () => {
       mockAxios.onPost('/api/forbidden-post').reply(403, { error: 'Forbidden' });
 
-      await expect(makeRequestWithRetry('POST', '/api/forbidden-post', {
+      await expect(axiosRequestWithRetry('POST', '/api/forbidden-post', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -309,7 +309,7 @@ describe('makeRequestWithRetry', () => {
     it('should not retry PUT method on non-retryable status codes', async () => {
       mockAxios.onPut('/api/forbidden-put').reply(403, { error: 'Forbidden' });
 
-      await expect(makeRequestWithRetry('PUT', '/api/forbidden-put', {
+      await expect(axiosRequestWithRetry('PUT', '/api/forbidden-put', {
         retries: 3,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -324,7 +324,7 @@ describe('makeRequestWithRetry', () => {
 
       const startTime = Date.now();
 
-      await expect(makeRequestWithRetry('GET', '/api/slow', {
+      await expect(axiosRequestWithRetry('GET', '/api/slow', {
         retries: 5,
         backoffFactor: 0.5,
         timeout: 1000
@@ -342,7 +342,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/recovers')
         .replyOnce(200, { success: true });
 
-      const response = await makeRequestWithRetry('GET', '/api/recovers', {
+      const response = await axiosRequestWithRetry('GET', '/api/recovers', {
         retries: 3,
         backoffFactor: 0.1,
         timeout: 5000
@@ -358,7 +358,7 @@ describe('makeRequestWithRetry', () => {
       const startTime = Date.now();
 
       await expect(
-        makeRequestWithRetry('GET', '/api/long-delay', {
+        axiosRequestWithRetry('GET', '/api/long-delay', {
           retries: 3,
           backoffFactor: 2,
           maxJitterMs: 0,
@@ -377,7 +377,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/slow-response').timeout();
 
       await expect(
-        makeRequestWithRetry('GET', '/api/slow-response', {
+        axiosRequestWithRetry('GET', '/api/slow-response', {
           retries: 1,
           backoffFactor: 0.1,
           timeout: 500
@@ -395,7 +395,7 @@ describe('makeRequestWithRetry', () => {
         return [500, { error: 'Server Error' }];
       });
 
-      await expect(makeRequestWithRetry('GET', '/api/retry-after-timeout', {
+      await expect(axiosRequestWithRetry('GET', '/api/retry-after-timeout', {
         retries: 10,
         backoffFactor: 0.5,
         timeout: 800
@@ -412,7 +412,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/no-timeout')
         .replyOnce(200, { success: true });
 
-      const response = await makeRequestWithRetry('GET', '/api/no-timeout', {
+      const response = await axiosRequestWithRetry('GET', '/api/no-timeout', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -426,7 +426,7 @@ describe('makeRequestWithRetry', () => {
     it('should respect custom retry count', async () => {
       mockAxios.onGet('/api/always-fail').reply(500);
 
-      await expect(makeRequestWithRetry('GET', '/api/always-fail', {
+      await expect(axiosRequestWithRetry('GET', '/api/always-fail', {
         retries: 2,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -438,7 +438,7 @@ describe('makeRequestWithRetry', () => {
     it('should handle zero retries (no retry attempts)', async () => {
       mockAxios.onGet('/api/fail-once').reply(500);
 
-      await expect(makeRequestWithRetry('GET', '/api/fail-once', {
+      await expect(axiosRequestWithRetry('GET', '/api/fail-once', {
         retries: 0,
         backoffFactor: 0.1
       })).rejects.toThrow();
@@ -450,7 +450,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/backoff-test').reply(500);
 
       const startTime = Date.now();
-      const promise = makeRequestWithRetry('GET', '/api/backoff-test', {
+      const promise = axiosRequestWithRetry('GET', '/api/backoff-test', {
         retries: 2,
         backoffFactor: 0.5,
         maxJitterMs: 0 // Disable jitter for predictable testing
@@ -471,7 +471,7 @@ describe('makeRequestWithRetry', () => {
       for (let i = 0; i < 3; i++) {
         const startTime = Date.now();
         try {
-          await makeRequestWithRetry('GET', '/api/jitter-test', {
+          await axiosRequestWithRetry('GET', '/api/jitter-test', {
             retries: 1,
             backoffFactor: 0.1,
             maxJitterMs: 500
@@ -495,7 +495,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/exhaust-retries').reply(500);
 
       try {
-        await makeRequestWithRetry('GET', '/api/exhaust-retries', {
+        await axiosRequestWithRetry('GET', '/api/exhaust-retries', {
           retries: 1,
           backoffFactor: 0.1
         });
@@ -516,7 +516,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/preserve-error').reply(500, errorResponse);
 
       try {
-        await makeRequestWithRetry('GET', '/api/preserve-error', {
+        await axiosRequestWithRetry('GET', '/api/preserve-error', {
           retries: 1,
           backoffFactor: 0.1
         });
@@ -532,7 +532,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/timeout').timeout();
 
       try {
-        await makeRequestWithRetry('GET', '/api/timeout', {
+        await axiosRequestWithRetry('GET', '/api/timeout', {
           retries: 1,
           backoffFactor: 0.1
         });
@@ -547,7 +547,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/timeout').reply(408);
 
       try {
-        await makeRequestWithRetry('GET', '/api/timeout', {
+        await axiosRequestWithRetry('GET', '/api/timeout', {
           retries: 1,
           backoffFactor: 0.1
         });
@@ -561,7 +561,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/connection-refused').networkError();
 
       try {
-        await makeRequestWithRetry('GET', '/api/connection-refused', {
+        await axiosRequestWithRetry('GET', '/api/connection-refused', {
           retries: 1,
           backoffFactor: 0.1
         });
@@ -576,7 +576,7 @@ describe('makeRequestWithRetry', () => {
     it('should log successful request attempts', async () => {
       mockAxios.onGet('/api/log-success').reply(200, { data: 'test' });
 
-      await makeRequestWithRetry('GET', '/api/log-success', { retries: 0 });
+      await axiosRequestWithRetry('GET', '/api/log-success', { retries: 0 });
 
       expect(console.log).toHaveBeenCalledWith(
         expect.stringMatching(/\[Attempt 1\/1\] Request to GET \/api\/log-success succeeded in \d+ms/)
@@ -590,7 +590,7 @@ describe('makeRequestWithRetry', () => {
         .onGet('/api/log-retry')
         .replyOnce(200);
 
-      await makeRequestWithRetry('GET', '/api/log-retry', {
+      await axiosRequestWithRetry('GET', '/api/log-retry', {
         retries: 1,
         backoffFactor: 0.1
       });
@@ -607,7 +607,7 @@ describe('makeRequestWithRetry', () => {
       mockAxios.onGet('/api/no-more-retries').reply(500);
 
       try {
-        await makeRequestWithRetry('GET', '/api/no-more-retries', {
+        await axiosRequestWithRetry('GET', '/api/no-more-retries', {
           retries: 1,
           backoffFactor: 0.1
         });
@@ -623,7 +623,7 @@ describe('makeRequestWithRetry', () => {
     it('should handle empty response data', async () => {
       mockAxios.onGet('/api/empty').reply(204, null);
 
-      const response = await makeRequestWithRetry('GET', '/api/empty', { retries: 0 });
+      const response = await axiosRequestWithRetry('GET', '/api/empty', { retries: 0 });
 
       expect(response.status).toBe(204);
       expect(response.data).toBeNull();
@@ -633,7 +633,7 @@ describe('makeRequestWithRetry', () => {
       const largeData = { items: Array(1000).fill({ id: 1, name: 'Test' }) };
       mockAxios.onGet('/api/large').reply(200, largeData);
 
-      const response = await makeRequestWithRetry('GET', '/api/large', { retries: 0 });
+      const response = await axiosRequestWithRetry('GET', '/api/large', { retries: 0 });
 
       expect(response.data.items.length).toBe(1000);
     });
@@ -642,7 +642,7 @@ describe('makeRequestWithRetry', () => {
       const specialUrl = '/api/users?filter=name:John%20Doe&tags=javascript,nodejs';
       mockAxios.onGet(specialUrl).reply(200, {});
 
-      await makeRequestWithRetry('GET', specialUrl, { retries: 0 });
+      await axiosRequestWithRetry('GET', specialUrl, { retries: 0 });
 
       expect(mockAxios.history.get[0].url).toBe(specialUrl);
     });
@@ -659,8 +659,8 @@ describe('makeRequestWithRetry', () => {
         .replyOnce(200, { id: 2 });
 
       const [response1, response2] = await Promise.all([
-        makeRequestWithRetry('GET', '/api/request1', { retries: 1, backoffFactor: 0.1 }),
-        makeRequestWithRetry('GET', '/api/request2', { retries: 1, backoffFactor: 0.1 })
+        axiosRequestWithRetry('GET', '/api/request1', { retries: 1, backoffFactor: 0.1 }),
+        axiosRequestWithRetry('GET', '/api/request2', { retries: 1, backoffFactor: 0.1 })
       ]);
 
       expect(response1.data).toEqual({ id: 1 });
@@ -671,10 +671,10 @@ describe('makeRequestWithRetry', () => {
 
   // Verify the wrappers work as expected
   describe('wrapper convenience functions', () => {
-    it('axiosGetWithRetry should work like makeRequestWithRetry with GET', async () => {
+    it('axiosGetWithRetry should work like axiosRequestWithRetry with GET', async () => {
       mockAxios.onGet('/api/test').reply(200, { data: 'test' });
 
-      const result1 = await makeRequestWithRetry('GET', '/api/test');
+      const result1 = await axiosRequestWithRetry('GET', '/api/test');
       const result2 = await axiosGetWithRetry('/api/test');
 
       expect(result1.data).toEqual(result2.data);
@@ -700,6 +700,150 @@ describe('makeRequestWithRetry', () => {
 
       expect(response.data).toEqual({ ok: true });
       expect(mockAxios.history.get.length).toBe(2);
+    });
+  });
+
+  describe('wrapper functions with various parameter combinations', () => {
+    it('axiosGetWithRetry: no config or retry', async () => {
+      mockAxios.onGet('/api/get-no-config').reply(200, { data: 'test' });
+
+      const response = await axiosGetWithRetry('/api/get-no-config');
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({ data: 'test' });
+      expect(mockAxios.history.get.length).toBe(1);
+    });
+
+    it('axiosGetWithRetry: config and retry settings', async () => {
+      mockAxios
+        .onGet('/api/get-with-config')
+        .replyOnce(500)
+        .onGet('/api/get-with-config')
+        .replyOnce(200, { success: true });
+
+      const response = await axiosGetWithRetry(
+        '/api/get-with-config',
+        {
+          headers: { 'X-Custom-Header': 'custom-value' },
+          params: { page: 1, limit: 10 }
+        },
+        {
+          retries: 1,
+          backoffFactor: 0.1
+        }
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({ success: true });
+      expect(mockAxios.history.get.length).toBe(2);
+      // Verify headers and params were passed correctly
+      expect(mockAxios.history.get[0].headers['X-Custom-Header']).toBe('custom-value');
+      expect(mockAxios.history.get[0].params).toEqual({ page: 1, limit: 10 });
+    });
+
+    it('axiosPostWithRetry: data and config and retry', async () => {
+      const postData = { name: 'John Doe', email: 'john@example.com' };
+      mockAxios
+        .onPost('/api/post-with-all')
+        .replyOnce(500)
+        .onPost('/api/post-with-all')
+        .replyOnce(201, { id: 1, ...postData });
+
+      const response = await axiosPostWithRetry(
+        '/api/post-with-all',
+        postData,
+        {
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': 'test-key' },
+          params: { validate: true }
+        },
+        {
+          retries: 1,
+          backoffFactor: 0.1,
+          maxJitterMs: 0
+        }
+      );
+
+      expect(response.status).toBe(201);
+      expect(response.data).toHaveProperty('id', 1);
+      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual(postData);
+      expect(mockAxios.history.post[0].headers['X-API-Key']).toBe('test-key');
+      expect(mockAxios.history.post[0].params).toEqual({ validate: true });
+      expect(mockAxios.history.post.length).toBe(2);
+    });
+
+    it('axiosPostWithRetry: empty data, config, empty retry', async () => {
+      mockAxios.onPost('/api/post-empty-data').reply(200, { received: null });
+
+      const response = await axiosPostWithRetry(
+        '/api/post-empty-data',
+        {},
+        { headers: { 'Content-Type': 'application/json' } },
+        {}
+      );
+
+      expect(response.status).toBe(200);
+      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual({});
+      expect(mockAxios.history.post.length).toBe(1);
+    });
+
+    it('axiosPostWithRetry: empty data, config, retry', async () => {
+      mockAxios
+        .onPost('/api/post-empty-data-retry')
+        .replyOnce(503)
+        .onPost('/api/post-empty-data-retry')
+        .replyOnce(200, { status: 'recovered' });
+
+      const response = await axiosPostWithRetry(
+        '/api/post-empty-data-retry',
+        {},
+        { headers: { 'X-Test': 'value' }, params: { retry: true } },
+        { retries: 1, backoffFactor: 0.1 }
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({ status: 'recovered' });
+      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual({});
+      expect(mockAxios.history.post[0].headers['X-Test']).toBe('value');
+      expect(mockAxios.history.post[0].params).toEqual({ retry: true });
+      expect(mockAxios.history.post.length).toBe(2);
+    });
+
+    it('axiosPostWithRetry: data, config, retry', async () => {
+      const postData = { action: 'update', value: 42 };
+      mockAxios
+        .onPost('/api/post-all-three')
+        .replyOnce(502)
+        .onPost('/api/post-all-three')
+        .replyOnce(200, { processed: true, value: 42 });
+
+      const response = await axiosPostWithRetry(
+        '/api/post-all-three',
+        postData,
+        {
+          headers: { 'Authorization': 'Bearer token123', 'X-Request-ID': 'req-123' },
+          params: { format: 'json', pretty: true },
+          timeout: 5000
+        },
+        {
+          retries: 2,
+          backoffFactor: 0.2,
+          maxJitterMs: 100,
+          timeout: 10000
+        }
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({ processed: true, value: 42 });
+      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual(postData);
+      expect(mockAxios.history.post[0].headers['Authorization']).toBe('Bearer token123');
+      expect(mockAxios.history.post[0].headers['X-Request-ID']).toBe('req-123');
+      expect(mockAxios.history.post[0].params).toEqual({ format: 'json', pretty: true });
+      expect(mockAxios.history.post.length).toBe(2);
+
+      // Verify retry happened
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Retrying')
+      );
     });
   });
 });

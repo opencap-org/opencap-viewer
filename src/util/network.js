@@ -16,7 +16,7 @@ import {apiError} from './ErrorMessage';
  * @param {number} options.timeout - Overall timeout in milliseconds (default: null)
  * @returns {Promise<Object>} Axios response object
  */
-export async function makeRequestWithRetry(method, url, options = {}) {
+export async function axiosRequestWithRetry(method, url, options = {}) {
   const {
     headers = null,
     data = null,
@@ -192,7 +192,7 @@ export async function makeRequestWithRetry(method, url, options = {}) {
 }
 
 export async function axiosGetWithRetry(url, config = {}, retryConfig = {}) {
-  return makeRequestWithRetry('GET', url, {
+  return axiosRequestWithRetry('GET', url, {
     ...config,  // headers, params, timeout from axios config
     ...retryConfig,  // retries, backoffFactor, etc.
     data: null  // GET doesn't have body
@@ -200,7 +200,7 @@ export async function axiosGetWithRetry(url, config = {}, retryConfig = {}) {
 }
 
 export async function axiosPostWithRetry(url, data = {}, config = {}, retryConfig = {}) {
-  return makeRequestWithRetry('POST', url, {
+  return axiosRequestWithRetry('POST', url, {
     ...config,
     data,
     ...retryConfig
