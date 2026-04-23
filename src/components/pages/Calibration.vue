@@ -121,7 +121,7 @@ import {mapActions, mapMutations, mapState} from 'vuex'
 import { apiError, apiSuccess, apiErrorRes, apiInfo, clearToastMessages } from '@/util/ErrorMessage.js'
 import MainLayout from '@/layout/MainLayout'
 import { playCalibrationFinishedSound } from "@/util/SoundMessage.js";
-import { makeRequestWithRetry } from "@/util/network.js";
+import { axiosGetWithRetry } from "@/util/network.js";
 
 export default {
   name: 'Calibration',
@@ -181,7 +181,7 @@ export default {
           placement: this.placement
         })
         try {
-          const resUpdate = await makeRequestWithRetry('GET', `/sessions/${this.session.id}/set_metadata/`, {
+          const resUpdate = await axiosGetWithRetry(`/sessions/${this.session.id}/set_metadata/`, {
             params: {
               cb_rows: this.rows,
               cb_cols: this.cols,
@@ -190,7 +190,7 @@ export default {
               }
             })
 
-          const res = await makeRequestWithRetry('GET', `/sessions/${this.session.id}/record/`, {
+          const res = await axiosGetWithRetry(`/sessions/${this.session.id}/record/`, {
             params: {
               name: 'calibration',
             }
@@ -205,13 +205,13 @@ export default {
     },
     async pollStatus() {
       try {
-        const res = await makeRequestWithRetry('GET', `/sessions/${this.session.id}/calibration_img/`)
+        const res = await axiosGetWithRetry(`/sessions/${this.session.id}/calibration_img/`)
         switch (res.data.status) {
           case "done": {
             clearTimeout(this.timeoutID);
             clearToastMessages()
 
-            const resCalibratedCameras = await makeRequestWithRetry('GET', `/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+            const resCalibratedCameras = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
 
             this.n_calibrated_cameras = resCalibratedCameras.data.data
 
@@ -232,7 +232,7 @@ export default {
           case "error": {
             clearTimeout(this.timeoutID);
             clearToastMessages()
-            const res_trial = await makeRequestWithRetry('GET', `/trials/${this.trialId}/`)
+            const res_trial = await axiosGetWithRetry(`/trials/${this.trialId}/`)
             apiErrorRes(res_trial, 'Finished with error')
             this.busy = false;
 
@@ -244,7 +244,7 @@ export default {
               res.data.status === "processing" &&
               res.data.status !== this.lastPolledStatus
             ) {
-              const resCalibratedCameras = await makeRequestWithRetry('GET', `/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+              const resCalibratedCameras = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
 
               this.n_calibrated_cameras = resCalibratedCameras.data.data
 
@@ -267,7 +267,7 @@ export default {
         }
 
         // Get n_cameras_connected.
-        const res_status = await makeRequestWithRetry('GET', `/sessions/${this.session.id}/status/`, {})
+        const res_status = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {})
 
         this.n_videos_uploaded = res_status.data.n_videos_uploaded
         this.n_cameras_connected = res_status.data.n_cameras_connected

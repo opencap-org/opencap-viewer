@@ -103,9 +103,9 @@ export async function makeRequestWithRetry(method, url, options = {}) {
         if (!error.response) {
           apiError('There was a network error. Please check your internet connection and try again.');
         } else if (error.response.status >= 500) {
-          apiError('The server encountered an error. Please try again later.');
+          apiError('The server encountered an error. Please try again.');
         } else if (error.response.status === 429) {
-          apiError('Too many requests. Please wait a moment and try again.');
+          apiError('Too many requests. Please wait a moment and try again later.');
         } else if (error.response.status === 408) {
           apiError('The request timed out. Please try again.');
         } else {
@@ -189,4 +189,20 @@ export async function makeRequestWithRetry(method, url, options = {}) {
 
   // This should never be reached, but just in case
   throw lastError;
+}
+
+export async function axiosGetWithRetry(url, config = {}, retryConfig = {}) {
+  return makeRequestWithRetry('GET', url, {
+    ...config,  // headers, params, timeout from axios config
+    ...retryConfig,  // retries, backoffFactor, etc.
+    data: null  // GET doesn't have body
+  });
+}
+
+export async function axiosPostWithRetry(url, data = {}, config = {}, retryConfig = {}) {
+  return makeRequestWithRetry('POST', url, {
+    ...config,
+    data,
+    ...retryConfig
+  });
 }

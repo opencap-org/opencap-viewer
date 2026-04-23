@@ -1,6 +1,6 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { makeRequestWithRetry } from '../src/util/network.js';
+import { makeRequestWithRetry, axiosGetWithRetry, axiosPostWithRetry } from '../src/util/network.js';
 
 // Mock console.log to avoid cluttering test output
 global.console = {
@@ -666,6 +666,40 @@ describe('makeRequestWithRetry', () => {
       expect(response1.data).toEqual({ id: 1 });
       expect(response2.data).toEqual({ id: 2 });
       expect(mockAxios.history.get.length).toBe(4);
+    });
+  });
+
+  // Verify the wrappers work as expected
+  describe('wrapper convenience functions', () => {
+    it('axiosGetWithRetry should work like makeRequestWithRetry with GET', async () => {
+      mockAxios.onGet('/api/test').reply(200, { data: 'test' });
+
+      const result1 = await makeRequestWithRetry('GET', '/api/test');
+      const result2 = await axiosGetWithRetry('/api/test');
+
+      expect(result1.data).toEqual(result2.data);
+    });
+
+    it('axiosPostWithRetry should pass data correctly', async () => {
+      const postData = { name: 'test' };
+      mockAxios.onPost('/api/test').reply(200, { received: postData });
+
+      const response = await axiosPostWithRetry('/api/test', postData);
+
+      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual(postData);
+    });
+
+    it('should preserve retry behavior', async () => {
+      mockAxios
+        .onGet('/api/retry')
+        .replyOnce(500)
+        .onGet('/api/retry')
+        .replyOnce(200, { ok: true });
+
+      const response = await axiosGetWithRetry('/api/retry', {}, { retries: 1, backoffFactor: 0.1 });
+
+      expect(response.data).toEqual({ ok: true });
+      expect(mockAxios.history.get.length).toBe(2);
     });
   });
 });
