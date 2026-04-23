@@ -192,17 +192,39 @@ export async function axiosRequestWithRetry(method, url, options = {}) {
 }
 
 export async function axiosGetWithRetry(url, config = {}, retryConfig = {}) {
+  // Default retry configuration for GET requests
+  const defaultGetRetryConfig = {
+    retries: 4,
+    backoffFactor: 0.5,
+    maxJitterMs: 200,
+    timeout: 10000
+  };
+
+  // Merge provided retryConfig with defaults (provided config takes precedence and overrides defaults)
+  const mergedRetryConfig = { ...defaultGetRetryConfig, ...retryConfig };
+
   return axiosRequestWithRetry('GET', url, {
     ...config,  // headers, params, timeout from axios config
-    ...retryConfig,  // retries, backoffFactor, etc.
+    ...mergedRetryConfig, // retries, backoffFactor, etc.
     data: null  // GET doesn't have body
   });
 }
 
 export async function axiosPostWithRetry(url, data = {}, config = {}, retryConfig = {}) {
+  // Default retry configuration for POST requests
+  const defaultPostRetryConfig = {
+    retries: 3,
+    backoffFactor: 1,
+    maxJitterMs: 500,
+    timeout: 30000
+  };
+
+  // Merge provided retryConfig with defaults (provided config takes precedence and overrides defaults)
+  const mergedRetryConfig = { ...defaultPostRetryConfig, ...retryConfig };
+
   return axiosRequestWithRetry('POST', url, {
-    ...config,
-    data,
-    ...retryConfig
+    ...config, // headers, params, timeout from axios config
+    data, // data included in the request
+    ...mergedRetryConfig // retries, backoffFactor, etc.
   });
 }
