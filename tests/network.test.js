@@ -465,6 +465,13 @@ describe('axiosRequestWithRetry', () => {
     });
 
     it('should add random jitter to delays', async () => {
+      // Mock Math.random to return predictable values
+      const randomSpy = jest
+        .spyOn(Math, 'random')
+        .mockReturnValueOnce(0.1)  // e.g., 50ms jitter (500 * 0.1)
+        .mockReturnValueOnce(0.5)  // 250ms jitter
+        .mockReturnValueOnce(0.9); // 450ms jitter
+
       mockAxios.onGet('/api/jitter-test').reply(500);
 
       const delays = [];
@@ -484,9 +491,14 @@ describe('axiosRequestWithRetry', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      // Delays should vary due to jitter. Note: If randomness produces identical values by chance, this will fail.
-      const uniqueDelays = new Set(delays.map(d => Math.floor(d / 100) * 100));
-      expect(uniqueDelays.size).toBeGreaterThan(1);
+      // Assert that random was called exactly 3 times
+      expect(randomSpy).toHaveBeenCalledTimes(3);
+
+      // Assert delays are unique and match expected jitter (roughly)
+      expect(delays).toHaveLength(3);
+      expect(new Set(delays).size).toBe(3); // all unique
+
+      randomSpy.mockRestore();
     });
   });
 
