@@ -283,6 +283,33 @@
                       </v-card-text>
 
                       <v-card-title class="justify-center data-title">
+                        <span class="mr-2">Synchronization Algorithm Version</span>
+                        <v-tooltip bottom="" max-width="500px">
+                          <template v-slot:activator="{ on }">
+                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                          </template>
+                          OpenCap uses a synchronization algorithm to synchronize the videos recorded using multiple cameras.
+                          <br><br>
+                          The latest version (v1.1, default) is more accurate and more robust when the user punches one hand
+                          in the air above their shoulders (it will automatically use the best detected punch from either hand)
+                          and brings it back down at some point during the trial. We recommend using it for studies involving
+                          treadmill gait or fairly static movements. With no hand punch, it behaves the same as v1.0.
+                          <br><br>
+                          The original version (v1.0) may have lower accuracy when synchronizing movements with hand punch.
+                          Otherwise, it behaves the same as v1.1 in any other instance.
+                        </v-tooltip>
+                      </v-card-title>
+                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                        <v-select
+                            v-model="synchronization_version"
+                            label="Select synchronization algorithm version"
+                            :items="synchronization_versions"
+                            item-text="text"
+                            item-value="value"
+                          />
+                      </v-card-text>
+
+                      <v-card-title class="justify-center data-title">
                         <span class="mr-2">Filter frequency</span>
                         <v-tooltip bottom="" max-width="500px">
                           <template v-slot:activator="{ on }">
@@ -446,6 +473,11 @@ export default {
       augmenter_models: [        
         {"text": "v0.3 (default)", "value": "v0.3"},
         {"text": "v0.2 (old model, default until 07-30-2023)", "value": "v0.2"},
+      ],
+      synchronization_version: '1.1',
+      synchronization_versions: [
+        {"text": "v1.1 (default)", "value": "1.1"},
+        {"text": "v1.0 (old model, default until 05-07-2026)", "value": "1.0"},
       ],
       filter_frequency: 'default',
       filter_frequencies: [        
@@ -744,6 +776,7 @@ export default {
                     settings_openSimModel: this.openSimModel,
                     settings_augmenter_model: this.augmenter_model,
                     settings_filter_frequency: this.filter_frequency,
+                    settings_synchronization_version: this.synchronization_version,
                   },
                 }
               );
