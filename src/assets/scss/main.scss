@@ -587,6 +587,14 @@ body,
   }
 }
 
+.v-dialog__content {
+  z-index: 2100 !important;
+}
+
+.v-overlay.v-overlay--active {
+  z-index: 2090 !important;
+}
+
 /* Shared base for all dialogs */
 .app-dialog,
 .confirm-dialog {
