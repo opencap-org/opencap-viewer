@@ -81,7 +81,11 @@
                   <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
-                  <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">{{ displayDeviceCount }} devices are recording, do not refresh</p>
+                  <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
+                    {{ displayDeviceCount }} devices are recording
+                    <template v-if="sessionFramerate">at {{ sessionFramerate }} Hz</template>, 
+                    do not refresh
+                  </p>
                   <p v-if="state === 'processing'">{{ n_videos_uploaded }} of {{ displayDeviceCount }} videos uploaded, do not refresh.</p>
               </ValidationObserver>
 
@@ -1107,6 +1111,10 @@
           const s = this.session;
           if (!s) return 'Session';
           return s.meta?.sessionName || s.sessionName || (s.id ? String(s.id).split('-')[0] : '') || 'Session';
+        },
+        sessionFramerate() {
+          const framerate = this.session?.meta?.settings?.framerate ?? null;
+          return framerate !== null ? Number(framerate) : null;
         },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
@@ -2409,16 +2417,18 @@
       recordingTimeLimit() {
         // Default value is 60.
         // Set -1 for no limit.
-        var timelimit = 60
-  
-        // If we know the framerate, we change time limit accordingly.
-        if ('meta' in this.session && 'settings' in this.session.meta && 'framerate' in this.session.meta.settings) {
-          var framerate = this.session.meta.settings.framerate
-          if (framerate == 60 || framerate == 120 || framerate == 240)
-            timelimit = 60 / (framerate / 60)
+        const DEFAULT_TIME_LIMIT = 60;
+        const VALID_FRAMERATES = [60, 120, 240];
+    
+        let timelimit = DEFAULT_TIME_LIMIT;
+        const framerate = this.sessionFramerate;
+        
+        // Adjust timelimit for valid framerates
+        if (framerate !== null && VALID_FRAMERATES.includes(framerate)) {
+          timelimit = 60 / (framerate / 60);
         }
-  
-        return timelimit
+        
+        return timelimit;
       },
       toggleSessionMenuButtons() {
         this.showSessionMenuButtons = !this.showSessionMenuButtons;
