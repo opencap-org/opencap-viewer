@@ -309,82 +309,35 @@
     </v-dialog>
     
     <!-- Trash Session Dialog -->
-    <v-dialog
+    <ConfirmDialog
         v-model="remove_dialog"
-        content-class="confirm-dialog"
-        max-width="500"
         :fullscreen="$vuetify.breakpoint.smAndDown"
-        :retain-focus="false">
-      <v-card>
-        <v-card-text class="pt-4">
-          <v-row class="m-0">
-            <v-col cols="12" sm="2">
-              <v-icon x-large color="red">mdi-close-circle</v-icon>
-            </v-col>
-            <v-col cols="12" sm="10">
-              <p>
-                Do you want to trash session <code>{{selectedSessionForDelete?.id}}</code>?
-                You will be able to restore it for 30 days. After that,
-                this session will be permanently removed.
-              </p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn
-            color="blue darken-1"
-            text
-            @click="remove_dialog = false; selectedSessionForDelete = null">
-            No
-          </v-btn>
-          <v-btn
-            color="red darken-1"
-            text
-            @click="remove_dialog = false; trashSession(selectedSessionForDelete?.id); selectedSessionForDelete = null">
-            Yes
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+        :retain-focus="false"
+        icon="mdi-close-circle"
+        icon-color="red"
+        confirm-color="red darken-1"
+        @cancel="remove_dialog = false; selectedSessionForDelete = null"
+        @confirm="remove_dialog = false; trashSession(selectedSessionForDelete?.id); selectedSessionForDelete = null">
+      <p>
+        Do you want to trash session <code>{{selectedSessionForDelete?.id}}</code>?
+        You will be able to restore it for 30 days. After that,
+        this session will be permanently removed.
+      </p>
+    </ConfirmDialog>
     
     <!-- Restore Session Dialog -->
-    <v-dialog
+    <ConfirmDialog
         v-model="restore_dialog"
-        content-class="confirm-dialog"
-        max-width="500"
         :fullscreen="$vuetify.breakpoint.smAndDown"
-        :retain-focus="false">
-      <v-card>
-        <v-card-text class="pt-4">
-          <v-row class="m-0">
-            <v-col cols="12" sm="2">
-              <v-icon x-large color="green">mdi-undo-variant</v-icon>
-            </v-col>
-            <v-col cols="12" sm="10">
-              <p>
-                Do you want to restore session <code>{{selectedSessionForDelete?.id}}</code>?
-              </p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn
-            color="blue darken-1"
-            text
-            @click="restore_dialog = false; selectedSessionForDelete = null">
-            No
-          </v-btn>
-          <v-btn
-            color="green darken-1"
-            text
-            @click="restore_dialog = false; restoreSession(selectedSessionForDelete?.id); selectedSessionForDelete = null">
-            Yes
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+        :retain-focus="false"
+        icon="mdi-undo-variant"
+        icon-color="green"
+        @cancel="restore_dialog = false; selectedSessionForDelete = null"
+        @confirm="restore_dialog = false; restoreSession(selectedSessionForDelete?.id); selectedSessionForDelete = null">
+      <p>
+        Do you want to restore session <code>{{selectedSessionForDelete?.id}}</code>?
+      </p>
+    </ConfirmDialog>
       
 <!--    <div class="d-flex table-info-footer">-->
 <!--      <v-btn-->
@@ -404,9 +357,13 @@ import { formatDate } from '@/util/DateFormat.js'
 import axios from 'axios'
 import router from '@/router'
 import Vue from 'vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
 export default {
   name: 'SelectSession',
+  components: {
+    ConfirmDialog
+  },
   created: function () {
       this.loadAnalysisDashboardList()
   },

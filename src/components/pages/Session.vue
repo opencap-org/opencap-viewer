@@ -242,44 +242,23 @@
                       New session
                   </v-btn>
 
-                  <v-dialog
+                  <ConfirmDialog
                       v-model="new_session_confirm_dialog"
-                      content-class="confirm-dialog"
-                      max-width="500"
-                      :fullscreen="$vuetify.breakpoint.smAndDown">
-                      <v-card>
-                          <v-card-text class="pt-4">
-                              <v-row class="m-0">
-                                  <v-col cols="12" sm="2">
-                                      <v-icon x-large color="orange">mdi-alert-circle</v-icon>
-                                  </v-col>
-                                  <v-col cols="12" sm="10">
-                                      <p class="mb-2">
-                                          Starting a new session will require calibration again.
-                                      </p>
-                                      <p class="mb-0">
-                                          To keep the current calibration and recording setup, choose New session, same setup instead.
-                                      </p>
-                                  </v-col>
-                              </v-row>
-                          </v-card-text>
-                          <v-card-actions>
-                              <v-spacer></v-spacer>
-                              <v-btn
-                                  color="blue darken-1"
-                                  text
-                                  @click="new_session_confirm_dialog = false">
-                                  Cancel
-                              </v-btn>
-                              <v-btn
-                                  color="orange darken-1"
-                                  text
-                                  @click="confirmNewSession">
-                                  Continue
-                              </v-btn>
-                          </v-card-actions>
-                      </v-card>
-                  </v-dialog>
+                      :fullscreen="$vuetify.breakpoint.smAndDown"
+                      icon="mdi-alert-circle"
+                      icon-color="orange"
+                      cancel-text="Cancel"
+                      confirm-text="Continue"
+                      confirm-color="orange darken-1"
+                      @cancel="new_session_confirm_dialog = false"
+                      @confirm="confirmNewSession">
+                      <p class="mb-2">
+                          Starting a new session will require calibration again.
+                      </p>
+                      <p class="mb-0">
+                          To keep the current calibration and recording setup, choose New session, same setup instead.
+                      </p>
+                  </ConfirmDialog>
   
                   <v-dialog v-model="dialog" content-class="app-dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
                       max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
@@ -710,122 +689,55 @@
       </v-dialog>
 
       <!-- Trash trial dialog (extracted for mobile-friendly behavior) -->
-      <v-dialog
+      <ConfirmDialog
+        v-if="trialForTrashDialog"
         v-model="remove_dialog"
-        v-click-outside="clickOutsideDialogTrialHideMenu"
-        content-class="confirm-dialog"
-        max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown">
-        <v-card>
-          <v-card-text class="pt-4" v-if="trialForTrashDialog">
-            <v-row class="m-0">
-              <v-col cols="12" sm="2">
-                <v-icon x-large color="red">mdi-close-circle</v-icon>
-              </v-col>
-              <v-col cols="12" sm="10">
-                <p>
-                  Do you want to trash trial {{ trialForTrashDialog.name }}?
-                  You will be able to restore it for 30 days. After that,
-                  this trial will be permanently removed.
-                </p>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="blue darken-1"
-              text
-              @click="closeTrashDialog">
-              No
-            </v-btn>
-            <v-btn
-              color="red darken-1"
-              text
-              @click="confirmTrashTrial">
-              Yes
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        :click-outside="clickOutsideDialogTrialHideMenu"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        icon="mdi-close-circle"
+        icon-color="red"
+        confirm-color="red darken-1"
+        @cancel="closeTrashDialog"
+        @confirm="confirmTrashTrial">
+        <p>
+          Do you want to trash trial {{ trialForTrashDialog.name }}?
+          You will be able to restore it for 30 days. After that,
+          this trial will be permanently removed.
+        </p>
+      </ConfirmDialog>
 
       <!-- Restore trial dialog -->
-      <v-dialog
+      <ConfirmDialog
+        v-if="trialForRestoreDialog"
         v-model="restore_dialog"
-        v-click-outside="clickOutsideDialogTrialHideMenu"
-        content-class="confirm-dialog"
-        max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown">
-        <v-card>
-          <v-card-text class="pt-4" v-if="trialForRestoreDialog">
-            <v-row class="m-0">
-              <v-col cols="12" sm="2">
-                <v-icon x-large color="green">mdi-undo-variant</v-icon>
-              </v-col>
-              <v-col cols="12" sm="10">
-                <p>
-                  Do you want to restore trial {{ trialForRestoreDialog.name }}?
-                </p>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="blue darken-1"
-              text
-              @click="closeRestoreDialog">
-              No
-            </v-btn>
-            <v-btn
-              color="green darken-1"
-              text
-              @click="confirmRestoreTrial">
-              Yes
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        :click-outside="clickOutsideDialogTrialHideMenu"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        icon="mdi-undo-variant"
+        icon-color="green"
+        @cancel="closeRestoreDialog"
+        @confirm="confirmRestoreTrial">
+        <p>
+          Do you want to restore trial {{ trialForRestoreDialog.name }}?
+        </p>
+      </ConfirmDialog>
 
       <!-- Permanent delete trial dialog -->
-      <v-dialog
+      <ConfirmDialog
+        v-if="trialForPermanentDeleteDialog"
         v-model="permanent_delete_dialog"
-        v-click-outside="clickOutsideDialogTrialHideMenu"
-        content-class="confirm-dialog"
-        max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown">
-        <v-card>
-          <v-card-text class="pt-4" v-if="trialForPermanentDeleteDialog">
-            <v-row class="m-0">
-              <v-col cols="12" sm="2">
-                <v-icon x-large color="red">mdi-close-circle</v-icon>
-              </v-col>
-              <v-col cols="12" sm="10">
-                <p>
-                  Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
-                  This action cannot be undone.
-                  <span v-if="!trialForPermanentDeleteDialog.trashed"> Use Trash to keep the ability to restore the trial.</span>
-                </p>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="blue darken-1"
-              text
-              @click="closePermanentDeleteDialog">
-              No
-            </v-btn>
-            <v-btn
-              color="red darken-1"
-              text
-              @click="confirmPermanentDeleteTrial">
-              Yes
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        :click-outside="clickOutsideDialogTrialHideMenu"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        icon="mdi-close-circle"
+        icon-color="red"
+        confirm-color="red darken-1"
+        @cancel="closePermanentDeleteDialog"
+        @confirm="confirmPermanentDeleteTrial">
+        <p>
+          Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
+          This action cannot be undone.
+          <span v-if="!trialForPermanentDeleteDialog.trashed"> Use Trash to keep the ability to restore the trial.</span>
+        </p>
+      </ConfirmDialog>
   
     <v-dialog
         v-model="showAnalysisDialog"
@@ -976,6 +888,7 @@
   import VideoNavigation from '@/components/ui/VideoNavigation'
   import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
   import SpeedControl from '@/components/ui/SpeedControl'
+  import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   
   let openpose_bones = [
     [20, 21],
@@ -1009,7 +922,8 @@
       components: {
           Status,
           VideoNavigation,
-          SpeedControl
+          SpeedControl,
+          ConfirmDialog
       },
       data() {
           return {

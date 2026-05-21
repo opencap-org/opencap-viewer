@@ -83,41 +83,31 @@
       </div>
     </transition>
     <!-- Logout confirmation dialog -->
-    <v-dialog
+    <ConfirmDialog
       v-model="showLogoutDialog"
-      content-class="confirm-dialog"
-      max-width="500"
-      :retain-focus="false">
-      <v-card>
-        <v-card-text class="pt-4">
-          <v-row class="m-0">
-            <v-col cols="12" sm="2">
-              <v-icon x-large color="blue">mdi-logout</v-icon>
-            </v-col>
-            <v-col cols="12" sm="10">
-              <p>Are you sure you want to log out?</p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="white" text @click="showLogoutDialog = false">
-            Cancel
-          </v-btn>
-          <v-btn color="white" text @click="confirmLogout">
-            Log out
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+      :retain-focus="false"
+      icon="mdi-logout"
+      icon-color="blue"
+      cancel-text="Cancel"
+      cancel-color="white"
+      confirm-text="Log out"
+      confirm-color="white"
+      @cancel="showLogoutDialog = false"
+      @confirm="confirmLogout">
+      <p>Are you sure you want to log out?</p>
+    </ConfirmDialog>
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
 export default {
   name: 'ProfileDropdown',
+  components: {
+    ConfirmDialog
+  },
   computed: {
     ...mapState({
       username: state => state.auth.username,

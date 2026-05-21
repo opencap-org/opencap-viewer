@@ -276,83 +276,63 @@
     </v-bottom-sheet>
 
     <!-- Trash Subject Dialog -->
-    <v-dialog v-model="remove_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
-      <v-card v-if="selectedSubjectForTrash">
-        <v-card-text class="pt-4">
-          <v-row class="m-0">
-            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
-            <v-col cols="12" sm="10">
-              <p>Do you want to trash subject <code>{{ selectedSubjectForTrash.name }}</code>?
-                You will be able to restore it for 30 days. After that, this subject will be permanently removed.</p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="remove_dialog = false; selectedSubjectForTrash = null">No</v-btn>
-          <v-btn color="red darken-1" text @click="remove_dialog = false; trashSubject(selectedSubjectForTrash.id); selectedSubjectForTrash = null">Yes</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ConfirmDialog
+      v-if="selectedSubjectForTrash"
+      v-model="remove_dialog"
+      :click-outside="clickOutsideDialogSubjectHideMenu"
+      :fullscreen="$vuetify.breakpoint.smAndDown"
+      icon="mdi-close-circle"
+      icon-color="red"
+      confirm-color="red darken-1"
+      @cancel="remove_dialog = false; selectedSubjectForTrash = null"
+      @confirm="remove_dialog = false; trashSubject(selectedSubjectForTrash.id); selectedSubjectForTrash = null">
+      <p>Do you want to trash subject <code>{{ selectedSubjectForTrash.name }}</code>?
+        You will be able to restore it for 30 days. After that, this subject will be permanently removed.</p>
+    </ConfirmDialog>
 
     <!-- Restore Subject Dialog -->
-    <v-dialog v-model="restore_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
-      <v-card v-if="selectedSubjectForRestore">
-        <v-card-text class="pt-4">
-          <v-row class="m-0">
-            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-undo-variant</v-icon></v-col>
-            <v-col cols="12" sm="10">
-              <p>Do you want to restore subject <code>{{ selectedSubjectForRestore.name }}</code>?</p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="restore_dialog = false; selectedSubjectForRestore = null">No</v-btn>
-          <v-btn color="green darken-1" text @click="restore_dialog = false; restoreSubject(selectedSubjectForRestore.id); selectedSubjectForRestore = null">Yes</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ConfirmDialog
+      v-if="selectedSubjectForRestore"
+      v-model="restore_dialog"
+      :click-outside="clickOutsideDialogSubjectHideMenu"
+      :fullscreen="$vuetify.breakpoint.smAndDown"
+      icon="mdi-undo-variant"
+      icon-color="green"
+      @cancel="restore_dialog = false; selectedSubjectForRestore = null"
+      @confirm="restore_dialog = false; restoreSubject(selectedSubjectForRestore.id); selectedSubjectForRestore = null">
+      <p>Do you want to restore subject <code>{{ selectedSubjectForRestore.name }}</code>?</p>
+    </ConfirmDialog>
 
     <!-- Permanent Delete Subject Dialog -->
-    <v-dialog v-model="remove_permanently_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
-      <v-card v-if="selectedSubjectForPermanentDelete">
-        <v-card-text class="pt-4">
-          <v-row class="m-0">
-            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
-            <v-col cols="12" sm="10">
-              <p>Do you want to <strong>permanently</strong> remove subject <code>{{ selectedSubjectForPermanentDelete.name }}</code>?</p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="remove_permanently_dialog = false; selectedSubjectForPermanentDelete = null">No</v-btn>
-          <v-btn color="red darken-1" text @click="remove_permanently_dialog = false; permanentRemoveSubject(selectedSubjectForPermanentDelete.id); selectedSubjectForPermanentDelete = null">Yes</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ConfirmDialog
+      v-if="selectedSubjectForPermanentDelete"
+      v-model="remove_permanently_dialog"
+      :click-outside="clickOutsideDialogSubjectHideMenu"
+      :fullscreen="$vuetify.breakpoint.smAndDown"
+      icon="mdi-close-circle"
+      icon-color="red"
+      confirm-color="red darken-1"
+      @cancel="remove_permanently_dialog = false; selectedSubjectForPermanentDelete = null"
+      @confirm="remove_permanently_dialog = false; permanentRemoveSubject(selectedSubjectForPermanentDelete.id); selectedSubjectForPermanentDelete = null">
+      <p>Do you want to <strong>permanently</strong> remove subject <code>{{ selectedSubjectForPermanentDelete.name }}</code>?</p>
+    </ConfirmDialog>
 
     <!-- Download Subject Dialog -->
-    <v-dialog v-model="download_dialog" v-click-outside="clickOutsideDialogSubjectHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
-      <v-card v-if="selectedSubjectForDownload">
-        <v-card-text class="pt-4">
-          <v-row class="m-0">
-            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-download</v-icon></v-col>
-            <v-col cols="12" sm="10">
-              <p>Do you want to download all data associated to the subject <code>{{ selectedSubjectForDownload.name }}</code>?
-                (This includes every session and trial associated to it, and can take several minutes).</p>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="download_dialog = false; selectedSubjectForDownload = null">Cancel</v-btn>
-          <v-btn color="green darken-1" text :disabled="downloading"
-            @click="download_dialog = false; downloadSubjectData(selectedSubjectForDownload.id); selectedSubjectForDownload = null">Download</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ConfirmDialog
+      v-if="selectedSubjectForDownload"
+      v-model="download_dialog"
+      :click-outside="clickOutsideDialogSubjectHideMenu"
+      :fullscreen="$vuetify.breakpoint.smAndDown"
+      :confirm-disabled="downloading"
+      icon="mdi-download"
+      icon-color="green"
+      cancel-text="Cancel"
+      confirm-text="Download"
+      @cancel="download_dialog = false; selectedSubjectForDownload = null"
+      @confirm="download_dialog = false; downloadSubjectData(selectedSubjectForDownload.id); selectedSubjectForDownload = null">
+      <p>Do you want to download all data associated to the subject <code>{{ selectedSubjectForDownload.name }}</code>?
+        (This includes every session and trial associated to it, and can take several minutes).</p>
+    </ConfirmDialog>
 
     <DialogComponent
       ref="dialogRef"
@@ -368,10 +348,12 @@ import { mapActions, mapState } from 'vuex'
 import axios from 'axios'
 import { apiInfo, apiError } from '@/util/ErrorMessage.js'
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
 export default {
   components: {
-    DialogComponent
+    DialogComponent,
+    ConfirmDialog
   },
   name: 'Subjects',
   created: function () {},
