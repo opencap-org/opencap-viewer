@@ -76,7 +76,7 @@
                     <v-text-field
                       v-model="sessionName"
                       label="Session name (optional)"
-                      hint="If empty, a name is set as subject name and date (DD-MM-YYYY)."
+                      hint="If empty, a name is set as subject name and date (YYYY-MM-DD)."
                       persistent-hint
                       type="text"
                       @input="isAllInputsValid"
@@ -688,7 +688,7 @@ export default {
       const y = d.getFullYear();
       const m = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
-      return `${subjectPart}_${day}-${m}-${y}`;
+      return `${subjectPart}_${y}-${m}-${day}`;
     },
     /** Name sent to the API: user value if non-empty and valid, else subject + date. */
     getResolvedSessionNameForSubmit() {
