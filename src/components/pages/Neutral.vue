@@ -75,9 +75,10 @@
                     </v-row>
                     <v-text-field
                       v-model="sessionName"
-                      label="Session Name"
+                      label="Session name (optional)"
+                      hint="If empty, a name is set as subject name and date (YYYY-MM-DD)."
+                      persistent-hint
                       type="text"
-                      required
                       @input="isAllInputsValid"
                       @blur="validateSessionName"
                       :error="formErrors.name != null"
@@ -636,6 +637,7 @@ export default {
     submitAddSubject (data) {
       let obj = {
         id: data.id,
+        name: data.name,
         display_name: `${data.name} (${data.weight} Kg, ${data.height} m, ${data.birth_year})`,
       }
       this.loaded_subjects.push(obj)
@@ -646,12 +648,66 @@ export default {
     openNewSubjectPopup() {
         this.$refs.dialogRef.edit_dialog = true
     },
+    sanitizeSessionNameSegment(raw) {
+      let s = String(raw || '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9-_]/g, '');
+      s = s.replace(/_+/g, '_').replace(/^_|_$/g, '');
+      return s;
+    },
+    /** Plain subject label for auto session names (not display_name with anthropometry). */
+    getSubjectRawNameForDefaultSession() {
+      if (!this.subject || this.subject.id === 'new') {
+        return 'subject';
+      }
+      const n = this.subject.name;
+      if (n != null && String(n).trim() !== '') {
+        return String(n).trim();
+      }
+      const dn = this.subject.display_name;
+      if (dn) {
+        const cut = String(dn).indexOf(' (');
+        if (cut > 0) {
+          return String(dn).slice(0, cut).trim();
+        }
+        return String(dn).trim();
+      }
+      return String(this.subject.id);
+    },
+    buildDefaultSessionName() {
+      let subjectPart = this.sanitizeSessionNameSegment(
+        this.getSubjectRawNameForDefaultSession()
+      );
+      if (!subjectPart) {
+        subjectPart =
+          this.subject && this.subject.id !== 'new'
+            ? this.sanitizeSessionNameSegment(String(this.subject.id)) || 'subject'
+            : 'subject';
+      }
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${subjectPart}_${y}-${m}-${day}`;
+    },
+    /** Name sent to the API: user value if non-empty and valid, else subject + date. */
+    getResolvedSessionNameForSubmit() {
+      const trimmed = (this.sessionName || '').trim();
+      if (!trimmed) {
+        return this.buildDefaultSessionName();
+      }
+      const validPattern = /^[a-zA-Z0-9-_]+$/;
+      if (!validPattern.test(trimmed)) {
+        return this.buildDefaultSessionName();
+      }
+      return trimmed;
+    },
     validateSessionName() {
       const trimmedSessionName = (this.sessionName || '').trim();
 
       if (!trimmedSessionName) {
-        this.formErrors.name = "Session name is required.";
-        return false;
+        this.formErrors.name = null;
+        return true;
       }
 
       const validPattern = /^[a-zA-Z0-9-_]+$/;
@@ -740,7 +796,7 @@ export default {
                     settings_scaling_setup: this.scaling_setup,
                     settings_pose_model: this.pose_model,
                     settings_framerate: this.framerate,
-                    settings_session_name: this.sessionName,
+                    settings_session_name: this.getResolvedSessionNameForSubmit(),
                     settings_openSimModel: this.openSimModel,
                     settings_augmenter_model: this.augmenter_model,
                     settings_filter_frequency: this.filter_frequency,
@@ -914,7 +970,7 @@ export default {
                 // settings_scaling_setup: this.scaling_setup,
                 // settings_pose_model: this.pose_model,
                 settings_framerate: this.framerate,
-                settings_session_name: this.sessionName,
+                settings_session_name: this.getResolvedSessionNameForSubmit(),
                 settings_openSimModel: this.openSimModel,
                 // settings_augmenter_model: this.augmenter_model,
                 // settings_filter_frequency: this.filter_frequency,
