@@ -215,71 +215,114 @@
     </v-bottom-sheet>
 
     <!-- Restore Session Dialog -->
-    <ConfirmDialog
-      v-if="selectedSessionForRestore"
-      v-model="restore_session_dialog"
-      :click-outside="clickOutsideDialogSessionHideMenu"
-      :fullscreen="$vuetify.breakpoint.smAndDown"
-      icon="mdi-undo-variant"
-      icon-color="green"
-      @cancel="restore_session_dialog = false; selectedSessionForRestore = null"
-      @confirm="restore_session_dialog = false; restoreSession(selectedSessionForRestore.id); selectedSessionForRestore = null">
-      <p>Do you want to restore session <code>{{ selectedSessionForRestore.id }}</code>?</p>
-    </ConfirmDialog>
+    <v-dialog v-model="restore_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
+      <v-card v-if="selectedSessionForRestore">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-undo-variant</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to restore session <code>{{ selectedSessionForRestore.id }}</code>?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="restore_session_dialog = false; selectedSessionForRestore = null">No</v-btn>
+          <v-btn color="green darken-1" text @click="restore_session_dialog = false; restoreSession(selectedSessionForRestore.id); selectedSessionForRestore = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Permanent Delete Session Dialog -->
-    <ConfirmDialog
-      v-if="selectedSessionForPermanentDelete"
-      v-model="remove_permanently_session_dialog"
-      :click-outside="clickOutsideDialogSessionHideMenu"
-      :fullscreen="$vuetify.breakpoint.smAndDown"
-      icon="mdi-close-circle"
-      icon-color="red"
-      confirm-color="red darken-1"
-      @cancel="remove_permanently_session_dialog = false; selectedSessionForPermanentDelete = null"
-      @confirm="remove_permanently_session_dialog = false; permanentRemoveSession(selectedSessionForPermanentDelete.id); selectedSessionForPermanentDelete = null">
-      <p>Do you want to <strong>permanently</strong> remove session <code>{{ selectedSessionForPermanentDelete.id }}</code>?</p>
-    </ConfirmDialog>
+    <v-dialog v-model="remove_permanently_session_dialog" v-click-outside="clickOutsideDialogSessionHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
+      <v-card v-if="selectedSessionForPermanentDelete">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to <strong>permanently</strong> remove session <code>{{ selectedSessionForPermanentDelete.id }}</code>?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="remove_permanently_session_dialog = false; selectedSessionForPermanentDelete = null">No</v-btn>
+          <v-btn color="red darken-1" text @click="remove_permanently_session_dialog = false; permanentRemoveSession(selectedSessionForPermanentDelete.id); selectedSessionForPermanentDelete = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Restore Trial Dialog -->
-    <ConfirmDialog
-      v-if="selectedTrialForRestore"
-      v-model="restore_trial_dialog"
-      :click-outside="clickOutsideDialogTrialHideMenu"
-      :fullscreen="$vuetify.breakpoint.smAndDown"
-      icon="mdi-undo-variant"
-      icon-color="green"
-      @cancel="restore_trial_dialog = false; selectedTrialForRestore = null"
-      @confirm="restore_trial_dialog = false; restoreTrial(selectedTrialForRestore); selectedTrialForRestore = null">
-      <p>Do you want to restore trial {{ selectedTrialForRestore.name }}?</p>
-    </ConfirmDialog>
+    <v-dialog v-model="restore_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
+      <v-card v-if="selectedTrialForRestore">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="green">mdi-undo-variant</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to restore trial {{ selectedTrialForRestore.name }}?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="restore_trial_dialog = false; selectedTrialForRestore = null">No</v-btn>
+          <v-btn color="green darken-1" text @click="restore_trial_dialog = false; restoreTrial(selectedTrialForRestore); selectedTrialForRestore = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Permanent Delete Trial Dialog -->
-    <ConfirmDialog
-      v-if="selectedTrialForPermanentDelete"
-      v-model="remove_permanently_trial_dialog"
-      :click-outside="clickOutsideDialogTrialHideMenu"
-      :fullscreen="$vuetify.breakpoint.smAndDown"
-      icon="mdi-close-circle"
-      icon-color="red"
-      confirm-color="red darken-1"
-      @cancel="remove_permanently_trial_dialog = false; selectedTrialForPermanentDelete = null"
-      @confirm="remove_permanently_trial_dialog = false; permanentRemoveTrial(selectedTrialForPermanentDelete); selectedTrialForPermanentDelete = null">
-      <p>Do you want to <strong>permanently</strong> remove trial {{ selectedTrialForPermanentDelete.name }}?</p>
-    </ConfirmDialog>
+    <v-dialog v-model="remove_permanently_trial_dialog" v-click-outside="clickOutsideDialogTrialHideMenu" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
+      <v-card v-if="selectedTrialForPermanentDelete">
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2"><v-icon x-large color="red">mdi-close-circle</v-icon></v-col>
+            <v-col cols="12" sm="10">
+              <p>Do you want to <strong>permanently</strong> remove trial {{ selectedTrialForPermanentDelete.name }}?</p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="blue darken-1" text @click="remove_permanently_trial_dialog = false; selectedTrialForPermanentDelete = null">No</v-btn>
+          <v-btn color="red darken-1" text @click="remove_permanently_trial_dialog = false; permanentRemoveTrial(selectedTrialForPermanentDelete); selectedTrialForPermanentDelete = null">Yes</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-    <ConfirmDialog
-      v-model="empty_bin_dialog"
-      :fullscreen="$vuetify.breakpoint.smAndDown"
-      icon="mdi-close-circle"
-      icon-color="red"
-      confirm-color="red darken-1"
-      @cancel="empty_bin_dialog = false"
-      @confirm="empty_bin_dialog = false; emptyBin()">
-      <p>
-        Do you want to <strong>permanently</strong> empty the Recycle Bin?
-      </p>
-    </ConfirmDialog>
+    <v-dialog v-model="empty_bin_dialog" content-class="confirm-dialog" max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
+      <v-card>
+        <v-card-text class="pt-4">
+          <v-row class="m-0">
+            <v-col cols="12" sm="2">
+              <v-icon x-large color="red">mdi-close-circle</v-icon>
+            </v-col>
+            <v-col cols="12" sm="10">
+              <p>
+                Do you want to <strong>permanently</strong> empty the Recycle Bin?
+              </p>
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="blue darken-1"
+            text
+            @click="empty_bin_dialog = false"
+          >
+            No
+          </v-btn>
+          <v-btn
+            color="red darken-1"
+            text
+            @click="empty_bin_dialog = false; emptyBin()"
+          >
+            Yes
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
 </div>
 </template>
@@ -289,13 +332,9 @@ import Vue from 'vue'
 import { mapActions } from 'vuex'
 import axios from 'axios'
 import { apiInfo, apiError } from '@/util/ErrorMessage.js'
-import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
 export default {
   name: 'RecycleBin',
-  components: {
-    ConfirmDialog
-  },
   data () {
     return {
       session_loading: true,
