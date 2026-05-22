@@ -1416,7 +1416,7 @@
         this.buttonCooldown = true;
         setTimeout(() => {
             this.buttonCooldown = false;
-        }, 1000); // 2 seconds
+        }, 2000); // 2 seconds
       },
       async changeState() {
         // Start cooldown immediately to prevent double-clicks
@@ -1557,7 +1557,6 @@
             break
           }
         }
-        await new Promise(r => setTimeout(r, 500));
       },
       recordTimerHandler() {
         this.recordingTimePassed = moment().diff(this.recordingStarted, 'seconds')
