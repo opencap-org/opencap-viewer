@@ -524,13 +524,21 @@ export default {
     closeSheetAndPermanentDeleteSession(item) { this.showSessionMenuSheet = false; this.selectedSessionForMenu = null; this.selectedSessionForPermanentDelete = item; this.remove_permanently_session_dialog = true; },
     closeSheetAndRestoreTrial(item) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.selectedTrialForRestore = item; this.restore_trial_dialog = true; },
     closeSheetAndPermanentDeleteTrial(item) { this.showTrialMenuSheet = false; this.selectedTrialForMenu = null; this.selectedTrialForPermanentDelete = item; this.remove_permanently_trial_dialog = true; },
+    removeSessionFromRecycleBin(id) {
+      const index = this.trashed_sessions.findIndex(session => session.id === id);
+      if (index >= 0) {
+        this.trashed_sessions.splice(index, 1);
+        this.session_total = Math.max(0, this.session_total - 1);
+      }
+
+      if (this.selected && this.selected.id === id) {
+        this.selected = null;
+      }
+    },
     async permanentRemoveSession(id) {
       try {
         await this.permanentRemoveExistingSession(id);
-        if (this.selected && this.selected.id === id) {
-          this.selected = null;
-        }
-        this.loadTrashedSessions();
+        this.removeSessionFromRecycleBin(id);
       } catch (error) {
         apiError(error)
       }
