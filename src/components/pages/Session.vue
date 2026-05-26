@@ -1551,9 +1551,7 @@
             this.cancelPoll()
             this.state = 'ready'
             // End cooldown after processing cancellation
-            setTimeout(() => {
-              this.buttonCooldown = false
-            }, 1000)
+            this.buttonCooldown = false
             break
           }
         }
