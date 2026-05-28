@@ -622,6 +622,7 @@ export default {
     }
     await this.loadSession(this.$route.params.id)
     this.applySavedAdvancedSettings()
+    await this.ensureAdvancedSettingsMetadata()
     this.updateSavedAdvancedSettingsSnapshot()
     if (this.$route.query.autoRecord) {
       this.onNext();
@@ -798,6 +799,21 @@ export default {
         this.advancedSettingsDialog = false
       }
     },
+    async ensureAdvancedSettingsMetadata() {
+      if (this.hasSavedAdvancedSettingsMetadata) return
+
+      try {
+        await axios.get(
+          `/sessions/${this.session.id}/set_metadata/`,
+          {
+            params: this.getAdvancedSettingsMetadataParams(),
+          }
+        )
+        await this.loadSession(this.session.id)
+      } catch (error) {
+        apiError(error)
+      }
+    },
     reloadSubjects() {
     },
     openNewSubjectPopup() {
@@ -947,7 +963,6 @@ export default {
                 `/sessions/${this.session.id}/set_metadata/`,
                 {
                   params: {
-                    ...(this.hasSavedAdvancedSettingsMetadata ? {} : this.getAdvancedSettingsMetadataParams()),
                     settings_data_sharing: this.data_sharing,
                     settings_session_name: this.getResolvedSessionNameForSubmit(),
                   },
