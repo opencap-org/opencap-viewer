@@ -574,6 +574,19 @@ export default {
         filter_frequency: this.filter_frequency,
       }
     },
+    hasSavedAdvancedSettingsMetadata() {
+      const settings = this.session?.meta?.settings
+      if (!settings || typeof settings !== 'object') return false
+
+      return [
+        'scalingsetup',
+        'posemodel',
+        'framerate',
+        'openSimModel',
+        'augmentermodel',
+        'filterfrequency',
+      ].every(key => settings[key] !== undefined && settings[key] !== null && settings[key] !== '')
+    },
     hasUnsavedAdvancedSettings() {
       if (!this.savedAdvancedSettingsSnapshot) return false
       return JSON.stringify(this.currentAdvancedSettings) !== JSON.stringify(this.savedAdvancedSettingsSnapshot)
@@ -934,6 +947,7 @@ export default {
                 `/sessions/${this.session.id}/set_metadata/`,
                 {
                   params: {
+                    ...(this.hasSavedAdvancedSettingsMetadata ? {} : this.getAdvancedSettingsMetadataParams()),
                     settings_data_sharing: this.data_sharing,
                     settings_session_name: this.getResolvedSessionNameForSubmit(),
                   },
