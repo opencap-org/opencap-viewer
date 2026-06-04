@@ -239,7 +239,7 @@
                   <v-btn small class="w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'"
                       @click="openNewSessionSameSetupConfirm">
                       <v-icon left small>mdi-plus-box-multiple</v-icon>
-                      {{ isMonocularSession ? 'New session same camera' : 'New session, same setup' }}
+                      {{ newSessionSameSetupCopy.button }}
                   </v-btn>
 
                   <ConfirmDialog
@@ -250,12 +250,12 @@
                       confirm-color="green darken-1"
                       @cancel="new_session_same_setup_confirm_dialog = false"
                       @confirm="confirmNewSessionSameSetup">
-                      <h3 class="mb-3">New session, same setup</h3>
+                      <h3 class="mb-3">{{ newSessionSameSetupCopy.title }}</h3>
                       <p class="mb-2">
                           Starting a new session will leave this session page.
                       </p>
                       <p class="mb-0">
-                          The new session will keep the current calibration, recording setup, and saved advanced settings.
+                          {{ newSessionSameSetupCopy.body }}
                       </p>
                   </ConfirmDialog>
   
@@ -1148,6 +1148,20 @@
         },
         isMonocularSession() {
           return !!(this.session?.isMono ?? this.session?.is_mono)
+        },
+        newSessionSameSetupCopy() {
+          if (this.isMonocularSession) {
+            return {
+              button: 'New session same camera',
+              title: 'New session, same camera',
+              body: 'The new session will use the same camera on this device.',
+            }
+          }
+          return {
+            button: 'New session, same setup',
+            title: 'New session, same setup',
+            body: 'The new session will keep the current calibration, recording setup, and saved advanced settings.',
+          }
         },
         sessionDeepLinkUrl() {
           if (!this.session?.id) return null
