@@ -1477,6 +1477,9 @@ export default {
 /* Advanced Settings Dialog Responsive Styles */
 .advanced-settings-dialog {
   z-index: 200 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   
   .v-card.advanced-settings-card {
     width: 100%;
@@ -1719,6 +1722,7 @@ export default {
 
   .v-card__actions.advanced-settings-footer {
     position: relative;
+    flex-shrink: 0;
     z-index: 20;
     padding: 16px;
     gap: 12px;
@@ -1736,6 +1740,26 @@ export default {
     .v-btn:not(.primary-dark) {
       color: #ffffff !important;
       background: rgba(255,255,255,0.08) !important;
+    }
+  }
+
+  @media (max-width: 599px) {
+    margin: 12px !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    height: calc(100vh - 24px);
+    height: calc(100dvh - 24px);
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+
+    .v-card.advanced-settings-card {
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+    }
+
+    .v-card__actions.advanced-settings-footer {
+      padding: 12px;
     }
   }
   
