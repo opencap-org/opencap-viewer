@@ -1152,9 +1152,9 @@
         newSessionSameSetupCopy() {
           if (this.isMonocularSession) {
             return {
-              button: 'New session same camera',
+              button: 'New session, same camera',
               title: 'New session, same camera',
-              body: 'The new session will use the same camera on this device.',
+              body: 'The new session will use the same camera.',
             }
           }
           return {
