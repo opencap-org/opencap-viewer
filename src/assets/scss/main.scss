@@ -587,6 +587,24 @@ body,
   }
 }
 
+.v-dialog__content {
+  z-index: 2100 !important;
+}
+
+.v-overlay.v-overlay--active {
+  z-index: 2090 !important;
+}
+
+// Dialogs are intentionally raised above the app shell. Vuetify menus/selects,
+// autocompletes, comboboxes, and tooltips render as separate overlay content,
+// so they also need to sit above active dialogs when opened from inside one.
+.v-menu__content,
+.v-select__content,
+.v-autocomplete__content,
+.v-tooltip__content {
+  z-index: 3000 !important;
+}
+
 /* Shared base for all dialogs */
 .app-dialog,
 .confirm-dialog {
