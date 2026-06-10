@@ -274,11 +274,12 @@
                       confirm-color="orange darken-1"
                       @cancel="new_session_confirm_dialog = false"
                       @confirm="confirmNewSession">
+                      <h3 v-if="newSessionCopy.title" class="mb-3">{{ newSessionCopy.title }}</h3>
                       <p class="mb-2">
-                          Starting a new session will require calibration again.
+                          {{ newSessionCopy.body }}
                       </p>
                       <p class="mb-0">
-                          To keep the current calibration and recording setup, choose New session, same setup instead.
+                          {{ newSessionCopy.detail }}
                       </p>
                   </ConfirmDialog>
   
@@ -1154,13 +1155,27 @@
             return {
               button: 'New session, same camera',
               title: 'New session, same camera',
-              body: 'The new session will use the same camera.',
+              body: 'The new session will use the currently connected recording camera. If you are recording on this same device, it must be a supported iPhone or iPad with OpenCap app 2.0 or newer.',
             }
           }
           return {
             button: 'New session, same setup',
             title: 'New session, same setup',
             body: 'The new session will keep the current calibration, recording setup, and saved advanced settings.',
+          }
+        },
+        newSessionCopy() {
+          if (this.isMonocularSession) {
+            return {
+              title: 'New monocular setup',
+              body: 'Starting a new session will leave this session page.',
+              detail: 'You may need to connect a recording device again by opening the session in the OpenCap app or scanning the QR code.',
+            }
+          }
+          return {
+            title: '',
+            body: 'Starting a new session will require calibration again.',
+            detail: 'To keep the current calibration and recording setup, choose New session, same setup instead.',
           }
         },
         sessionDeepLinkUrl() {
