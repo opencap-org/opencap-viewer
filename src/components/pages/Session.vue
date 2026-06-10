@@ -1412,18 +1412,19 @@
         // Tie key to the active trial so DOM can't be reused across trials.
         return `trial-${trialId}-video-${id || media || index}`
       },
-      startButtonCooldown() {
+      startButtonCooldown(duration = 1000) {
         this.buttonCooldown = true;
         setTimeout(() => {
-            this.buttonCooldown = false;
-        }, 2000); // 2 seconds
+          this.buttonCooldown = false;
+        }, duration);
       },
       async changeState() {
-        // Start cooldown immediately to prevent double-clicks
-        this.startButtonCooldown()
 
         switch (this.state) {
           case 'ready': {
+            // Start cooldown immediately to prevent double-clicks
+            this.startButtonCooldown()
+
             this.submitted = true
 
             if (await this.$refs.observer.validate()) {
@@ -1524,6 +1525,9 @@
             break
           }
           case 'recording': {
+            // Start cooldown immediately to prevent double-clicks
+            this.startButtonCooldown()
+
             this.cancelRecordTimer()
             this.cancelRecordingStatusPoll()
 
@@ -1547,6 +1551,9 @@
             break
           }
           case 'processing': {
+            // Start cooldown immediately to prevent double-clicks. In this case, set to 1.5 seconds.
+            this.startButtonCooldown(1500)
+
             const res = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
             this.cancelPoll()
             this.state = 'ready'
