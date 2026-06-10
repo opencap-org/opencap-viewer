@@ -323,14 +323,22 @@
                         >
                           Close
                         </v-btn>
-                        <v-btn
-                          color="primary-dark"
-                          :loading="savingAdvancedSettings"
-                          :disabled="savingAdvancedSettings || !hasUnsavedAdvancedSettings"
-                          @click="saveAdvancedSettingsAndClose"
-                        >
-                          Save and exit
-                        </v-btn>
+                        <v-tooltip top :disabled="hasUnsavedAdvancedSettings && !savingAdvancedSettings">
+                          <template v-slot:activator="{ on }">
+                            <span v-on="on" class="advanced-settings-save-wrapper">
+                              <v-btn
+                                text
+                                class="advanced-settings-save-btn"
+                                :loading="savingAdvancedSettings"
+                                :disabled="savingAdvancedSettings || !hasUnsavedAdvancedSettings"
+                                @click="saveAdvancedSettingsAndClose"
+                              >
+                                Save and exit
+                              </v-btn>
+                            </span>
+                          </template>
+                          <span>{{ saveAdvancedSettingsDisabledMessage }}</span>
+                        </v-tooltip>
                       </v-card-actions>
                     </v-card>
                   </v-dialog>
@@ -592,6 +600,10 @@ export default {
     hasUnsavedAdvancedSettings() {
       if (!this.savedAdvancedSettingsSnapshot) return false
       return JSON.stringify(this.currentAdvancedSettings) !== JSON.stringify(this.savedAdvancedSettingsSnapshot)
+    },
+    saveAdvancedSettingsDisabledMessage() {
+      if (this.savingAdvancedSettings) return 'Saving advanced settings'
+      return 'Make a change to enable Save and exit'
     },
     backButtonLabel() {
       if (this.isMonocularMode && this.$route.query.fromDevice === 'true') {
@@ -1738,6 +1750,26 @@ export default {
     }
 
     .v-btn:not(.primary-dark) {
+      color: #ffffff !important;
+      background: rgba(255,255,255,0.08) !important;
+    }
+
+    .advanced-settings-save-wrapper {
+      display: inline-flex;
+    }
+
+    .advanced-settings-save-btn.v-btn--disabled {
+      background: rgba(255,255,255,0.06) !important;
+      color: rgba(255,255,255,0.42) !important;
+      border: 1px dashed rgba(255,255,255,0.24);
+      box-shadow: none;
+    }
+
+    .advanced-settings-save-btn.v-btn--disabled .v-btn__content {
+      color: rgba(255,255,255,0.42) !important;
+    }
+
+    .advanced-settings-save-btn:not(.v-btn--disabled) {
       color: #ffffff !important;
       background: rgba(255,255,255,0.08) !important;
     }
