@@ -68,6 +68,11 @@
   
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
+                <div v-if="participantName" class="participant-context mb-3">
+                  <div class="participant-context__label">Participant</div>
+                  <div class="participant-context__name">{{ participantName }}</div>
+                </div>
+
                 <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
                   <div class="flex-grow-1 min-width-0">
                     <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
@@ -81,7 +86,11 @@
                   <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
-                  <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">{{ displayDeviceCount }} devices are recording, do not refresh</p>
+                  <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
+                    {{ displayDeviceCount }} devices are recording
+                    <template v-if="sessionFramerate">at {{ sessionFramerate }} Hz</template>,
+                    do not refresh
+                  </p>
                   <p v-if="state === 'processing'">{{ n_videos_uploaded }} of {{ displayDeviceCount }} videos uploaded, do not refresh.</p>
               </ValidationObserver>
 
@@ -228,15 +237,51 @@
 
             <div v-if="showSessionMenuButtons" class="session-actions-panel">
                   <v-btn small class="w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'"
-                      @click="newSessionSameSetup">
+                      @click="openNewSessionSameSetupConfirm">
                       <v-icon left small>mdi-plus-box-multiple</v-icon>
-                      {{ isMonocularSession ? 'New session same camera' : 'New session, same setup' }}
+                      {{ newSessionSameSetupCopy.button }}
                   </v-btn>
+
+                  <ConfirmDialog
+                      v-model="new_session_same_setup_confirm_dialog"
+                      :fullscreen="$vuetify.breakpoint.smAndDown"
+                      cancel-text="Cancel"
+                      confirm-text="Create session"
+                      confirm-color="green darken-1"
+                      @cancel="new_session_same_setup_confirm_dialog = false"
+                      @confirm="confirmNewSessionSameSetup">
+                      <h3 class="mb-3">{{ newSessionSameSetupCopy.title }}</h3>
+                      <p class="mb-2">
+                          Starting a new session will leave this session page.
+                      </p>
+                      <p class="mb-0">
+                          {{ newSessionSameSetupCopy.body }}
+                      </p>
+                  </ConfirmDialog>
   
-                  <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="newSession">
+                  <v-btn small class="mt-4 w-100 session-action-btn" v-show="show_controls" :disabled="busy || state !== 'ready'" @click="openNewSessionConfirm">
                       <v-icon left small>mdi-plus</v-icon>
                       New session
                   </v-btn>
+
+                  <ConfirmDialog
+                      v-model="new_session_confirm_dialog"
+                      :fullscreen="$vuetify.breakpoint.smAndDown"
+                      icon="mdi-alert-circle"
+                      icon-color="orange"
+                      cancel-text="Cancel"
+                      confirm-text="Continue"
+                      confirm-color="orange darken-1"
+                      @cancel="new_session_confirm_dialog = false"
+                      @confirm="confirmNewSession">
+                      <h3 v-if="newSessionCopy.title" class="mb-3">{{ newSessionCopy.title }}</h3>
+                      <p class="mb-2">
+                          {{ newSessionCopy.body }}
+                      </p>
+                      <p class="mb-0">
+                          {{ newSessionCopy.detail }}
+                      </p>
+                  </ConfirmDialog>
   
                   <v-dialog v-model="dialog" content-class="app-dialog" :width="$vuetify.breakpoint.smAndDown ? '100%' : '500'"
                       max-width="500" :fullscreen="$vuetify.breakpoint.smAndDown">
@@ -667,122 +712,55 @@
       </v-dialog>
 
       <!-- Trash trial dialog (extracted for mobile-friendly behavior) -->
-      <v-dialog
+      <ConfirmDialog
+        v-if="trialForTrashDialog"
         v-model="remove_dialog"
-        v-click-outside="clickOutsideDialogTrialHideMenu"
-        content-class="confirm-dialog"
-        max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown">
-        <v-card>
-          <v-card-text class="pt-4" v-if="trialForTrashDialog">
-            <v-row class="m-0">
-              <v-col cols="12" sm="2">
-                <v-icon x-large color="red">mdi-close-circle</v-icon>
-              </v-col>
-              <v-col cols="12" sm="10">
-                <p>
-                  Do you want to trash trial {{ trialForTrashDialog.name }}?
-                  You will be able to restore it for 30 days. After that,
-                  this trial will be permanently removed.
-                </p>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="blue darken-1"
-              text
-              @click="closeTrashDialog">
-              No
-            </v-btn>
-            <v-btn
-              color="red darken-1"
-              text
-              @click="confirmTrashTrial">
-              Yes
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        :click-outside="clickOutsideDialogTrialHideMenu"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        icon="mdi-close-circle"
+        icon-color="red"
+        confirm-color="red darken-1"
+        @cancel="closeTrashDialog"
+        @confirm="confirmTrashTrial">
+        <p>
+          Do you want to trash trial {{ trialForTrashDialog.name }}?
+          You will be able to restore it for 30 days. After that,
+          this trial will be permanently removed.
+        </p>
+      </ConfirmDialog>
 
       <!-- Restore trial dialog -->
-      <v-dialog
+      <ConfirmDialog
+        v-if="trialForRestoreDialog"
         v-model="restore_dialog"
-        v-click-outside="clickOutsideDialogTrialHideMenu"
-        content-class="confirm-dialog"
-        max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown">
-        <v-card>
-          <v-card-text class="pt-4" v-if="trialForRestoreDialog">
-            <v-row class="m-0">
-              <v-col cols="12" sm="2">
-                <v-icon x-large color="green">mdi-undo-variant</v-icon>
-              </v-col>
-              <v-col cols="12" sm="10">
-                <p>
-                  Do you want to restore trial {{ trialForRestoreDialog.name }}?
-                </p>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="blue darken-1"
-              text
-              @click="closeRestoreDialog">
-              No
-            </v-btn>
-            <v-btn
-              color="green darken-1"
-              text
-              @click="confirmRestoreTrial">
-              Yes
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        :click-outside="clickOutsideDialogTrialHideMenu"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        icon="mdi-undo-variant"
+        icon-color="green"
+        @cancel="closeRestoreDialog"
+        @confirm="confirmRestoreTrial">
+        <p>
+          Do you want to restore trial {{ trialForRestoreDialog.name }}?
+        </p>
+      </ConfirmDialog>
 
       <!-- Permanent delete trial dialog -->
-      <v-dialog
+      <ConfirmDialog
+        v-if="trialForPermanentDeleteDialog"
         v-model="permanent_delete_dialog"
-        v-click-outside="clickOutsideDialogTrialHideMenu"
-        content-class="confirm-dialog"
-        max-width="500"
-        :fullscreen="$vuetify.breakpoint.smAndDown">
-        <v-card>
-          <v-card-text class="pt-4" v-if="trialForPermanentDeleteDialog">
-            <v-row class="m-0">
-              <v-col cols="12" sm="2">
-                <v-icon x-large color="red">mdi-close-circle</v-icon>
-              </v-col>
-              <v-col cols="12" sm="10">
-                <p>
-                  Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
-                  This action cannot be undone.
-                  <span v-if="!trialForPermanentDeleteDialog.trashed"> Use Trash to keep the ability to restore the trial.</span>
-                </p>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="blue darken-1"
-              text
-              @click="closePermanentDeleteDialog">
-              No
-            </v-btn>
-            <v-btn
-              color="red darken-1"
-              text
-              @click="confirmPermanentDeleteTrial">
-              Yes
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+        :click-outside="clickOutsideDialogTrialHideMenu"
+        :fullscreen="$vuetify.breakpoint.smAndDown"
+        icon="mdi-close-circle"
+        icon-color="red"
+        confirm-color="red darken-1"
+        @cancel="closePermanentDeleteDialog"
+        @confirm="confirmPermanentDeleteTrial">
+        <p>
+          Do you want to permanently delete trial {{ trialForPermanentDeleteDialog.name }}?
+          This action cannot be undone.
+          <span v-if="!trialForPermanentDeleteDialog.trashed"> Use Trash to keep the ability to restore the trial.</span>
+        </p>
+      </ConfirmDialog>
   
     <v-dialog
         v-model="showAnalysisDialog"
@@ -933,6 +911,7 @@
   import VideoNavigation from '@/components/ui/VideoNavigation'
   import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
   import SpeedControl from '@/components/ui/SpeedControl'
+  import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   
   let openpose_bones = [
     [20, 21],
@@ -966,7 +945,8 @@
       components: {
           Status,
           VideoNavigation,
-          SpeedControl
+          SpeedControl,
+          ConfirmDialog
       },
       data() {
           return {
@@ -1053,6 +1033,8 @@
               trial_rename_index: 0,
 
               session_rename_dialog: false,
+              new_session_confirm_dialog: false,
+              new_session_same_setup_confirm_dialog: false,
               sessionNewName: '',
 
               trial_modify_tags: false,
@@ -1108,6 +1090,18 @@
           if (!s) return 'Session';
           return s.meta?.sessionName || s.sessionName || (s.id ? String(s.id).split('-')[0] : '') || 'Session';
         },
+        participantName() {
+          const session = this.session
+          if (!session) return ''
+
+          const hasSubject = session.subject || session.meta?.subject?.id
+          const name = session.subject_name || (hasSubject ? session.name : '') || ''
+          return String(name)
+        },
+        sessionFramerate() {
+          const framerate = this.session?.meta?.settings?.framerate ?? null;
+          return framerate !== null ? Number(framerate) : null;
+        },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
         },
@@ -1155,6 +1149,34 @@
         },
         isMonocularSession() {
           return !!(this.session?.isMono ?? this.session?.is_mono)
+        },
+        newSessionSameSetupCopy() {
+          if (this.isMonocularSession) {
+            return {
+              button: 'New session, same camera',
+              title: 'New session, same camera',
+              body: 'The new session will use the currently connected recording camera. If you are recording on this same device, it must be a supported iPhone or iPad with OpenCap app 2.0 or newer.',
+            }
+          }
+          return {
+            button: 'New session, same setup',
+            title: 'New session, same setup',
+            body: 'The new session will keep the current calibration, recording setup, and saved advanced settings.',
+          }
+        },
+        newSessionCopy() {
+          if (this.isMonocularSession) {
+            return {
+              title: 'New monocular setup',
+              body: 'Starting a new session will leave this session page.',
+              detail: 'You may need to connect a recording device again by opening the session in the OpenCap app or scanning the QR code.',
+            }
+          }
+          return {
+            title: '',
+            body: 'Starting a new session will require calibration again.',
+            detail: 'To keep the current calibration and recording setup, choose New session, same setup instead.',
+          }
         },
         sessionDeepLinkUrl() {
           if (!this.session?.id) return null
@@ -1692,6 +1714,20 @@
         this.clearAll()
         this.$router.push({name: 'RecordingMode'})
       },
+      openNewSessionConfirm() {
+        this.new_session_confirm_dialog = true
+      },
+      confirmNewSession() {
+        this.new_session_confirm_dialog = false
+        this.newSession()
+      },
+      openNewSessionSameSetupConfirm() {
+        this.new_session_same_setup_confirm_dialog = true
+      },
+      confirmNewSessionSameSetup() {
+        this.new_session_same_setup_confirm_dialog = false
+        this.newSessionSameSetup()
+      },
       openInApp() {
         if (this.sessionDeepLinkUrl) {
           window.location.href = this.sessionDeepLinkUrl
@@ -1723,6 +1759,25 @@
         store[this.session.id] = true
         this.setSameDeviceSessionStore(store)
       },
+      getAdvancedSettingsMetadataParams(settings = {}) {
+        const params = {}
+        const settingKeys = [
+          { storedKey: 'scalingsetup', paramKey: 'settings_scaling_setup' },
+          { storedKey: 'posemodel', paramKey: 'settings_pose_model' },
+          { storedKey: 'framerate', paramKey: 'settings_framerate' },
+          { storedKey: 'openSimModel', paramKey: 'settings_openSimModel' },
+          { storedKey: 'augmentermodel', paramKey: 'settings_augmenter_model' },
+          { storedKey: 'filterfrequency', paramKey: 'settings_filter_frequency' },
+        ]
+
+        settingKeys.forEach(({ storedKey, paramKey }) => {
+          if (settings[storedKey] !== undefined && settings[storedKey] !== null && settings[storedKey] !== '') {
+            params[paramKey] = settings[storedKey]
+          }
+        })
+
+        return params
+      },
       setPublic(p) {
         console.log(p)
         axios.patch(`/sessions/${this.session.id}/`, {"public": p})
@@ -1752,7 +1807,11 @@
       async newSessionSameSetup() {
         // Snapshot before initSessionSameSetup: new_subject response may omit isMono on the new session.
         const wasMonocular = !!(this.session?.isMono ?? this.session?.is_mono)
+        const advancedSettings = this.getAdvancedSettingsMetadataParams(this.session?.meta?.settings)
         await this.initSessionSameSetup()
+        if (!wasMonocular && Object.keys(advancedSettings).length > 0) {
+          await axios.get(`/sessions/${this.session.id}/set_metadata/`, { params: advancedSettings })
+        }
         const query = wasMonocular ? { isMono: 'true', fromDevice: 'true' } : {}
         this.$router.push({name: 'Neutral', params: {id: this.session.id}, query})
       },
@@ -2409,16 +2468,18 @@
       recordingTimeLimit() {
         // Default value is 60.
         // Set -1 for no limit.
-        var timelimit = 60
-  
-        // If we know the framerate, we change time limit accordingly.
-        if ('meta' in this.session && 'settings' in this.session.meta && 'framerate' in this.session.meta.settings) {
-          var framerate = this.session.meta.settings.framerate
-          if (framerate == 60 || framerate == 120 || framerate == 240)
-            timelimit = 60 / (framerate / 60)
+        const DEFAULT_TIME_LIMIT = 60;
+        const VALID_FRAMERATES = [60, 120, 240];
+
+        let timelimit = DEFAULT_TIME_LIMIT;
+        const framerate = this.sessionFramerate;
+
+        // Adjust timelimit for valid framerates
+        if (framerate !== null && VALID_FRAMERATES.includes(framerate)) {
+          timelimit = 60 / (framerate / 60);
         }
-  
-        return timelimit
+
+        return timelimit;
       },
       toggleSessionMenuButtons() {
         this.showSessionMenuButtons = !this.showSessionMenuButtons;
@@ -2566,6 +2627,32 @@
       flex-direction: row;
       overflow: hidden;
       position: relative;
+    }
+
+    .participant-context {
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      padding: 10px 14px;
+      background-color: rgba(20, 20, 20, 0.78);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+      color: rgba(255, 255, 255, 0.92);
+      max-width: 100%;
+    }
+
+    .participant-context__label {
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .participant-context__name {
+      margin-top: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
     }
   
     .mobile-menu-toggle {

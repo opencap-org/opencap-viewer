@@ -5,6 +5,15 @@ request related to the change, then we may provide the commit.
 
 This is not a comprehensive list of changes but rather a hand-curated collection of the more notable ones. For a comprehensive history, see the [OpenCap Viewer GitHub repo](https://github.com/stanfordnmbl/opencap-viewer).
 
+v2.0.1
+======
+- Fix occlusion of Advanced Settings pop-up on Neutral page. (#478)
+- Add confirmation of starting new sessions. (#480, #502)
+- Show participant name on recording screen. (#358)
+- Display framerate when recording. (#488)
+- Providing a session name is optional, and a default session name is applied if not provided. (PR #491)
+- When using "New session, same setup", advanced settings from the current session are applied to the new session. (#483, #501)
+
 v2.0
 ======
 - Major responsive UI overhaul across core pages (sessions, subjects, recycle bin, connect/calibration/neutral/session flows, and dashboards) with improved mobile/tablet layouts and navigation patterns.
