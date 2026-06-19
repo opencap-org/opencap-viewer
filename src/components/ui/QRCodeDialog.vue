@@ -10,12 +10,13 @@
         </v-btn>
         <v-dialog
             v-model="dialog"
-            activator="parent"
             content-class="app-dialog"
             max-width="420"
             width="auto"
+            :retain-focus="false"
+            @click:outside="closeDialog"
         >
-            <v-card>
+            <v-card ref="qrCard">
                 <v-card-text class="qr-code-content">
                     <v-progress-circular
                         v-if="loading"
@@ -93,9 +94,36 @@ export default {
             const subjectName = this.session?.subject_name || null
             const url = getSessionDeepLink(this.session.id, token, subjectName)
             if (url) window.location.href = url
+        },
+
+        closeDialog() {
+            this.dialog = false
+        },
+
+        handleOutsideClick(e) {
+            if (!this.dialog) return
+
+            // Ignore clicks on the navbar trigger; it manages open state itself.
+            if (this.$el.contains(e.target)) return
+
+            const card = this.$refs.qrCard?.$el || this.$refs.qrCard
+            if (card?.contains(e.target)) return
+
+            this.closeDialog()
+        },
+
+        setOutsideClickListener(active) {
+            if (active) {
+                document.addEventListener('click', this.handleOutsideClick, true)
+            } else {
+                document.removeEventListener('click', this.handleOutsideClick, true)
+            }
         }
     },
     watch:{
+        dialog(isOpen) {
+            this.setOutsideClickListener(isOpen)
+        },
         $route(){
             this.setShowSessionQR()
         }
@@ -109,6 +137,9 @@ export default {
     },
     mounted(){
         this.setShowSessionQR()
+    },
+    beforeDestroy() {
+        this.setOutsideClickListener(false)
     },
 
 }

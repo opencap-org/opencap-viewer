@@ -75,9 +75,10 @@
                     </v-row>
                     <v-text-field
                       v-model="sessionName"
-                      label="Session Name"
+                      label="Session name (optional)"
+                      hint="If empty, a name is set as subject name and date (YYYY-MM-DD)."
+                      persistent-hint
                       type="text"
-                      required
                       @input="isAllInputsValid"
                       @blur="validateSessionName"
                       :error="formErrors.name != null"
@@ -151,15 +152,16 @@
                 </v-btn>
 
                   <v-dialog
-                    v-model="advancedSettingsDialog"
+                    :value="advancedSettingsDialog"
                     :width="$vuetify.breakpoint.smAndDown ? '95%' : '700px'"
                     content-class="advanced-settings-dialog app-dialog"
                     max-width="700"
+                    @input="setAdvancedSettingsDialog"
                   >
                     <v-card class="advanced-settings-card">
                       <v-card-actions class="advanced-settings-header justify-space-between align-center">
                         <v-card-title class="advanced-settings-title">Advanced Settings</v-card-title>
-                        <v-btn icon @click="advancedSettingsDialog = false" class="advanced-settings-close-btn" aria-label="Close">
+                        <v-btn icon @click="requestCloseAdvancedSettings" class="advanced-settings-close-btn" aria-label="Close">
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="advanced-settings-close-icon">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -167,150 +169,177 @@
                         </v-btn>
                       </v-card-actions>
 
-                      <v-card-title class="justify-center data-title">
-                        <span class="mr-2">Scaling setup</span>
-                        <v-tooltip bottom="" max-width="500px">
-                          <template v-slot:activator="{ on }">
-                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                          </template>
-                          OpenCap uses data from the neutral pose to scale the musculoskeletal model to the anthropometry of the subject.
-                          By default, OpenCap assumes that the subject is standing with an upright posture and the feet pointing forward (i.e., straight back and no bending or rotation at the hips, knees, or ankles) as shown in the example neutral pose. These assumptions are modeled in the OpenSim scaling setup.
-                          If the subject cannot adopt this pose, you can select the "Any pose" scaling setup, which does not assume any specific posture but still requires all body segments to be visible by at least two cameras.
-                          We recommend using the default scaling setup unless the subject cannot adopt the upright standing neutral pose.
-                        </v-tooltip>
-                      </v-card-title>
-                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                        <v-select
-                            v-model="scaling_setup"
-                            label="Select scaling setup"
-                            :items="scaling_setups"
-                            item-text="text"
-                            item-value="value"
-                          />
-                      </v-card-text>
+                      <div class="advanced-settings-body">
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Scaling setup</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            OpenCap uses data from the neutral pose to scale the musculoskeletal model to the anthropometry of the subject.
+                            By default, OpenCap assumes that the subject is standing with an upright posture and the feet pointing forward (i.e., straight back and no bending or rotation at the hips, knees, or ankles) as shown in the example neutral pose. These assumptions are modeled in the OpenSim scaling setup.
+                            If the subject cannot adopt this pose, you can select the "Any pose" scaling setup, which does not assume any specific posture but still requires all body segments to be visible by at least two cameras.
+                            We recommend using the default scaling setup unless the subject cannot adopt the upright standing neutral pose.
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-select
+                              v-model="scaling_setup"
+                              label="Select scaling setup"
+                              :items="scaling_setups"
+                              item-text="text"
+                              item-value="value"
+                            />
+                        </v-card-text>
 
-                      <v-card-title class="justify-center data-title">
-                        <span class="mr-2">Human pose estimation model</span>
-                        <v-tooltip bottom="" max-width="500px">
-                          <template v-slot:activator="{ on }">
-                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                          </template>
-                          OpenCap supports two human pose estimation models: OpenPose and HRNet. We recommend using OpenPose for computation speed, but both models provide similar accuracy.
-                          OpenPose is restricted to academic or non-profit organization non-commercial research use (consult the license at https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/LICENSE).
-                          HRNet, as implemented by Open-MMLab, has a permissive Apache 2.0 license (consult the license at https://github.com/open-mmlab/mmpose/blob/master/LICENSE).
-                          Please ensure that you have the rights to use the model you select. The OpenCap authors deny any responsibility regarding license infringement.
-                        </v-tooltip>
-                      </v-card-title>
-                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                        <v-select
-                            v-model="pose_model"
-                            label="Select human pose estimation model"
-                            :items="pose_models"
-                            item-text="text"
-                            item-value="value"
-                          />
-                      </v-card-text>
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Human pose estimation model</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            OpenCap supports two human pose estimation models: OpenPose and HRNet. We recommend using OpenPose for computation speed, but both models provide similar accuracy.
+                            OpenPose is restricted to academic or non-profit organization non-commercial research use (consult the license at https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/LICENSE).
+                            HRNet, as implemented by Open-MMLab, has a permissive Apache 2.0 license (consult the license at https://github.com/open-mmlab/mmpose/blob/master/LICENSE).
+                            Please ensure that you have the rights to use the model you select. The OpenCap authors deny any responsibility regarding license infringement.
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-select
+                              v-model="pose_model"
+                              label="Select human pose estimation model"
+                              :items="pose_models"
+                              item-text="text"
+                              item-value="value"
+                            />
+                        </v-card-text>
   
-                      <v-card-title class="justify-center data-title">
-                        <span class="mr-2">Framerate</span>
-                        <v-tooltip bottom="" max-width="500px">
-                          <template v-slot:activator="{ on }">
-                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                          </template>
-                          The framerate determines the number of frames per second at which the videos are recorded. Higher framerates provide more temporal resolution but reduce the maximum recording time.
-                        </v-tooltip>
-                      </v-card-title>
-                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                        <v-select
-                            v-model="framerate"
-                            label="Select framerate"
-                            :items="framerates_available"
-                            item-text="text"
-                            item-value="value"
-                            @change="updateFrequency"
-                          />
-                      </v-card-text>
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Framerate</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            The framerate determines the number of frames per second at which the videos are recorded. Higher framerates provide more temporal resolution but reduce the maximum recording time.
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-select
+                              v-model="framerate"
+                              label="Select framerate"
+                              :items="framerates_available"
+                              item-text="text"
+                              item-value="value"
+                              @change="updateFrequency"
+                            />
+                        </v-card-text>
 
-                      <v-card-title class="justify-center data-title">
-                        <span class="mr-2">Musculoskeletal model</span>
-                        <v-tooltip bottom="" max-width="500px">
-                          <template v-slot:activator="{ on }">
-                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                          </template>
-                          Full body model: Musculoskeletal model with 33 degrees of freedom from Lai et al. 2017 (https://pubmed.ncbi.nlm.nih.gov/28900782/) with modified hip abductor muscle paths from Uhlrich et al. 2022 (https://pubmed.ncbi.nlm.nih.gov/35798755/). Recommended for primarily lower extremity tasks (e.g., gait).
-                          <br><br>
-                          Full body model with ISB shoulder: Incorporates a 6 degree-of-freedom shoulder complex joint. It incorporates a scapulothoracic body with 3 translational degrees of freedom relative to the torso. The glenohumoral joint uses the Y-X-Y rotation sequence (elevation plane, elevation, rotation) recommended by the ISB (https://pubmed.ncbi.nlm.nih.gov/15844264/). Recommended for upper extremity tasks (e.g., pitching).
-                        </v-tooltip>
-                      </v-card-title>
-                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                        <v-select
-                            v-model="openSimModel"
-                            label="Select musculoskeletal model"
-                            :items="openSimModels"
-                            item-text="text"
-                            item-value="value"
-                          />
-                      </v-card-text>
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Musculoskeletal model</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            Full body model: Musculoskeletal model with 33 degrees of freedom from Lai et al. 2017 (https://pubmed.ncbi.nlm.nih.gov/28900782/) with modified hip abductor muscle paths from Uhlrich et al. 2022 (https://pubmed.ncbi.nlm.nih.gov/35798755/). Recommended for primarily lower extremity tasks (e.g., gait).
+                            <br><br>
+                            Full body model with ISB shoulder: Incorporates a 6 degree-of-freedom shoulder complex joint. It incorporates a scapulothoracic body with 3 translational degrees of freedom relative to the torso. The glenohumoral joint uses the Y-X-Y rotation sequence (elevation plane, elevation, rotation) recommended by the ISB (https://pubmed.ncbi.nlm.nih.gov/15844264/). Recommended for upper extremity tasks (e.g., pitching).
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-select
+                              v-model="openSimModel"
+                              label="Select musculoskeletal model"
+                              :items="openSimModels"
+                              item-text="text"
+                              item-value="value"
+                            />
+                        </v-card-text>
 
-                      <v-card-title class="justify-center data-title">
-                        <span class="mr-2">Marker augmenter model</span>
-                        <v-tooltip bottom="" max-width="500px">
-                          <template v-slot:activator="{ on }">
-                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                          </template>
-                          OpenCap uses an LSTM model, also called marker augmenter model, to predict the 3D position of 43 anatomical markers from the 3D position of 20 video keypoints (https://www.biorxiv.org/content/10.1101/2022.07.07.499061v1). 
-                          The anatomical markers are used as input to OpenSim to compute joint angles using inverse kinematics.
-                          <br><br>
-                          The latest model (v0.3, default) is more accurate and more robust to different activities than v0.2. We recommend using it for new studies. 
-                          It was trained on 1475 hours of motion capture data and resulted in an RMSE of 4.4 +/- 0.3 deg (OpenPose) and 4.1 +/- 0.3 deg (HRnet) for joint angles across 18 degrees of freedom.
-                          <br><br>                  
-                          The original model (v0.2) underwent training using 708 hours of motion capture data, yielding an RMSE of 4.8 +/- 0.2 deg (OpenPose and HRNet) for joint angles across 18 degrees of freedom. 
-                          <br><br>
-                          The performance evaluation was conducted in comparison to marker-based motion capture using data from 10 subjects performing 4 different types of activities (walking, squatting, sit-to-stand, and drop jumps). 
-                          The dataset used for training the latest model (v0.3) contains data from more subjects and from a more diverse set of tasks; model v0.3 is therefore expected to be more accurate for a wider variety of tasks and to yield more accurate results.
-                          We recommend using v0.3 for new studies but warn users that we might still adjust the model in the future. 
-                          If you would like to use the model that was default prior to 07-30-2023, select v0.2.
-                        </v-tooltip>
-                      </v-card-title>
-                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                        <v-select
-                            v-model="augmenter_model"
-                            label="Select marker augmenter model"
-                            :items="augmenter_models"
-                            item-text="text"
-                            item-value="value"
-                          />
-                      </v-card-text>
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Marker augmenter model</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            OpenCap uses an LSTM model, also called marker augmenter model, to predict the 3D position of 43 anatomical markers from the 3D position of 20 video keypoints (https://www.biorxiv.org/content/10.1101/2022.07.07.499061v1).
+                            The anatomical markers are used as input to OpenSim to compute joint angles using inverse kinematics.
+                            <br><br>
+                            The latest model (v0.3, default) is more accurate and more robust to different activities than v0.2. We recommend using it for new studies.
+                            It was trained on 1475 hours of motion capture data and resulted in an RMSE of 4.4 +/- 0.3 deg (OpenPose) and 4.1 +/- 0.3 deg (HRnet) for joint angles across 18 degrees of freedom.
+                            <br><br>
+                            The original model (v0.2) underwent training using 708 hours of motion capture data, yielding an RMSE of 4.8 +/- 0.2 deg (OpenPose and HRNet) for joint angles across 18 degrees of freedom.
+                            <br><br>
+                            The performance evaluation was conducted in comparison to marker-based motion capture using data from 10 subjects performing 4 different types of activities (walking, squatting, sit-to-stand, and drop jumps).
+                            The dataset used for training the latest model (v0.3) contains data from more subjects and from a more diverse set of tasks; model v0.3 is therefore expected to be more accurate for a wider variety of tasks and to yield more accurate results.
+                            We recommend using v0.3 for new studies but warn users that we might still adjust the model in the future.
+                            If you would like to use the model that was default prior to 07-30-2023, select v0.2.
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-select
+                              v-model="augmenter_model"
+                              label="Select marker augmenter model"
+                              :items="augmenter_models"
+                              item-text="text"
+                              item-value="value"
+                            />
+                        </v-card-text>
 
-                      <v-card-title class="justify-center data-title">
-                        <span class="mr-2">Filter frequency</span>
-                        <v-tooltip bottom="" max-width="500px">
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Filter frequency</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            OpenCap uses a low-pass Butterworth filter to smooth the 2D video keypoints. The filter frequency is the cutoff frequency of the filter.
+                            <br><br>
+                            By default, OpenCap uses a filter frequency of half the framerate (if the framerate is 60fps, the filter frequency is 30Hz), except for gait activities, for which the filter frequency is 12Hz.
+                            <br><br>
+                            You can here enter a different filter frequency. WARNING: this filter frequency will be applied to ALL motion trials of your session. As per the Nyquist Theorem, the filter frequency should be less than half the framerate.
+                            If you enter a filter frequency higher than half the framerate, we will use half the framerate as the filter frequency instead.
+                            <br><br>
+                            We recommend consulting the literature to find a suitable filter frequency for your specific tasks. If you are unsure, we recommend using the default filter frequency.
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-combobox
+                          :key="componentKey"
+                          v-model="tempFilterFrequency"
+                          label="Enter frequency (Hz) or choose default"
+                          :items="filter_frequencies"
+                          :allow-custom="true"
+                          :return-object="false"
+                          @change="validateAndSetFrequency"
+                          item-text="text"
+                          item-value="value"
+                          ></v-combobox>
+                        </v-card-text>
+                      </div>
+                      <v-card-actions class="advanced-settings-footer justify-end">
+                        <v-btn
+                          text
+                          :disabled="savingAdvancedSettings"
+                          @click="requestCloseAdvancedSettings"
+                        >
+                          Close
+                        </v-btn>
+                        <v-tooltip top :disabled="hasUnsavedAdvancedSettings && !savingAdvancedSettings">
                           <template v-slot:activator="{ on }">
-                            <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            <span v-on="on" class="advanced-settings-save-wrapper">
+                              <v-btn
+                                text
+                                class="advanced-settings-save-btn"
+                                :loading="savingAdvancedSettings"
+                                :disabled="savingAdvancedSettings || !hasUnsavedAdvancedSettings"
+                                @click="saveAdvancedSettingsAndClose"
+                              >
+                                Save and exit
+                              </v-btn>
+                            </span>
                           </template>
-                          OpenCap uses a low-pass Butterworth filter to smooth the 2D video keypoints. The filter frequency is the cutoff frequency of the filter.
-                          <br><br>                  
-                          By default, OpenCap uses a filter frequency of half the framerate (if the framerate is 60fps, the filter frequency is 30Hz), except for gait activities, for which the filter frequency is 12Hz.
-                          <br><br>
-                          You can here enter a different filter frequency. WARNING: this filter frequency will be applied to ALL motion trials of your session. As per the Nyquist Theorem, the filter frequency should be less than half the framerate.
-                          If you enter a filter frequency higher than half the framerate, we will use half the framerate as the filter frequency instead.
-                          <br><br>
-                          We recommend consulting the literature to find a suitable filter frequency for your specific tasks. If you are unsure, we recommend using the default filter frequency.
+                          <span>{{ saveAdvancedSettingsDisabledMessage }}</span>
                         </v-tooltip>
-                      </v-card-title>
-                      <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                        <v-combobox
-                        :key="componentKey"
-                        v-model="tempFilterFrequency"
-                        label="Enter frequency (Hz) or choose default"
-                        :items="filter_frequencies"
-                        :allow-custom="true"
-                        :return-object="false"
-                        @change="validateAndSetFrequency"
-                        item-text="text"
-                        item-value="value"
-                        ></v-combobox>
-                      </v-card-text>
+                      </v-card-actions>
                     </v-card>
                   </v-dialog>
             </div>
@@ -371,6 +400,23 @@
       @subject-added="submitAddSubject"
     />
 
+    <ConfirmDialog
+      v-model="unsavedAdvancedSettingsDialog"
+      :fullscreen="$vuetify.breakpoint.smAndDown"
+      icon="mdi-alert-circle"
+      icon-color="orange"
+      cancel-text="Discard"
+      confirm-text="Save and Close"
+      confirm-color="primary-dark"
+      :confirm-disabled="savingAdvancedSettings"
+      @cancel="discardAdvancedSettingsChanges"
+      @confirm="saveAdvancedSettingsAndClose">
+      <h3 class="mb-2">Unsaved advanced settings</h3>
+      <p class="mb-0">
+        Press Save to apply these advanced settings to the session before closing.
+      </p>
+    </ConfirmDialog>
+
   </MainLayout>
 </template>
 
@@ -382,13 +428,15 @@ import { playNeutralFinishedSound } from "@/util/SoundMessage.js";
 import MainLayout from "@/layout/MainLayout";
 import ExampleImage from "@/components/ui/ExampleImage";
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
 export default {
   name: "Neutral",
   components: {
     MainLayout,
     ExampleImage,
-    DialogComponent
+    DialogComponent,
+    ConfirmDialog
   },
   data() {
     return {
@@ -402,6 +450,9 @@ export default {
         subject_tags: null,
       },
       advancedSettingsDialog: false,
+      unsavedAdvancedSettingsDialog: false,
+      savingAdvancedSettings: false,
+      savedAdvancedSettingsSnapshot: null,
       selected: null,
       subject_query: "",
       subject_loading: false,
@@ -523,6 +574,37 @@ export default {
     errorsConsole() {
       return this.errors;
     },
+    currentAdvancedSettings() {
+      return {
+        scaling_setup: this.scaling_setup,
+        pose_model: this.pose_model,
+        framerate: this.framerate,
+        openSimModel: this.openSimModel,
+        augmenter_model: this.augmenter_model,
+        filter_frequency: this.filter_frequency,
+      }
+    },
+    hasSavedAdvancedSettingsMetadata() {
+      const settings = this.session?.meta?.settings
+      if (!settings || typeof settings !== 'object') return false
+
+      return [
+        'scalingsetup',
+        'posemodel',
+        'framerate',
+        'openSimModel',
+        'augmentermodel',
+        'filterfrequency',
+      ].every(key => settings[key] !== undefined && settings[key] !== null && settings[key] !== '')
+    },
+    hasUnsavedAdvancedSettings() {
+      if (!this.savedAdvancedSettingsSnapshot) return false
+      return JSON.stringify(this.currentAdvancedSettings) !== JSON.stringify(this.savedAdvancedSettingsSnapshot)
+    },
+    saveAdvancedSettingsDisabledMessage() {
+      if (this.savingAdvancedSettings) return 'Saving advanced settings'
+      return 'Make a change to enable Save and exit'
+    },
     backButtonLabel() {
       if (this.isMonocularMode && this.$route.query.fromDevice === 'true') {
         return 'Back';
@@ -552,7 +634,10 @@ export default {
     if (!this.isMonocularMode) {
       apiInfo("You can now record a neutral pose different than the upright standing pose (e.g., sitting). Select 'Any pose' 'Advanced Settings'.", 8000);
     }
-    this.loadSession(this.$route.params.id)
+    await this.loadSession(this.$route.params.id)
+    this.applySavedAdvancedSettings()
+    await this.ensureAdvancedSettingsMetadata()
+    this.updateSavedAdvancedSettingsSnapshot()
     if (this.$route.query.autoRecord) {
       this.onNext();
     }
@@ -636,22 +721,178 @@ export default {
     submitAddSubject (data) {
       let obj = {
         id: data.id,
+        name: data.name,
         display_name: `${data.name} (${data.weight} Kg, ${data.height} m, ${data.birth_year})`,
       }
       this.loaded_subjects.push(obj)
       this.subject = obj
+    },
+    applySavedAdvancedSettings() {
+      const settings = this.session?.meta?.settings
+      if (!settings || typeof settings !== 'object') return
+
+      const assignIfPresent = (key, setter) => {
+        if (settings[key] !== undefined && settings[key] !== null && settings[key] !== '') {
+          setter(settings[key])
+        }
+      }
+
+      assignIfPresent('scalingsetup', value => { this.scaling_setup = value })
+      assignIfPresent('posemodel', value => { this.pose_model = value })
+      assignIfPresent('framerate', value => {
+        const parsed = Number(value)
+        this.framerate = Number.isNaN(parsed) ? value : parsed
+      })
+      assignIfPresent('openSimModel', value => { this.openSimModel = value })
+      assignIfPresent('augmentermodel', value => { this.augmenter_model = value })
+      assignIfPresent('filterfrequency', value => {
+        this.filter_frequency = String(value)
+        this.tempFilterFrequency = this.filter_frequency
+        this.componentKey += 1
+      })
+    },
+    updateSavedAdvancedSettingsSnapshot() {
+      this.savedAdvancedSettingsSnapshot = {...this.currentAdvancedSettings}
+    },
+    getAdvancedSettingsMetadataParams() {
+      return {
+        settings_scaling_setup: this.scaling_setup,
+        settings_pose_model: this.pose_model,
+        settings_framerate: this.framerate,
+        settings_openSimModel: this.openSimModel,
+        settings_augmenter_model: this.augmenter_model,
+        settings_filter_frequency: this.filter_frequency,
+      }
+    },
+    setAdvancedSettingsDialog(value) {
+      if (value) {
+        this.advancedSettingsDialog = true
+      } else {
+        this.requestCloseAdvancedSettings()
+      }
+    },
+    requestCloseAdvancedSettings() {
+      if (this.hasUnsavedAdvancedSettings) {
+        this.unsavedAdvancedSettingsDialog = true
+      } else {
+        this.advancedSettingsDialog = false
+      }
+    },
+    discardAdvancedSettingsChanges() {
+      if (this.savedAdvancedSettingsSnapshot) {
+        Object.assign(this, this.savedAdvancedSettingsSnapshot)
+        this.tempFilterFrequency = this.filter_frequency
+        this.componentKey += 1
+      }
+      this.unsavedAdvancedSettingsDialog = false
+      this.advancedSettingsDialog = false
+    },
+    async saveAdvancedSettings() {
+      this.savingAdvancedSettings = true
+      try {
+        await axios.get(
+          `/sessions/${this.session.id}/set_metadata/`,
+          {
+            params: this.getAdvancedSettingsMetadataParams(),
+          }
+        )
+        await this.loadSession(this.session.id)
+        this.applySavedAdvancedSettings()
+        this.updateSavedAdvancedSettingsSnapshot()
+        apiSuccess("Advanced settings saved.")
+      } catch (error) {
+        apiError(error)
+      } finally {
+        this.savingAdvancedSettings = false
+      }
+    },
+    async saveAdvancedSettingsAndClose() {
+      await this.saveAdvancedSettings()
+      if (!this.hasUnsavedAdvancedSettings) {
+        this.unsavedAdvancedSettingsDialog = false
+        this.advancedSettingsDialog = false
+      }
+    },
+    async ensureAdvancedSettingsMetadata() {
+      if (this.hasSavedAdvancedSettingsMetadata) return
+
+      try {
+        await axios.get(
+          `/sessions/${this.session.id}/set_metadata/`,
+          {
+            params: this.getAdvancedSettingsMetadataParams(),
+          }
+        )
+        await this.loadSession(this.session.id)
+      } catch (error) {
+        apiError(error)
+      }
     },
     reloadSubjects() {
     },
     openNewSubjectPopup() {
         this.$refs.dialogRef.edit_dialog = true
     },
+    sanitizeSessionNameSegment(raw) {
+      let s = String(raw || '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9-_]/g, '');
+      s = s.replace(/_+/g, '_').replace(/^_|_$/g, '');
+      return s;
+    },
+    /** Plain subject label for auto session names (not display_name with anthropometry). */
+    getSubjectRawNameForDefaultSession() {
+      if (!this.subject || this.subject.id === 'new') {
+        return 'subject';
+      }
+      const n = this.subject.name;
+      if (n != null && String(n).trim() !== '') {
+        return String(n).trim();
+      }
+      const dn = this.subject.display_name;
+      if (dn) {
+        const cut = String(dn).indexOf(' (');
+        if (cut > 0) {
+          return String(dn).slice(0, cut).trim();
+        }
+        return String(dn).trim();
+      }
+      return String(this.subject.id);
+    },
+    buildDefaultSessionName() {
+      let subjectPart = this.sanitizeSessionNameSegment(
+        this.getSubjectRawNameForDefaultSession()
+      );
+      if (!subjectPart) {
+        subjectPart =
+          this.subject && this.subject.id !== 'new'
+            ? this.sanitizeSessionNameSegment(String(this.subject.id)) || 'subject'
+            : 'subject';
+      }
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${subjectPart}_${y}-${m}-${day}`;
+    },
+    /** Name sent to the API: user value if non-empty and valid, else subject + date. */
+    getResolvedSessionNameForSubmit() {
+      const trimmed = (this.sessionName || '').trim();
+      if (!trimmed) {
+        return this.buildDefaultSessionName();
+      }
+      const validPattern = /^[a-zA-Z0-9-_]+$/;
+      if (!validPattern.test(trimmed)) {
+        return this.buildDefaultSessionName();
+      }
+      return trimmed;
+    },
     validateSessionName() {
       const trimmedSessionName = (this.sessionName || '').trim();
 
       if (!trimmedSessionName) {
-        this.formErrors.name = "Session name is required.";
-        return false;
+        this.formErrors.name = null;
+        return true;
       }
 
       const validPattern = /^[a-zA-Z0-9-_]+$/;
@@ -737,13 +978,7 @@ export default {
                 {
                   params: {
                     settings_data_sharing: this.data_sharing,
-                    settings_scaling_setup: this.scaling_setup,
-                    settings_pose_model: this.pose_model,
-                    settings_framerate: this.framerate,
-                    settings_session_name: this.sessionName,
-                    settings_openSimModel: this.openSimModel,
-                    settings_augmenter_model: this.augmenter_model,
-                    settings_filter_frequency: this.filter_frequency,
+                    settings_session_name: this.getResolvedSessionNameForSubmit(),
                   },
                 }
               );
@@ -914,7 +1149,7 @@ export default {
                 // settings_scaling_setup: this.scaling_setup,
                 // settings_pose_model: this.pose_model,
                 settings_framerate: this.framerate,
-                settings_session_name: this.sessionName,
+                settings_session_name: this.getResolvedSessionNameForSubmit(),
                 settings_openSimModel: this.openSimModel,
                 // settings_augmenter_model: this.augmenter_model,
                 // settings_filter_frequency: this.filter_frequency,
@@ -1254,17 +1489,21 @@ export default {
 /* Advanced Settings Dialog Responsive Styles */
 .advanced-settings-dialog {
   z-index: 200 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   
   .v-card.advanced-settings-card {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
     overflow-x: hidden !important;
-    overflow-y: auto !important;
+    overflow-y: hidden !important;
+    height: min(90vh, 820px);
     max-height: 90vh;
     display: flex;
     flex-direction: column;
-    padding-bottom: 48px;
+    padding-bottom: 0;
     padding-top: 0;
     min-height: auto;
     background-color: #252525 !important;
@@ -1320,6 +1559,15 @@ export default {
     ::v-deep .v-tooltip span {
       background-color: transparent !important;
     }
+  }
+
+  .advanced-settings-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background-color: #252525 !important;
   }
   
   .v-card__title.data-title {
@@ -1438,10 +1686,7 @@ export default {
     z-index: 30;
     margin-top: 0;
     margin-bottom: 0;
-    position: sticky;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: relative;
     background-color: #252525 !important;
     border-bottom: 1px solid rgba(255,255,255,0.08);
     
@@ -1459,8 +1704,8 @@ export default {
     background: transparent !important;
   }
   
-  .v-card__actions {
-    .v-btn {
+  .v-card__actions.advanced-settings-header {
+    .v-btn.advanced-settings-close-btn {
       min-width: 40px;
       width: 40px;
       height: 40px;
@@ -1484,6 +1729,69 @@ export default {
     .v-btn::before,
     .v-btn .v-ripple__container {
       color: #ffffff !important;
+    }
+  }
+
+  .v-card__actions.advanced-settings-footer {
+    position: relative;
+    flex-shrink: 0;
+    z-index: 20;
+    padding: 16px;
+    gap: 12px;
+    background-color: #252525 !important;
+    border-top: 1px solid rgba(255,255,255,0.08);
+
+    .v-btn {
+      min-width: 96px;
+      height: 40px;
+      padding: 0 18px;
+      border-radius: 4px;
+      text-transform: none;
+    }
+
+    .v-btn:not(.primary-dark) {
+      color: #ffffff !important;
+      background: rgba(255,255,255,0.08) !important;
+    }
+
+    .advanced-settings-save-wrapper {
+      display: inline-flex;
+    }
+
+    .advanced-settings-save-btn.v-btn--disabled {
+      background: rgba(255,255,255,0.06) !important;
+      color: rgba(255,255,255,0.42) !important;
+      border: 1px dashed rgba(255,255,255,0.24);
+      box-shadow: none;
+    }
+
+    .advanced-settings-save-btn.v-btn--disabled .v-btn__content {
+      color: rgba(255,255,255,0.42) !important;
+    }
+
+    .advanced-settings-save-btn:not(.v-btn--disabled) {
+      color: #ffffff !important;
+      background: rgba(255,255,255,0.08) !important;
+    }
+  }
+
+  @media (max-width: 599px) {
+    margin: 12px !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    height: calc(100vh - 24px);
+    height: calc(100dvh - 24px);
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+
+    .v-card.advanced-settings-card {
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+    }
+
+    .v-card__actions.advanced-settings-footer {
+      padding: 12px;
     }
   }
   
