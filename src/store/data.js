@@ -272,7 +272,16 @@ export default {
       state.trialName = ''       
     },
     addTrial (state, trial) {
-      state.session.trials.push(trial)
+      if (!state.session.trials) {
+        Vue.set(state.session, 'trials', [])
+      }
+
+      const index = trial?.id ? state.session.trials.findIndex(t => t.id === trial.id) : -1
+      if (index >= 0) {
+        Vue.set(state.session.trials, index, trial)
+      } else {
+        state.session.trials.push(trial)
+      }
     },
     updateTrial (state, trial) {
       const index = state.session.trials.findIndex(t => t.id === trial.id)
