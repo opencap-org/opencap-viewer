@@ -526,6 +526,7 @@
                   :src="video.media" 
                   crossorigin="anonymous" 
                   @ended="onVideoEnded(index)"
+                  preload="metadata"
                   class="video-element" />
             </div>
 
@@ -912,7 +913,8 @@
   import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
   import SpeedControl from '@/components/ui/SpeedControl'
   import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
-  
+  import { debounce } from 'lodash'
+
   let openpose_bones = [
     [20, 21],
     [20, 22],
@@ -1052,6 +1054,15 @@
               controlGestureGuard: null,
 
               sessionNotification: { show: false, text: '', type: 'error' },
+
+              // Performance optimization properties
+              lastFrameTime: 0,
+              frameSkipCounter: 0,
+              maxFrameSkip: 2,
+              materialCache: new Map(),
+              dataCache: new Map(),
+              renderQuality: 'high', // 'low', 'medium', 'high'
+              isLowPerformance: false,
           }
       },
       filters: {
@@ -1220,9 +1231,28 @@
             maxWidth: maxWidths[idx],
             '--mobile-video-max-height': `${maxHeight[idx]}px`
           }
+        },
+        renderSettings() {
+          if (this.isLowPerformance) {
+            return {
+              pixelRatio: 1.5,
+              shadowMapSize: 1024,
+              antialiasing: false,
+              maxFramesToRender: 60
+            };
+          }
+          return {
+            pixelRatio: window.devicePixelRatio || 2,
+            shadowMapSize: 2048,
+            antialiasing: true,
+            maxFramesToRender: 60
+          };
         }
       },
     async mounted() {
+      // Check performance
+      this.checkPerformance();
+
       await this.loadSession(this.$route.params.id)
       this.persistSameDeviceSessionFlag()
 
@@ -1296,6 +1326,11 @@
       // Remove keyboard event listener
       window.removeEventListener('keydown', this.handleKeyboard)
       this.unbindControlGestureGuards()
+
+      // Clear caches
+      this.materialCache.clear();
+      this.dataCache.clear();
+      this.disposeScene();
     },
     watch: {
       dialog(isOpen) {
@@ -2053,6 +2088,57 @@
           }
         }
       },
+      disposeScene() {
+        if (this.scene) {
+          this.scene.traverse((object) => {
+            if (object.isMesh) {
+              if (object.geometry) {
+                object.geometry.dispose();
+              }
+              if (object.material) {
+                if (Array.isArray(object.material)) {
+                  object.material.forEach(m => m.dispose());
+                } else {
+                  object.material.dispose();
+                }
+              }
+            }
+          });
+
+          // Clear meshes cache
+          for (let key in this.meshes) {
+            if (this.meshes[key]) {
+              if (this.meshes[key].geometry) {
+                this.meshes[key].geometry.dispose();
+              }
+              if (this.meshes[key].material) {
+                if (Array.isArray(this.meshes[key].material)) {
+                  this.meshes[key].material.forEach(m => m.dispose());
+                } else {
+                  this.meshes[key].material.dispose();
+                }
+              }
+            }
+          }
+          this.meshes = {};
+        }
+      },
+      checkPerformance() {
+        if (typeof window !== 'undefined' && window.performance) {
+          // Check if device is low performance
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          const memory = navigator.deviceMemory || 4;
+          const cores = navigator.hardwareConcurrency || 4;
+
+          this.isLowPerformance = isMobile || memory < 4 || cores < 4;
+
+          if (this.isLowPerformance) {
+            this.renderQuality = 'medium';
+            this.maxFrameSkip = 2;
+            console.log('Low performance mode enabled');
+          }
+        }
+      },
       async loadTrial(trial) {
         console.log('loadTrial')
         // Clear any previous toast/errors when switching trials.
@@ -2072,20 +2158,30 @@
           this.togglePlay(false)
 
           try {
-            const {data} = await axios.get(`/trials/${trial.id}/`)
-  
+            // Check cache first
+            let data;
+            const cacheKey = `trial_${trial.id}`;
+            if (this.dataCache.has(cacheKey)) {
+              console.log('Loading trial from cache');
+              data = this.dataCache.get(cacheKey);
+            } else {
+              const response = await axios.get(`/trials/${trial.id}/`)
+              data = response.data;
+              this.dataCache.set(cacheKey, data);
+            }
+
             this.trial = data
             console.log("Trial:", data)
   
             // load JSON
             const json = data.results.filter(element => element.tag == "visualizerTransforms-json")
             if (json && json.length > 0) {
-              let data
+              let jsonData
               const url = json[0].media
   
               if (url.startsWith(axios.defaults.baseURL)) {
                 const res = await axios.get(url)
-                data = res.data
+                jsonData = res.data
               } else {
                 let axiosClean = axios.create()
   
@@ -2097,12 +2193,12 @@
                     return data
                   }]
                 })
-  
-                data = res.data
+
+                jsonData = res.data
               }
-  
-              this.frames = data.time
-              this.animation_json = data
+
+              this.frames = jsonData.time
+              this.animation_json = jsonData
             } else {
               this.frames = [] //null
             }
@@ -2146,6 +2242,9 @@
             if (this.frames.length > 0) {
               this.$nextTick(() => {
                 try {
+                  // Dispose old scene
+                  this.disposeScene();
+
                   while (this.$refs.mocap.lastChild) {
                     this.$refs.mocap.removeChild(this.$refs.mocap.lastChild)
                   }
@@ -2162,21 +2261,43 @@
                   this.camera.position.y = 3
 
                   this.scene = new THREE.Scene()
-                  this.renderer = new THREE.WebGLRenderer({antialias: true})
+                  this.renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    powerPreference: "high-performance"
+                  })
                   this.renderer.shadowMap.enabled = true;
-                  this.renderer.setPixelRatio(window.devicePixelRatio)
+
+                  // Adaptive render quality
+                  const pixelRatio = this.isLowPerformance ?
+                    Math.min(window.devicePixelRatio, 1.5) :
+                    window.devicePixelRatio;
+                  this.renderer.setPixelRatio(pixelRatio)
+
+                  // Reduce shadow quality on mobile
+                  if (this.isLowPerformance) {
+                    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                  }
+
                   this.onResize()
                   container.appendChild(this.renderer.domElement)
                   this.controls = new THREE_OC.OrbitControls(this.camera, this.renderer.domElement)
   
                   // show3d
-                  // add the plane
+                  // add the plane - with cached texture
                   {
                     const planeSize = 8;
   
                     const loader = new THREE.TextureLoader();
-                    const texture = loader.load('https://threejsfundamentals.org/threejs/resources/images/checker.png');
-                    //                  const texture = loader.load('https://www.the3rdsequence.com/texturedb/download/32/texture/jpg/1024/smooth+white+tile-1024x1024.jpg')
+                    // Use cached texture if available
+                    let texture;
+                    const textureKey = 'checker_texture';
+                    if (this.materialCache.has(textureKey)) {
+                      texture = this.materialCache.get(textureKey);
+                    } else {
+                      texture = loader.load('https://threejsfundamentals.org/threejs/resources/images/checker.png');
+                      this.materialCache.set(textureKey, texture);
+                    }
+
                     texture.wrapS = THREE.RepeatWrapping;
                     texture.wrapT = THREE.RepeatWrapping;
                     texture.magFilter = THREE.NearestFilter;
@@ -2206,7 +2327,7 @@
                     this.scene.add(light);
                   }
   
-                  // add directional light
+                  // add directional light - with reduced shadow resolution for performance
                   {
                     const color = 0xFFFFFF;
                     const intensity = 0.8;
@@ -2221,8 +2342,11 @@
                     light.shadow.camera.near = 0.1;
                     light.shadow.camera.far = 200;
                     light.shadow.camera.zoom = 16
-                    light.shadow.mapSize.width = 2048;
-                    light.shadow.mapSize.height = 2048;
+
+                    // Reduced shadow map size for low performance devices
+                    const shadowSize = this.isLowPerformance ? 1024 : 2048;
+                    light.shadow.mapSize.width = shadowSize;
+                    light.shadow.mapSize.height = shadowSize;
                     this.scene.add(light);
                     this.scene.add(light.target);
   
@@ -2287,7 +2411,7 @@
           }
         }
       },
-      onResize() {
+      onResize: debounce(function() {
         const container = this.$refs.mocap
         if (container && this.renderer) {
           const width = container.clientWidth || container.offsetWidth
@@ -2302,12 +2426,17 @@
             }
           }
         }
-      },
+      }),
       animate() {
         // cancel display cycle if loading of new trial started
-        if (!this.trialLoading) {
-          requestAnimationFrame(this.animate)
-          this.animateOneFrame()
+        if (this.playing && !this.trialLoading) {
+          // Check if enough time has passed for next frame (cap at 60fps)
+          const now = performance.now();
+          if (now - this.lastFrameTime >= 16) {
+            this.lastFrameTime = now;
+            this.animateOneFrame();
+          }
+          requestAnimationFrame(this.animate);
         }
       },
       animateOneFrame() {
@@ -2322,6 +2451,18 @@
           if (this.videos.length > 0) {
             let t = 0
             if (this.vid0()) t = this.vid0().currentTime;
+
+            // Skip frames on low performance devices
+            if (this.isLowPerformance && this.frameSkipCounter < this.maxFrameSkip) {
+              this.frameSkipCounter++;
+              // Still render but skip updates
+              if (this.renderer && this.scene && this.camera) {
+                this.renderer.render(this.scene, this.camera);
+              }
+              return;
+            }
+            this.frameSkipCounter = 0;
+
             cframe = (Math.round(t * framerate)) > this.frames.length ? this.frames.length - 1 : (Math.round(t * framerate))
             this.frame = cframe
             if (this.vid0()) this.time = this.frame == 0 ? 0 : parseFloat(this.vid0().currentTime.toFixed(2))
@@ -2505,7 +2646,7 @@
         }
         window.alert(`Result with tag "${tag}" not found`);
       },
-      handleKeyboard(event) {
+      handleKeyboard: debounce(function(event) {
         // Only handle keyboard events when trial is loaded and video controls are enabled
         if (this.videoControlsDisabled) {
           return
@@ -2534,7 +2675,7 @@
             }
             break
         }
-      }
+      })
     }
   }
   </script>
@@ -3183,5 +3324,3 @@
     color: #90caf9;
   }
   </style>
-  
-  
