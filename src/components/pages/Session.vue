@@ -1121,7 +1121,7 @@
           return trials.filter(trial => trial && trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
         },
         videoControlsDisabled() {
-          return !this.trial || this.frames.length === 0
+          return !this.trial || this.trial.name === 'neutral' || this.frames.length === 0
         },
         has3DData() {
           return !!this.trial && Array.isArray(this.frames) && this.frames.length > 0
@@ -2398,7 +2398,9 @@
 
                 delay(timeout).then(() => {
                   // The fixed number 5 is here as a warkaround for Safari
-                  this.togglePlay(true)
+                  if (this.trial?.name !== 'neutral') {
+                    this.togglePlay(true)
+                  }
                 });
               })
             }
