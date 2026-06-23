@@ -1309,6 +1309,7 @@
 
       // Add keyboard event listener
       window.addEventListener('keydown', this.handleKeyboard)
+      window.addEventListener('resize', this.onResize)
       this.bindControlGestureGuards()
     },
     beforeDestroy() {
@@ -1318,13 +1319,13 @@
       this.cancelTrialsPoll()
   
       if (this.resizeObserver) {
-        if (this.$refs.mocap) {
-          this.resizeObserver.unobserve(this.$refs.mocap)
-        }
+        this.resizeObserver.disconnect()
+        this.resizeObserver = null
       }
 
       // Remove keyboard event listener
       window.removeEventListener('keydown', this.handleKeyboard)
+      window.removeEventListener('resize', this.onResize)
       this.unbindControlGestureGuards()
 
       // Clear caches
@@ -1342,18 +1343,15 @@
         }
       },
       trial() {
-        if (this.trial && this.has3DData) {
-          this.$nextTick(() => {
-            this.resizeObserver = new ResizeObserver(this.onResize)
-            if (this.$refs.mocap) {
-              this.resizeObserver.observe(this.$refs.mocap)
-            }
-          })
-        } else {
-          if (this.resizeObserver && this.$refs.mocap) {
-            this.resizeObserver.unobserve(this.$refs.mocap)
+        if (!this.trial || !this.has3DData) {
+          if (this.resizeObserver) {
+            this.resizeObserver.disconnect()
+            this.resizeObserver = null
           }
         }
+      },
+      leftMenuOpen() {
+        this.$nextTick(() => this.onResize())
       },
       playSpeed() {
         this.eachVideo(videoElement => {
@@ -2384,6 +2382,7 @@
                 }
   
                 this.onResize()
+                this.initResizeObserver()
 
                 // animate
   
@@ -2411,22 +2410,35 @@
           }
         }
       },
-      onResize: debounce(function() {
+      initResizeObserver() {
+        if (typeof ResizeObserver === 'undefined' || !this.$refs.mocap) {
+          return
+        }
+        if (this.resizeObserver) {
+          this.resizeObserver.disconnect()
+          this.resizeObserver = null
+        }
+        this.resizeObserver = new ResizeObserver(() => {
+          this.onResize()
+        })
+        this.resizeObserver.observe(this.$refs.mocap)
+      },
+      onResize() {
         const container = this.$refs.mocap
         if (container && this.renderer) {
-          const width = container.clientWidth || container.offsetWidth
-          const height = container.clientHeight || container.offsetHeight
-          
-          if (width > 0 && height > 0) {
-            this.renderer.setSize(width, height)
-            
-            if (this.camera) {
-              this.camera.aspect = width / height
-              this.camera.updateProjectionMatrix()
-            }
+          const width = container.clientWidth
+          const height = container.clientHeight
+          if (!width || !height) {
+            return
+          }
+          // Keep drawing buffer in sync with the visible canvas size.
+          this.renderer.setSize(width, height, true)
+          if (this.camera) {
+            this.camera.aspect = width / height
+            this.camera.updateProjectionMatrix()
           }
         }
-      }),
+      },
       animate() {
         // cancel display cycle if loading of new trial started
         if (this.playing && !this.trialLoading) {
@@ -2999,6 +3011,7 @@
         touch-action: none;
   
         canvas {
+          display: block;
           width: 100% !important;
           height: 100% !important;
         }
