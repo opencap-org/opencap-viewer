@@ -478,11 +478,11 @@
                 </div>
   
   
-                  <div v-if="!videoControlsDisabled && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
+                  <div v-if="trial && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                          :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"
+                          :disabled="videoControlsDisabled || state !== 'ready'" dark class="time-input" @input="onChangeTime"
                           autocomplete="off" />
-                      <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
+                      <v-slider :value="frame" :min="0" :max="frames.length - 1" :disabled="videoControlsDisabled" @input="onNavigate" hide-details
                           class="mb-2 flex-grow-1 timeline-slider" />
 
                       <div class="playback-controls-inline d-flex align-center">
@@ -499,7 +499,7 @@
                             @input="onNavigate"
                             class="playback-navigation" />
 
-                        <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+                        <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed ml-2" />
                       </div>
                   </div>
               </div>
@@ -545,14 +545,14 @@
 
             <div v-if="isMobileOrTablet" class="right-spacer" />
 
-            <div v-if="isMobileOrTablet && !videoControlsDisabled" class="playback-controls ui-no-zoom">
+            <div v-if="isMobileOrTablet && trial" class="playback-controls ui-no-zoom">
               <div class="playback-timeline-mobile d-flex align-center px-1">
                 <v-text-field
                     label="Time (s)"
                     type="number"
                     :step="0.01"
                     :value="time"
-                    :disabled="state !== 'ready'"
+                    :disabled="videoControlsDisabled || state !== 'ready'"
                     dark
                     class="time-input mr-2"
                     autocomplete="off"
@@ -561,6 +561,7 @@
                     :value="frame"
                     :min="0"
                     :max="frames.length - 1"
+                    :disabled="videoControlsDisabled"
                     @input="onNavigate"
                     hide-details
                     class="flex-grow-1 timeline-slider" />
@@ -580,7 +581,7 @@
                     @input="onNavigate"
                     class="playback-navigation" />
 
-                <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+                <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed ml-2" />
               </div>
             </div>
           </div>
