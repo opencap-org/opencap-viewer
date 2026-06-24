@@ -470,7 +470,12 @@
         <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
             <div v-if="trial" class="d-flex flex-column" style="flex: 1 1 0; min-height: 0; height: 100%;">
   
-                <div v-if="has3DData" id="mocap" ref="mocap" class="flex-grow-1" />
+                <div v-if="has3DData" class="mocap-wrapper flex-grow-1">
+                  <div id="mocap" ref="mocap" class="mocap-inner" />
+                  <div v-if="!sceneReady" class="mocap-loading-overlay d-flex align-center justify-center">
+                    <v-progress-circular indeterminate color="grey lighten-1" size="40" width="3" />
+                  </div>
+                </div>
                 <div v-else class="session-empty-state d-flex flex-column align-center justify-center text-center flex-grow-1">
                   <v-icon size="56" color="grey lighten-1" class="mb-3">mdi-cube-off-outline</v-icon>
                   <h3 class="mb-2">No 3D motion data for this trial</h3>
@@ -999,6 +1004,7 @@
               videos: [],
               frames: [],
               trialLoading: false,
+              sceneReady: false,
   
               // objects & arrays
               synced: false,
@@ -2155,6 +2161,7 @@
           this.videos = []
           this.synced = false
           this.trialLoading = true
+          this.sceneReady = false
           this.togglePlay(false)
 
           try {
@@ -2399,6 +2406,7 @@
                 }
 
                 delay(timeout).then(() => {
+                  this.sceneReady = true
                   // The fixed number 5 is here as a warkaround for Safari.
                   // For neutral: start the render loop so meshes appear as OBJ files load,
                   // but skip vid.play() so videos stay paused at frame 0.
@@ -3019,6 +3027,23 @@
       flex-direction: column;
       overflow: hidden;
   
+      .mocap-wrapper {
+        position: relative;
+        min-height: 0;
+      }
+
+      .mocap-inner {
+        width: 100%;
+        height: 100%;
+      }
+
+      .mocap-loading-overlay {
+        position: absolute;
+        inset: 0;
+        background-color: #000;
+        z-index: 5;
+      }
+
       #mocap {
         width: 100%;
         height: 100%;
