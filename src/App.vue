@@ -31,6 +31,9 @@
       <v-spacer class="navbar-spacer"></v-spacer>
 
       <div class="navbar-actions d-flex align-center">
+        <LocalDataSaveToggle
+          v-if="showSessionNavbarControls"
+          class="navbar-local-save" />
         <QRCodeDialog class="navbar-qr"/>
         <profile-dropdown v-if="showProfileInNavbar" class="navbar-profile"></profile-dropdown>
       </div>
@@ -48,11 +51,13 @@ import { mapActions, mapState } from 'vuex'
 import { notificationState, hideNotification, clearNotifications } from '@/util/notificationStore.js'
 import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
+import LocalDataSaveToggle from './components/ui/LocalDataSaveToggle.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
 
 export default {
   name: 'App',
   components: {
+    LocalDataSaveToggle,
     QRCodeDialog,
     'profile-dropdown': ProfileDropdown},
   data () {
@@ -106,6 +111,9 @@ export default {
     showProfileInNavbar () {
       const authRouteNames = ['Login', 'Register', 'Verify', 'ResetPassword', 'NewPassword']
       return this.verified && !authRouteNames.includes(this.$route.name)
+    },
+    showSessionNavbarControls () {
+      return this.$route.name === 'Session'
     },
     appStyle () {
       return {
@@ -196,6 +204,10 @@ export default {
   @media (max-width: 599px) {
     min-width: auto;
   }
+}
+
+.navbar-local-save {
+  flex-shrink: 0;
 }
 
 .navbar-profile {

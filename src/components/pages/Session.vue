@@ -91,7 +91,7 @@
                     <template v-if="sessionFramerate">at {{ sessionFramerate }} Hz</template>,
                     do not refresh
                   </p>
-                  <p v-if="state === 'processing'">{{ n_videos_uploaded }} of {{ displayDeviceCount }} videos uploaded, do not refresh.</p>
+                  <p v-if="state === 'processing'">{{ processingProgressText }}</p>
               </ValidationObserver>
 
               <div class="show-removed-trials-sidebar mb-2">
@@ -470,7 +470,12 @@
         <div class="viewer flex-grow-1" v-show="!showOpenInAppButton || trial">
             <div v-if="trial" class="d-flex flex-column" style="flex: 1 1 0; min-height: 0; height: 100%;">
   
-                <div v-if="has3DData" id="mocap" ref="mocap" class="flex-grow-1" />
+                <div v-if="has3DData" class="mocap-wrapper flex-grow-1">
+                  <div id="mocap" ref="mocap" class="mocap-inner" />
+                  <div v-if="!sceneReady" class="mocap-loading-overlay d-flex align-center justify-center">
+                    <v-progress-circular indeterminate color="grey lighten-1" size="40" width="3" />
+                  </div>
+                </div>
                 <div v-else class="session-empty-state d-flex flex-column align-center justify-center text-center flex-grow-1">
                   <v-icon size="56" color="grey lighten-1" class="mb-3">mdi-cube-off-outline</v-icon>
                   <h3 class="mb-2">No 3D motion data for this trial</h3>
@@ -478,11 +483,11 @@
                 </div>
   
   
-                  <div v-if="!videoControlsDisabled && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
+                  <div v-if="trial && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                          :disabled="state !== 'ready'" dark class="time-input" @input="onChangeTime"
+                          :disabled="videoControlsDisabled || state !== 'ready'" dark class="time-input" @input="onChangeTime"
                           autocomplete="off" />
-                      <v-slider :value="frame" :min="0" :max="frames.length - 1" @input="onNavigate" hide-details
+                      <v-slider :value="frame" :min="0" :max="frames.length - 1" :disabled="videoControlsDisabled" @input="onNavigate" hide-details
                           class="mb-2 flex-grow-1 timeline-slider" />
 
                       <div class="playback-controls-inline d-flex align-center">
@@ -499,7 +504,7 @@
                             @input="onNavigate"
                             class="playback-navigation" />
 
-                        <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+                        <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed ml-2" />
                       </div>
                   </div>
               </div>
@@ -525,6 +530,7 @@
                   playsinline 
                   :src="video.media" 
                   crossorigin="anonymous" 
+                  @loadedmetadata="onVideoLoadedMetadata(index)"
                   @ended="onVideoEnded(index)"
                   preload="metadata"
                   class="video-element" />
@@ -544,14 +550,14 @@
 
             <div v-if="isMobileOrTablet" class="right-spacer" />
 
-            <div v-if="isMobileOrTablet && !videoControlsDisabled" class="playback-controls ui-no-zoom">
+            <div v-if="isMobileOrTablet && trial" class="playback-controls ui-no-zoom">
               <div class="playback-timeline-mobile d-flex align-center px-1">
                 <v-text-field
                     label="Time (s)"
                     type="number"
                     :step="0.01"
                     :value="time"
-                    :disabled="state !== 'ready'"
+                    :disabled="videoControlsDisabled || state !== 'ready'"
                     dark
                     class="time-input mr-2"
                     autocomplete="off"
@@ -560,6 +566,7 @@
                     :value="frame"
                     :min="0"
                     :max="frames.length - 1"
+                    :disabled="videoControlsDisabled"
                     @input="onNavigate"
                     hide-details
                     class="flex-grow-1 timeline-slider" />
@@ -579,7 +586,7 @@
                     @input="onNavigate"
                     class="playback-navigation" />
 
-                <SpeedControl v-model="playSpeed" class="playback-speed ml-2" />
+                <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed ml-2" />
               </div>
             </div>
           </div>
@@ -997,6 +1004,7 @@
               videos: [],
               frames: [],
               trialLoading: false,
+              sceneReady: false,
   
               // objects & arrays
               synced: false,
@@ -1121,7 +1129,7 @@
           return trials.filter(trial => trial && trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
         },
         videoControlsDisabled() {
-          return !this.trial || this.frames.length === 0
+          return !this.trial || this.trial.name === 'neutral' || this.frames.length === 0
         },
         has3DData() {
           return !!this.trial && Array.isArray(this.frames) && this.frames.length > 0
@@ -1210,6 +1218,41 @@
         // Use max of API values so monocular (n_calibrated=1) still shows actual device count when more are recording
         displayDeviceCount() {
           return Math.max(this.n_cameras_connected, this.n_videos_uploaded, 1)
+        },
+        isSaveLocalPage() {
+          const value = Array.isArray(this.$route.query.save_local)
+            ? this.$route.query.save_local[this.$route.query.save_local.length - 1]
+            : this.$route.query.save_local
+
+          if (value === true || value === '') return true
+          if (value == null || value === false) return false
+
+          return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())
+        },
+        savedLocallyProgressText() {
+          const savedLabel = `${this.n_videos_uploaded} saved locally`
+          if (this.isMonocularSession) {
+            return `${savedLabel}, do not refresh.`
+          }
+
+          const calibratedLabel = `${this.n_calibrated_cameras} camera${this.n_calibrated_cameras === 1 ? '' : 's'} calibrated`
+          return `${calibratedLabel}, ${savedLabel}, do not refresh.`
+        },
+        uploadedProgressText() {
+          return `${this.n_videos_uploaded} of ${this.displayDeviceCount} videos uploaded, do not refresh.`
+        },
+        processingProgressText() {
+          return this.isSaveLocalPage
+            ? this.savedLocallyProgressText
+            : this.uploadedProgressText
+        },
+        transferProgressDescription() {
+          if (this.isSaveLocalPage) {
+            return `${this.n_videos_uploaded} saved locally`
+          }
+
+          const videoText = this.n_videos_uploaded === 1 ? 'video was' : 'videos were'
+          return `${this.n_videos_uploaded} ${videoText} uploaded`
         },
         mobileVideoSizeLabel() {
           return ['S', 'M', 'L'][this.mobileVideoSizeIndex] || 'S'
@@ -1855,7 +1898,7 @@
                   this.showExtraCameraWarning()
                 } else {
                   const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
-                  apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.n_videos_uploaded + " videos were uploaded. Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                  apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.transferProgressDescription + ". Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
                 }
               }
             }
@@ -2153,6 +2196,7 @@
           this.videos = []
           this.synced = false
           this.trialLoading = true
+          this.sceneReady = false
           this.togglePlay(false)
 
           try {
@@ -2397,8 +2441,16 @@
                 }
 
                 delay(timeout).then(() => {
-                  // The fixed number 5 is here as a warkaround for Safari
-                  this.togglePlay(true)
+                  this.sceneReady = true
+                  // The fixed number 5 is here as a warkaround for Safari.
+                  // For neutral: start the render loop so meshes appear as OBJ files load,
+                  // but skip vid.play() so videos stay paused at frame 0.
+                  if (this.trial?.name === 'neutral') {
+                    this.playing = true
+                    this.animate()
+                  } else {
+                    this.togglePlay(true)
+                  }
                 });
               })
             }
@@ -2544,6 +2596,14 @@
           } else {
             this.togglePlay(false)
           }
+        }
+      },
+      onVideoLoadedMetadata(index) {
+        // On Safari, seeking to 0 after metadata loads forces the first frame to paint
+        // even when the video is paused (important for neutral trials).
+        const el = this.videoElement(index)
+        if (el) {
+          el.currentTime = 0
         }
       },
       videoElement(index) {
@@ -3002,6 +3062,23 @@
       flex-direction: column;
       overflow: hidden;
   
+      .mocap-wrapper {
+        position: relative;
+        min-height: 0;
+      }
+
+      .mocap-inner {
+        width: 100%;
+        height: 100%;
+      }
+
+      .mocap-loading-overlay {
+        position: absolute;
+        inset: 0;
+        background-color: #000;
+        z-index: 5;
+      }
+
       #mocap {
         width: 100%;
         height: 100%;

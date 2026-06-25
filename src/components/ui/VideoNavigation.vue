@@ -3,6 +3,7 @@
     <v-btn
       v-if="showLoopToggle"
       icon
+      :disabled="disabled"
       :title="loop ? 'Loop on' : 'Loop off'"
       @click="$emit('toggle-loop')">
       <v-icon>{{ loop ? 'mdi-repeat' : 'mdi-repeat-off' }}</v-icon>
@@ -24,6 +25,7 @@
 
     <v-btn
       icon
+      :disabled="disabled"
       @click="$emit(playing ? 'pause' : 'play')">
       <v-icon>{{ playing ? 'mdi-pause' : 'mdi-play' }}</v-icon>
     </v-btn>
