@@ -255,21 +255,20 @@ export default {
 }
 
 .local-data-save-toggle--on {
-  border-color: rgba(119, 153, 207, 0.72);
-  color: rgb(119, 153, 207);
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .local-data-save-toggle--on::v-deep .v-input--switch__track {
-  background-color: rgb(119, 153, 207) !important;
-  border-color: rgb(119, 153, 207) !important;
-  color: rgb(119, 153, 207) !important;
-  opacity: 0.55;
+  background-color: green !important;
+  border-color: green !important;
+  color: green !important;
+  opacity: 0.28;
 }
 
 .local-data-save-toggle--on::v-deep .v-input--switch__thumb {
-  background-color: rgb(119, 153, 207) !important;
-  border-color: rgb(119, 153, 207) !important;
-  color: rgb(119, 153, 207) !important;
+  background-color: green !important;
+  border-color: green !important;
+  color: green !important;
 }
 
 .local-data-save-toggle--disabled {
