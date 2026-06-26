@@ -47,29 +47,14 @@
         </v-card-title>
 
         <v-card-text>
-          <div class="local-save-speed" :class="speedStatusClass">
-            <div class="local-save-speed__main">
-              <v-icon small class="local-save-speed__icon">{{ speedIcon }}</v-icon>
-              <span class="local-save-speed__label">Internet speed</span>
-              <v-progress-circular
-                v-if="internetSpeedChecking"
-                indeterminate
-                class="ml-2"
-                color="grey lighten-1"
-                size="14"
-                width="2" />
-            </div>
-            <div class="local-save-speed__value">{{ internetSpeedDisplayText }}</div>
-          </div>
-
           <p class="mb-2">
-            The data will be saved only on the recording phone(s), not on this computer and not in the cloud during recording. This feature is recommended when internet speed is slow.
+            The data will be saved only on the recording phone(s), not on this computer and not in the cloud during recording.
           </p>
-          <p class="mb-2">
-            A future upload step from the phone will be required before OpenCap can process the data and show results.
+          <p class="mb-0 ">
+            You will need to upload the videos from the iOS app on the phone(s) before OpenCap can process the data and show results.
           </p>
-          <p class="mb-0 local-save-dialog__recommendation">
-            {{ speedRecommendationText }}
+          <p class="mb-2 local-save-dialog__recommendation">
+            Use this when you want to record first and upload the videos later, typically when internet connection is slow.
           </p>
         </v-card-text>
 
@@ -100,12 +85,6 @@
 import axios from 'axios'
 import { mapState } from 'vuex'
 import { apiError } from '@/util/ErrorMessage.js'
-import {
-  formatInternetSpeed,
-  getConnectionDownlinkMbps,
-  internetSpeedStatus,
-  measureDownloadSpeed
-} from '@/util/internetSpeed.js'
 
 export default {
   name: 'LocalDataSaveToggle',
@@ -116,10 +95,6 @@ export default {
       loadingPreference: false,
       saving: false,
       confirmDialog: false,
-      internetSpeedChecking: false,
-      internetSpeedMbps: null,
-      internetSpeedState: 'unavailable',
-      speedCheckId: 0,
       preferenceRequestId: 0
     }
   },
@@ -135,39 +110,6 @@ export default {
     },
     saveLocalUrl () {
       return this.hasSession ? `/sessions/${this.session.id}/save_local/` : null
-    },
-    internetSpeedDisplayText () {
-      const formattedSpeed = formatInternetSpeed(this.internetSpeedMbps)
-      if (formattedSpeed) return formattedSpeed
-      if (this.internetSpeedChecking) return 'Checking'
-
-      return 'Unavailable'
-    },
-    speedIcon () {
-      if (this.internetSpeedState === 'slow') return 'mdi-wifi-strength-1'
-      if (this.internetSpeedState === 'ok') return 'mdi-wifi-strength-2'
-      if (this.internetSpeedState === 'fast') return 'mdi-wifi-strength-4'
-
-      return 'mdi-wifi-alert'
-    },
-    speedRecommendationText () {
-      if (this.internetSpeedChecking && !this.internetSpeedMbps) {
-        return 'Checking your current connection. Saving locally is recommended when internet speed is slow.'
-      }
-      if (this.internetSpeedState === 'slow') {
-        return 'Slow connection detected. Saving locally is recommended.'
-      }
-      if (this.internetSpeedState === 'ok') {
-        return 'Your connection is moderate. Saving locally can help avoid interrupted uploads.'
-      }
-      if (this.internetSpeedState === 'fast') {
-        return 'Your connection looks strong, but saving locally is still available if you want to upload later.'
-      }
-
-      return 'Speed could not be measured. Saving locally is recommended if uploads are unreliable.'
-    },
-    speedStatusClass () {
-      return `local-save-speed--${this.internetSpeedState}`
     },
     tooltipText () {
       if (!this.hasSession) return 'Session must load before changing local data storage.'
@@ -246,7 +188,6 @@ export default {
 
       if (!this.saveDataLocally) {
         this.confirmDialog = true
-        this.checkInternetSpeed()
         return
       }
 
@@ -282,36 +223,6 @@ export default {
       const saved = await this.applyPreference(true)
       if (saved) this.confirmDialog = false
     },
-    setSpeedValue (speedMbps) {
-      this.internetSpeedMbps = speedMbps
-      this.internetSpeedState = internetSpeedStatus(speedMbps)
-    },
-    async checkInternetSpeed () {
-      const currentCheckId = this.speedCheckId + 1
-      this.speedCheckId = currentCheckId
-
-      const downlink = getConnectionDownlinkMbps()
-      if (downlink) this.setSpeedValue(downlink)
-
-      this.internetSpeedChecking = true
-
-      try {
-        const result = await measureDownloadSpeed()
-        if (this.speedCheckId !== currentCheckId) return
-
-        this.setSpeedValue(result.mbps)
-      } catch (error) {
-        if (this.speedCheckId !== currentCheckId) return
-        if (!downlink) {
-          this.internetSpeedMbps = null
-          this.internetSpeedState = 'unavailable'
-        }
-      } finally {
-        if (this.speedCheckId === currentCheckId) {
-          this.internetSpeedChecking = false
-        }
-      }
-    },
     async savePreference (value) {
       const res = await axios.patch(this.saveLocalUrl, {
         save_local: Boolean(value)
@@ -344,7 +255,21 @@ export default {
 }
 
 .local-data-save-toggle--on {
-  color: rgba(255, 255, 255, 0.86);
+  border-color: rgba(119, 153, 207, 0.72);
+  color: rgb(119, 153, 207);
+}
+
+.local-data-save-toggle--on::v-deep .v-input--switch__track {
+  background-color: rgb(119, 153, 207) !important;
+  border-color: rgb(119, 153, 207) !important;
+  color: rgb(119, 153, 207) !important;
+  opacity: 0.55;
+}
+
+.local-data-save-toggle--on::v-deep .v-input--switch__thumb {
+  background-color: rgb(119, 153, 207) !important;
+  border-color: rgb(119, 153, 207) !important;
+  color: rgb(119, 153, 207) !important;
 }
 
 .local-data-save-toggle--disabled {
@@ -398,50 +323,6 @@ export default {
 
 .local-save-dialog__title {
   word-break: normal;
-}
-
-.local-save-speed {
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding: 10px 12px;
-}
-
-.local-save-speed__main {
-  align-items: center;
-  display: flex;
-  min-width: 0;
-}
-
-.local-save-speed__icon {
-  color: currentColor;
-  margin-right: 8px;
-}
-
-.local-save-speed__label {
-  font-weight: 600;
-}
-
-.local-save-speed__value {
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.local-save-speed--fast {
-  color: #9be7b2;
-}
-
-.local-save-speed--ok {
-  color: #ffe082;
-}
-
-.local-save-speed--slow,
-.local-save-speed--unavailable {
-  color: #ffb74d;
 }
 
 .local-save-dialog__recommendation {
