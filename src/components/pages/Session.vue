@@ -1032,6 +1032,7 @@
               recordingStatusPoll: null,
 
               trialsPoll: null,
+              trialsPollActive: false,
               showSessionMenuButtons: false,
               leftMenuOpen: false,
   
@@ -1914,10 +1915,19 @@
           window.clearTimeout(this.statusPoll)
         }
       },
-      async startTrialsPoll() {
-        this.trialsPoll = window.setTimeout(async () => {
+      startTrialsPoll() {
+        if (this.trialsPollActive) return
+
+        this.trialsPollActive = true
+        const poll = async () => {
+          this.trialsPoll = null
+          const sessionId = this.session?.id
+          if (!this.trialsPollActive || !sessionId) return
+
           try {
-            const res = await axios.get(`/sessions/${this.session.id}/status/?ret_session=true`)
+            const res = await axios.get(`/sessions/${sessionId}/status/?ret_session=true`)
+            if (!this.trialsPollActive || this.session?.id !== sessionId) return
+
             const updatedTrials = res.data.session.trials || []
 
             // Add new trials and update existing ones
@@ -1933,10 +1943,15 @@
             // Ignore poll errors (e.g. session no longer exists)
           }
 
-          this.startTrialsPoll()
-        }, 5000)
+          if (this.trialsPollActive && this.session?.id === sessionId) {
+            this.trialsPoll = window.setTimeout(poll, 5000)
+          }
+        }
+
+        this.trialsPoll = window.setTimeout(poll, 5000)
       },
       cancelTrialsPoll() {
+        this.trialsPollActive = false
         if (this.trialsPoll) {
           window.clearTimeout(this.trialsPoll)
           this.trialsPoll = null
