@@ -50,6 +50,7 @@
 import { mapActions, mapState } from 'vuex'
 import { notificationState, hideNotification, clearNotifications } from '@/util/notificationStore.js'
 import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
+import { canShowLocalDataSaveToggle } from '@/util/staffAccess.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import LocalDataSaveToggle from './components/ui/LocalDataSaveToggle.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
@@ -106,14 +107,16 @@ export default {
   computed: {
     ...mapState({
       verified: state => state.auth.verified,
-      sessionTime: state => state.auth.sessionTime
+      sessionTime: state => state.auth.sessionTime,
+      username: state => state.auth.username
     }),
     showProfileInNavbar () {
       const authRouteNames = ['Login', 'Register', 'Verify', 'ResetPassword', 'NewPassword']
       return this.verified && !authRouteNames.includes(this.$route.name)
     },
     showSessionNavbarControls () {
-      return this.$route.name === 'Session'
+      return this.$route.name === 'Session' &&
+        canShowLocalDataSaveToggle({ username: this.username })
     },
     appStyle () {
       return {
