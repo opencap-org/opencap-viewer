@@ -50,10 +50,10 @@
           <p class="mb-2">
             The data will be saved only on the recording phone(s), not on this computer and not in the cloud during recording.
           </p>
-          <p class="mb-0 ">
+          <p class="mb-2 ">
             You will need to upload the videos from the iOS app on the phone(s) before OpenCap can process the data and show results.
           </p>
-          <p class="mb-2 local-save-dialog__recommendation">
+          <p class="mb-0 local-save-dialog__recommendation">
             Use this when you want to record first and upload the videos later, typically when internet connection is slow.
           </p>
         </v-card-text>
