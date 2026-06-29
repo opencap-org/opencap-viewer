@@ -1807,6 +1807,7 @@
         this.$router.push({name: 'Neutral', params: {id: this.session.id}, query})
       },
       startPoll() {
+        this.cancelPoll()
         this.statusPoll = window.setTimeout(async () => {
           const res = await axios.get(`/sessions/${this.session.id}/status/`)
           this.n_cameras_connected = res.data.n_cameras_connected
@@ -1836,6 +1837,7 @@
       cancelPoll() {
         if (this.statusPoll) {
           window.clearTimeout(this.statusPoll)
+          this.statusPoll = null
         }
       },
       startTrialsPoll() {
