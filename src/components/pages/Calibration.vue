@@ -141,6 +141,7 @@ export default {
       n_videos_uploaded: 0,
       isAuditoryFeedbackEnabled: false,
       timeoutID: null,
+      pollID: 0,
     }
   },
   created() {
@@ -163,6 +164,10 @@ export default {
   mounted () {
       this.loadSession(this.$route.params.id)
   },
+  beforeDestroy() {
+    this.pollID++
+    this.cancelPoll()
+  },
   methods: {
     ...mapMutations('data', ['setCalibration', 'setTrialId']),
     ...mapActions('data', ['loadSession']),
@@ -171,6 +176,8 @@ export default {
         const query = this.$route.query.isMono === 'true' ? { isMono: 'true' } : {}
         this.$router.push({ path: `/${this.session.id}/neutral`, query })
       } else {
+        this.cancelPoll()
+        const pollID = ++this.pollID
         this.lastPolledStatus = "";
         // Record press
         this.busy = true
@@ -196,22 +203,24 @@ export default {
             }
           })
           this.setTrialId(res.data.id)
-          this.pollStatus()
+          this.pollStatus(pollID)
         } catch (error) {
           apiError(error)
           this.busy = false
         }
       }
     },
-    async pollStatus() {
+    async pollStatus(pollID = this.pollID) {
       try {
         const res = await axiosGetWithRetry(`/sessions/${this.session.id}/calibration_img/`)
+        if (pollID !== this.pollID) return
         switch (res.data.status) {
           case "done": {
-            clearTimeout(this.timeoutID);
+            this.cancelPoll()
             clearToastMessages()
 
             const resCalibratedCameras = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+            if (pollID !== this.pollID) return
 
             this.n_calibrated_cameras = resCalibratedCameras.data.data
 
@@ -230,9 +239,10 @@ export default {
             break;
           }
           case "error": {
-            clearTimeout(this.timeoutID);
+            this.cancelPoll()
             clearToastMessages()
             const res_trial = await axiosGetWithRetry(`/trials/${this.trialId}/`)
+            if (pollID !== this.pollID) return
             apiErrorRes(res_trial, 'Finished with error')
             this.busy = false;
 
@@ -245,11 +255,12 @@ export default {
               res.data.status !== this.lastPolledStatus
             ) {
               const resCalibratedCameras = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+              if (pollID !== this.pollID) return
 
               this.n_calibrated_cameras = resCalibratedCameras.data.data
 
               if (this.n_calibrated_cameras < 2) {
-                clearTimeout(this.timeoutID);
+                this.cancelPoll()
                 clearToastMessages()
                 apiError(this.n_calibrated_cameras + " device(s) connected to the session and 2+ devices are required, please re-pair the devices using qr code at top of page.", 10000);
                 this.busy = false
@@ -260,7 +271,7 @@ export default {
             }
             this.lastPolledStatus = res.data.status;
             if (this.busy) {
-              this.timeoutID = window.setTimeout(this.pollStatus, 1000);
+              this.timeoutID = window.setTimeout(() => this.pollStatus(pollID), 1000);
             }
             break;
           }
@@ -268,14 +279,21 @@ export default {
 
         // Get n_cameras_connected.
         const res_status = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {})
+        if (pollID !== this.pollID) return
 
         this.n_videos_uploaded = res_status.data.n_videos_uploaded
         this.n_cameras_connected = res_status.data.n_cameras_connected
       } catch (error) {
+        if (pollID !== this.pollID) return
+        this.cancelPoll()
         clearToastMessages()
         apiError(error);
         this.busy = false;
       }
+    },
+    cancelPoll() {
+      if (this.timeoutID) window.clearTimeout(this.timeoutID)
+      this.timeoutID = null
     },
   }
 }
