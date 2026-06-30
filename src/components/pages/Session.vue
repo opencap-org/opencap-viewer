@@ -94,8 +94,36 @@
                   <p v-if="state === 'processing'">{{ processingProgressText }}</p>
               </ValidationObserver>
 
-              <div class="show-removed-trials-sidebar mb-2">
+              <div class="show-removed-trials-sidebar mb-2 d-flex align-center">
                 <v-checkbox v-model="show_trashed" label="Show removed trials" hide-details dense class="toolbar-checkbox"></v-checkbox>
+                <v-spacer></v-spacer>
+                <v-menu
+                  open-on-hover
+                  offset-y
+                  left
+                  :close-on-content-click="false"
+                  content-class="trial-legend-menu">
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn icon small dark v-bind="attrs" v-on="on" aria-label="Trial color legend">
+                      <v-icon small>mdi-palette-outline</v-icon>
+                    </v-btn>
+                  </template>
+                  <div class="trial-legend">
+                    <div class="trial-legend__title">Trial status</div>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--done"></span>Done
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--processing"></span>Processing
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--error"></span>Error
+                    </span>
+                    <span v-if="isSaveLocalPage" class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--local"></span>Saved on phone
+                    </span>
+                  </div>
+                </v-menu>
               </div>
 
               <div class="trials-wrapper flex-grow-1">
@@ -1943,7 +1971,17 @@
         }
       },
       trialClasses(trial) {
-        return trial.trashed ? 'trashed' : 'cursor-pointer';
+        const classes = [trial.trashed ? 'trashed' : 'cursor-pointer'];
+        if (this.isTrialSavedLocally(trial)) {
+          classes.push('trial-saved-local');
+        }
+        return classes;
+      },
+      isTrialSavedLocally(trial) {
+        const videos = trial?.videos;
+        if (!Array.isArray(videos) || videos.length === 0) return false;
+        const isTruthy = raw => raw === true || ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase());
+        return videos.every(v => v && isTruthy(v.saved_local));
       },
       clickOutsideDialogTrialHideMenu(e) {
         if (e.target.className === 'v-overlay__scrim') {
@@ -2763,6 +2801,49 @@
     max-width: min(320px, calc(100vw - 24px));
   }
 
+  /* Trial color legend popover */
+  .trial-legend-menu {
+    background-color: #37474f;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  .trial-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #eceff1;
+
+    &__title {
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 2px;
+    }
+
+    &__item {
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    &__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      flex-shrink: 0;
+
+      &--done { background-color: green; }
+      &--processing { background-color: orange; }
+      &--error { background-color: red; }
+      &--local { background-color: #9c27b0; }
+    }
+  }
+
   /* Analysis submenu - adequate touch targets and width on mobile */
   .analysis-submenu {
     min-width: 180px;
@@ -2981,6 +3062,10 @@
 
       .show-removed-trials-sidebar {
         flex-shrink: 0;
+      }
+
+      .show-removed-trials-sidebar .toolbar-checkbox {
+        flex-grow: 0;
       }
 
       .toolbar-checkbox {

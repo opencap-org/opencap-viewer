@@ -97,6 +97,19 @@ export default {
       background-color: red;
     }
   }
+
+  // Trials whose videos are saved locally on the phone are not failures
+  // (and aren't really processing on the server), so show them in purple
+  // instead of the red "error" or orange "processing/stopped" colors.
+  &.trial-saved-local.st-error,
+  &.trial-saved-local.st-recording,
+  &.trial-saved-local.st-stopped,
+  &.trial-saved-local.st-processing,
+  &.trial-saved-local.st-reprocess {
+    div {
+      background-color: #9c27b0;
+    }
+  }
 }
 
 .overflow-text {
