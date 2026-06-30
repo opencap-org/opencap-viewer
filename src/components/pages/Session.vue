@@ -83,7 +83,9 @@
                   </div>
                 </div>
   
-                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton"
+                    :disabled="isButtonDisabled"
+                    @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
                   <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
@@ -964,7 +966,8 @@
                   recording: 'Stop recording',
                   processing: 'Cancel Upload'
               },
-  
+              buttonCooldown: false,
+
               rename_dialog: false,
               remove_dialog: false,
               restore_dialog: false,
@@ -1101,6 +1104,10 @@
             gender: state => state.data.gender,
             isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed
           }),
+        isButtonDisabled() {
+          const baseDisabled = (this.busy || this.invalid) && !(this.state === 'recording' && this.n_cameras_connected === 0);
+          return baseDisabled || this.buttonCooldown;
+        },
         sessionUrl() {
           return location.origin + "/session/" + (this.session?.id || '');
         },
@@ -1496,25 +1503,35 @@
         // Tie key to the active trial so DOM can't be reused across trials.
         return `trial-${trialId}-video-${id || media || index}`
       },
+      startButtonCooldown(duration = 1000) {
+        this.buttonCooldown = true;
+        setTimeout(() => {
+          this.buttonCooldown = false;
+        }, duration);
+      },
       async changeState() {
+
         switch (this.state) {
           case 'ready': {
+            // Start cooldown immediately to prevent double-clicks
+            this.startButtonCooldown()
+
             this.submitted = true
-  
+
             if (await this.$refs.observer.validate()) {
               this.busy = true
-  
+
               try {
                 // store in vuex
                 this.setSessionStep5(this.trialName)
-  
+
                 // api
                 const res = await axios.get(`/sessions/${this.session.id}/record/`, {
                   params: {
                     name: this.trialName
                   }
                 })
-  
+
                 // add to the list
                 this.trialInProcess = res.data
                 this.addTrial(this.trialInProcess)
@@ -1579,14 +1596,22 @@
                   playRecordingSound()
               } catch (error) {
                 apiError(error)
+                // End cooldown on error so user can retry
+                this.buttonCooldown = false
               }
-  
+
               this.busy = false
+            } else {
+              // If validation fails, end cooldown so user can try again
+              this.buttonCooldown = false
             }
-  
+
             break
           }
           case 'recording': {
+            // Start cooldown immediately to prevent double-clicks
+            this.startButtonCooldown()
+
             this.cancelRecordTimer()
             this.cancelRecordingStatusPoll()
 
@@ -1599,22 +1624,28 @@
 
               this.trialInProcess.status = res.data.status
               this.state = 'processing'
-  
+
               this.startPoll()
             } catch (error) {
               apiError(error)
+              // End cooldown on error so user can retry
+              this.buttonCooldown = false
             }
-  
+
             break
           }
           case 'processing': {
+            // Start cooldown immediately to prevent double-clicks. In this case, set to 1.5 seconds.
+            this.startButtonCooldown(1500)
+
             const res = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
             this.cancelPoll()
             this.state = 'ready'
+            // End cooldown after processing cancellation
+            this.buttonCooldown = false
             break
           }
         }
-        await new Promise(r => setTimeout(r, 500));
       },
       recordTimerHandler() {
         this.recordingTimePassed = moment().diff(this.recordingStarted, 'seconds')
