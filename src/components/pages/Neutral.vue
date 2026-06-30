@@ -227,9 +227,12 @@
                           <v-select
                               v-model="framerate"
                               label="Select framerate"
-                              :items="framerates_available"
+                              :items="framerateItems"
                               item-text="text"
                               item-value="value"
+                              item-disabled="disabled"
+                              :hint="lidarFramerateRestrictionActive ? lidarFramerateLockReason : ''"
+                              :persistent-hint="lidarFramerateRestrictionActive"
                               @change="updateFrequency"
                             />
                         </v-card-text>
@@ -314,6 +317,40 @@
                           item-value="value"
                           ></v-combobox>
                         </v-card-text>
+
+                        <template v-if="canUseLidar">
+                          <v-card-title class="justify-center data-title">
+                            <span class="mr-2">Use LiDAR</span>
+                            <v-tooltip bottom="" max-width="500px">
+                              <template v-slot:activator="{ on }">
+                                <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                              </template>
+                              When enabled, only iPhones with a LiDAR sensor will capture depth data alongside the videos. Any other phones will record normal RGB video instead. LiDAR is available on the iPhone 12 Pro / 12 Pro Max and all later Pro and Pro Max models.
+                            </v-tooltip>
+                          </v-card-title>
+                          <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                            <v-tooltip bottom :disabled="!lidarLockedByFramerate" max-width="500px">
+                              <template v-slot:activator="{ on, attrs }">
+                                <div v-bind="attrs" v-on="on">
+                                  <v-switch
+                                    :input-value="useLidar"
+                                    label="Use LiDAR during recording"
+                                    color="blue lighten-1"
+                                    inset
+                                    hide-details
+                                    readonly
+                                    :disabled="lidarLockedByFramerate"
+                                    @click.native.stop.prevent="toggleUseLidar"
+                                  />
+                                </div>
+                              </template>
+                              <span>{{ lidarFramerateLockReason }}</span>
+                            </v-tooltip>
+                            <p v-if="lidarLockedByFramerate" class="lidar-lock-reason mb-0 mt-1">
+                              {{ lidarFramerateLockReason }}
+                            </p>
+                          </v-card-text>
+                        </template>
                       </div>
                       <v-card-actions class="advanced-settings-footer justify-end">
                         <v-btn
@@ -429,6 +466,7 @@ import MainLayout from "@/layout/MainLayout";
 import ExampleImage from "@/components/ui/ExampleImage";
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import { canShowLidarToggle } from '@/util/staffAccess.js'
 
 export default {
   name: "Neutral",
@@ -521,6 +559,8 @@ export default {
       tempFilterFrequency: 'default',
       componentKey: 0,
       isAuditoryFeedbackEnabled: false,
+      useLidar: false,
+      lidarMaxFramerate: 60,
     };
   },
   created() {
@@ -535,6 +575,24 @@ export default {
       sexes: state => state.data.sexes,
       username: state => state.auth.username,
     }),
+    canUseLidar() {
+      return canShowLidarToggle({ username: this.username });
+    },
+    lidarFramerateLockReason() {
+      return `LiDAR captures depth data at up to ${this.lidarMaxFramerate}fps, so higher framerates are unavailable while LiDAR is on.`;
+    },
+    lidarLockedByFramerate() {
+      return Number(this.framerate) > this.lidarMaxFramerate;
+    },
+    lidarFramerateRestrictionActive() {
+      return this.canUseLidar && this.useLidar;
+    },
+    framerateItems() {
+      return this.framerates_available.map(item => ({
+        ...item,
+        disabled: this.lidarFramerateRestrictionActive && Number(item.value) > this.lidarMaxFramerate,
+      }));
+    },
     subjectSelectorChoices() {
       return this.subjectsMapped;
     },
@@ -636,6 +694,7 @@ export default {
     }
     await this.loadSession(this.$route.params.id)
     this.applySavedAdvancedSettings()
+    this.syncUseLidarFromSession()
     await this.ensureAdvancedSettingsMetadata()
     this.updateSavedAdvancedSettingsSnapshot()
     if (this.$route.query.autoRecord) {
@@ -668,8 +727,26 @@ export default {
     },
   },
   methods: {
-    ...mapMutations("data", ["setNeutral", "setTrialId"]),
+    ...mapMutations("data", ["setNeutral", "setTrialId", "setSessionUseLidar"]),
     ...mapActions("data", ["loadSubjects", "loadSession"]),
+    parseUseLidar(value) {
+      if (value === true || value === '') return true
+      if (value === false || value == null) return false
+      return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())
+    },
+    syncUseLidarFromSession() {
+      this.useLidar = this.parseUseLidar(this.session?.useLidar)
+    },
+    toggleUseLidar() {
+      if (this.lidarLockedByFramerate) return
+      this.applyUseLidar(!this.useLidar)
+    },
+    applyUseLidar(nextValue) {
+      this.useLidar = nextValue
+      // NOTE: persistence to the DB (useLidar on the session) is intentionally
+      // not wired up yet. We only keep the value in the store for now.
+      this.setSessionUseLidar(nextValue)
+    },
     navigateBack() {
       if (this.isMonocularMode) {
         if (this.$route.query.fromDevice === 'true') {
@@ -1847,5 +1924,12 @@ export default {
   ::v-deep .v-select__menu {
     z-index: 1000 !important;
   }
+}
+
+.lidar-lock-reason {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.78rem;
+  max-width: 360px;
+  text-align: center;
 }
 </style>

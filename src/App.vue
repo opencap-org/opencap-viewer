@@ -35,6 +35,10 @@
           v-if="showSessionNavbarControls"
           class="navbar-local-save"
           @change="onLocalDataSaveChange" />
+        <LidarToggle
+          v-if="showLidarNavbarControls"
+          class="navbar-lidar"
+          @change="onLidarChange" />
         <QRCodeDialog class="navbar-qr"/>
         <profile-dropdown v-if="showProfileInNavbar" class="navbar-profile"></profile-dropdown>
       </div>
@@ -51,15 +55,17 @@
 import { mapActions, mapMutations, mapState } from 'vuex'
 import { notificationState, hideNotification, clearNotifications } from '@/util/notificationStore.js'
 import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
-import { canShowLocalDataSaveToggle } from '@/util/staffAccess.js'
+import { canShowLocalDataSaveToggle, canShowLidarToggle } from '@/util/staffAccess.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import LocalDataSaveToggle from './components/ui/LocalDataSaveToggle.vue'
+import LidarToggle from './components/ui/LidarToggle.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
 
 export default {
   name: 'App',
   components: {
     LocalDataSaveToggle,
+    LidarToggle,
     QRCodeDialog,
     'profile-dropdown': ProfileDropdown},
   data () {
@@ -80,9 +86,12 @@ export default {
   },
   methods: {
     ...mapActions('auth', ['logout']),
-    ...mapMutations('data', ['setSessionSaveLocal']),
+    ...mapMutations('data', ['setSessionSaveLocal', 'setSessionUseLidar']),
     onLocalDataSaveChange ({ saveLocal, saveDataLocally }) {
       this.setSessionSaveLocal(saveLocal ?? saveDataLocally)
+    },
+    onLidarChange ({ useLidar }) {
+      this.setSessionUseLidar(useLidar)
     },
     startTimer () {
       this.logoutTimer = window.setTimeout(this.logoutTimerHandler, this.sessionTime)
@@ -122,6 +131,10 @@ export default {
     showSessionNavbarControls () {
       return this.$route.name === 'Session' &&
         canShowLocalDataSaveToggle({ username: this.username })
+    },
+    showLidarNavbarControls () {
+      return this.$route.name === 'Session' &&
+        canShowLidarToggle({ username: this.username })
     },
     appStyle () {
       return {
@@ -215,6 +228,10 @@ export default {
 }
 
 .navbar-local-save {
+  flex-shrink: 0;
+}
+
+.navbar-lidar {
   flex-shrink: 0;
 }
 
