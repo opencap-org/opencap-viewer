@@ -24,7 +24,7 @@
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="discardNeutralRecording">Discard &amp; retake</v-btn>
-          <v-btn color="primary" @click="confirmUploadNeutral">Send for processing</v-btn>
+          <v-btn color="primary" class="black--text" @click="confirmUploadNeutral">Send for processing</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -1115,7 +1115,7 @@ export default {
               res.data.status !== this.lastPolledStatus
             ) {
               clearToastMessages();
-              apiInfo("Processing: the subject can relax.", 5000);
+              apiInfo("Processing...", 5000);
 
               if (this.isAuditoryFeedbackEnabled)
                 playNeutralFinishedSound()
