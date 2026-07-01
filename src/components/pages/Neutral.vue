@@ -158,7 +158,7 @@
                     max-width="700"
                     @input="setAdvancedSettingsDialog"
                   >
-                    <v-card class="advanced-settings-card">
+                    <v-card class="advanced-settings-card" :class="{ 'advanced-settings-card--compact': !showStandardAdvancedSettings }">
                       <v-card-actions class="advanced-settings-header justify-space-between align-center">
                         <v-card-title class="advanced-settings-title">Advanced Settings</v-card-title>
                         <v-btn icon @click="requestCloseAdvancedSettings" class="advanced-settings-close-btn" aria-label="Close">
@@ -1781,6 +1781,15 @@ export default {
     ::v-deep .v-tooltip span {
       background-color: transparent !important;
     }
+  }
+
+  .v-card.advanced-settings-card.advanced-settings-card--compact {
+    height: auto;
+    max-height: min(90vh, 820px);
+  }
+
+  .advanced-settings-card--compact .advanced-settings-body {
+    flex: 0 1 auto;
   }
 
   .advanced-settings-body {
