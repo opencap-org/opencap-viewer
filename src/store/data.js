@@ -107,6 +107,9 @@ export default {
     setSessionSaveLocal (state, saveLocal) {
       Vue.set(state.session, 'save_local', saveLocal)
     },
+    setSessionUseLidar (state, useLidar) {
+      Vue.set(state.session, 'useLidar', useLidar)
+    },
     setExistingSessions (state, sessions) {
 
       // Dates to human readable format.

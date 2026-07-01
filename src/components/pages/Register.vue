@@ -90,7 +90,7 @@
 
                 </div>
                 <div class="col-md-6">
-                 <vue-country-dropdown
+                 <country-dropdown
                     ref="vcd"
                     @onSelect="onSelectCountry"
                     :preferredCountries="['US']"
@@ -99,7 +99,7 @@
                     :enabledFlags="true"
                     :enabledCountryCode="false"
                     :showNameInput="true">
-                  </vue-country-dropdown>
+                  </country-dropdown>
                 </div>
               </div>
 
@@ -335,12 +335,12 @@
 <script>
 import { mapActions, mapState } from "vuex";
 import { apiSuccess, apiError } from "@/util/ErrorMessage.js";
-import VueCountryDropdown from 'vue-country-dropdown'
+import CountryDropdown from '@/components/ui/CountryDropdown.vue'
 
 export default {
   name: "Register",
   components: {
-    VueCountryDropdown
+    CountryDropdown
   },
   data() {
     return {
@@ -487,7 +487,7 @@ export default {
   }
 
   .row .col-md-6 + .col-md-6 .v-text-field,
-  .row .col-md-6 + .col-md-6 .vue-country-select,
+  .row .col-md-6 + .col-md-6 .country-dropdown,
   .row .col-12 .v-text-field {
     margin-top: 0;
   }
@@ -543,45 +543,6 @@ export default {
   }
 }
 
-// Vue country dropdown - needs :deep for child components
-:deep(.vue-country-select) .country-name {
-  color: hsla(0,0%,100%,.7) !important;
-}
-:deep(div.dropdown.open) {
-  background-color: black !important;
-}
-:deep(.vue-country-select .country-name:hover) {
-  color: hsla(0,0%,100%,.7) !important;
-}
-:deep(.dropdown:hover) {
-  background-color: black !important;
-}
-:deep(li.dropdown-item) {
-  background-color: black !important;
-}
-:deep(li.dropdown-item:hover) {
-  background-color: rgb(46, 46, 46) !important;
-}
-:deep(li.dropdown-item > strong) {
-  font-weight: normal !important;
-  color: hsla(0,0%,100%,.7);
-}
-:deep(.vue-country-select) {
-  width: 100%;
-  border-color: hsla(0,0%,100%,.7) !important;
-}
-:deep(.vue-country-select:hover) {
-  border-color: white !important;
-}
-:deep(.vue-country-select:focus) {
-  border-color: white !important;
-}
-:deep(.vue-country-select:active) {
-  border-color: white !important;
-}
-:deep(li.dropdown-item > span) {
-  display: none;
-}
 .show-pass-icon {
   width: auto;
 }

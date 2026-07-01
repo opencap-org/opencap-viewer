@@ -35,6 +35,10 @@
           v-if="showSessionNavbarControls"
           class="navbar-local-save"
           @change="onLocalDataSaveChange" />
+        <LidarToggle
+          v-if="showLidarNavbarControls"
+          class="navbar-lidar"
+          @change="onLidarChange" />
         <QRCodeDialog class="navbar-qr"/>
         <profile-dropdown v-if="showProfileInNavbar" class="navbar-profile"></profile-dropdown>
       </div>
@@ -51,20 +55,23 @@
 import { mapActions, mapMutations, mapState } from 'vuex'
 import { notificationState, hideNotification, clearNotifications } from '@/util/notificationStore.js'
 import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
-import { canShowLocalDataSaveToggle } from '@/util/staffAccess.js'
+import { canShowLidarToggle, loadUserGroups } from '@/util/staffAccess.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import LocalDataSaveToggle from './components/ui/LocalDataSaveToggle.vue'
+import LidarToggle from './components/ui/LidarToggle.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
 
 export default {
   name: 'App',
   components: {
     LocalDataSaveToggle,
+    LidarToggle,
     QRCodeDialog,
     'profile-dropdown': ProfileDropdown},
   data () {
     return {
-      logoutTimer: null
+      logoutTimer: null,
+      userGroups: []
     }
   },
   created () {
@@ -74,15 +81,31 @@ export default {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual'
     }
+    this.loadBetaAccessGroups()
   },
   beforeDestroy () {
     this.cancelTimer()
   },
   methods: {
     ...mapActions('auth', ['logout']),
-    ...mapMutations('data', ['setSessionSaveLocal']),
+    ...mapMutations('data', ['setSessionSaveLocal', 'setSessionUseLidar']),
     onLocalDataSaveChange ({ saveLocal, saveDataLocally }) {
       this.setSessionSaveLocal(saveLocal ?? saveDataLocally)
+    },
+    onLidarChange ({ useLidar }) {
+      this.setSessionUseLidar(useLidar)
+    },
+    async loadBetaAccessGroups () {
+      if (!this.verified) {
+        this.userGroups = []
+        return
+      }
+
+      try {
+        this.userGroups = await loadUserGroups({ force: true })
+      } catch {
+        this.userGroups = []
+      }
     },
     startTimer () {
       this.logoutTimer = window.setTimeout(this.logoutTimerHandler, this.sessionTime)
@@ -112,16 +135,18 @@ export default {
   computed: {
     ...mapState({
       verified: state => state.auth.verified,
-      sessionTime: state => state.auth.sessionTime,
-      username: state => state.auth.username
+      sessionTime: state => state.auth.sessionTime
     }),
     showProfileInNavbar () {
       const authRouteNames = ['Login', 'Register', 'Verify', 'ResetPassword', 'NewPassword']
       return this.verified && !authRouteNames.includes(this.$route.name)
     },
     showSessionNavbarControls () {
+      return this.$route.name === 'Session'
+    },
+    showLidarNavbarControls () {
       return this.$route.name === 'Session' &&
-        canShowLocalDataSaveToggle({ username: this.username })
+        canShowLidarToggle({ groups: this.userGroups })
     },
     appStyle () {
       return {
@@ -146,6 +171,9 @@ export default {
       this.cancelTimer()
       this.startTimer()
       this.resetMainScroll()
+    },
+    verified () {
+      this.loadBetaAccessGroups()
     }
   }
 }
@@ -215,6 +243,10 @@ export default {
 }
 
 .navbar-local-save {
+  flex-shrink: 0;
+}
+
+.navbar-lidar {
   flex-shrink: 0;
 }
 

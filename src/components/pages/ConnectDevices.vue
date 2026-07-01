@@ -43,7 +43,7 @@
           </div>
 
           <div class="d-flex flex-column flex-grow-1 justify-space-between my-1 instructions-wrapper">
-            <h1 class="my-4">1. Install or update to <a href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer" class="app-store-link">OpenCap app<span v-if="isMonocularMode"> version 2.0+</span></a> from the App Store</h1>
+            <h1 class="my-4">1. Install or update to <a href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer" class="app-store-link">OpenCap app<span v-if="isMonocularMode"> version 2.1+</span></a> from the App Store</h1>
             <h1 class="my-4">2. Open the app and scan the QR code</h1>
             <div v-if="showOpenInAppButton" class="open-in-app-block my-2">
               <p class="mb-2">On this device? Open in App deeplink also requires app version 2.0+.</p>
