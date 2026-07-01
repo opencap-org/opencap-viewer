@@ -122,7 +122,7 @@
                     <span class="trial-legend__item">
                       <span class="trial-legend__dot trial-legend__dot--error"></span>Error
                     </span>
-                    <span v-if="isSaveLocalPage" class="trial-legend__item">
+                    <span class="trial-legend__item">
                       <span class="trial-legend__dot trial-legend__dot--local"></span>Saved on phone
                     </span>
                   </div>
