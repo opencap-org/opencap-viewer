@@ -90,8 +90,8 @@
                     Applying the LiDAR change on the phone. Please wait {{ lidarCooldownRemaining }}s before recording.
                   </p>
                   <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
-                    {{ displayDeviceCount }} devices are recording
-                    <template v-if="sessionFramerate">at {{ sessionFramerate }} Hz</template>,
+                    {{ recordingStatusText }}
+                    <template v-if="sessionFramerate"> at {{ sessionFramerate }} Hz</template><template v-if="isLidarRecordingEnabled">, {{ lidarRecordingStatusText }}</template>,
                     do not refresh
                   </p>
                   <p v-if="state === 'processing'">{{ processingProgressText }}</p>
@@ -1072,6 +1072,7 @@
   
               n_calibrated_cameras: 0,
               n_cameras_connected: 0,
+              n_cameras_using_lidar: 0,
               n_videos_uploaded: 0,
   
               trial_rename_dialog: false,
@@ -1267,14 +1268,20 @@
         displayDeviceCount() {
           return Math.max(this.n_cameras_connected, this.n_videos_uploaded, 1)
         },
+        isLidarRecordingEnabled() {
+          return this.parseTruthy(this.session?.useLidar ?? this.session?.use_lidar)
+        },
+        displayLidarDeviceCount() {
+          return Math.max(this.n_cameras_using_lidar, 0)
+        },
+        recordingStatusText() {
+          return `${this.displayDeviceCount} ${this.pluralize(this.displayDeviceCount, 'camera', 'cameras')} recording`
+        },
+        lidarRecordingStatusText() {
+          return `${this.displayLidarDeviceCount} with lidar`
+        },
         isSaveLocalPage() {
-          const isTruthySaveLocal = raw => {
-            if (raw === true || raw === '') return true
-            if (raw === false || raw == null) return false
-            return ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase())
-          }
-
-          return isTruthySaveLocal(this.session?.save_local ?? this.session?.saveLocal)
+          return this.parseTruthy(this.session?.save_local ?? this.session?.saveLocal)
         },
         savedLocallyProgressText() {
           const videoText = this.n_videos_uploaded === 1 ? 'video' : 'videos'
@@ -1287,7 +1294,9 @@
           return `${calibratedLabel}, ${savedLabel}, do not refresh.`
         },
         uploadedProgressText() {
-          return `${this.n_videos_uploaded} of ${this.displayDeviceCount} videos uploaded, do not refresh.`
+          const uploadedLabel = this.pluralize(this.n_videos_uploaded, 'video', 'videos')
+          const expectedLabel = this.pluralize(this.displayDeviceCount, 'video', 'videos')
+          return `${this.n_videos_uploaded} ${uploadedLabel} of ${this.displayDeviceCount} ${expectedLabel} uploaded, do not refresh.`
         },
         processingProgressText() {
           return this.isSaveLocalPage
@@ -1372,7 +1381,7 @@
           this.n_calibrated_cameras = 0
         }
       }
-  
+
       if (this.user_id == this.session.user) {
         this.show_controls = true
         this.showSessionMenuButtons = false
@@ -1513,6 +1522,25 @@
         'loadSession',
         'initSessionSameSetup',
         'loadAnalysisFunctions', 'loadAnalysisFunctionsPending', 'loadAnalysisFunctionsStates', 'loadTrialTags']),
+      parseTruthy(raw) {
+        if (raw === true || raw === '') return true
+        if (raw === false || raw == null) return false
+        return ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase())
+      },
+      pluralize(count, singular, plural = `${singular}s`) {
+        return Number(count) === 1 ? singular : plural
+      },
+      applyStatusCounts(data = {}) {
+        if (typeof data.n_cameras_connected !== 'undefined') {
+          this.n_cameras_connected = data.n_cameras_connected
+        }
+        if (typeof data.n_videos_uploaded !== 'undefined') {
+          this.n_videos_uploaded = data.n_videos_uploaded
+        }
+        if (typeof data.n_cameras_using_lidar !== 'undefined') {
+          this.n_cameras_using_lidar = data.n_cameras_using_lidar
+        }
+      },
       bindControlGestureGuards() {
         this.controlGestureGuard = (event) => {
           const target = event.target
@@ -1580,8 +1608,7 @@
 
                 // Get n_cameras_connected.
                 const res_status = await axios.get(`/sessions/${this.session.id}/status/`, {})
-                this.n_videos_uploaded = res_status.data.n_videos_uploaded
-                this.n_cameras_connected = res_status.data.n_cameras_connected
+                this.applyStatusCounts(res_status.data)
 
                 // If no calibrated cameras...
                 if (this.n_calibrated_cameras === 0) {
@@ -1617,7 +1644,7 @@
                     // Retry fetching the status
                     await new Promise(r => setTimeout(r, 500)); // Wait before retrying
                     const retryRes = await axios.get(`/sessions/${this.session.id}/status/`, {});
-                    this.n_cameras_connected = retryRes.data.n_cameras_connected;
+                    this.applyStatusCounts(retryRes.data)
                     if (this.n_cameras_connected > this.n_calibrated_cameras) {
                       this.showExtraCameraWarning()
                     }
@@ -1697,8 +1724,7 @@
           if (this.state !== 'recording') return
           try {
             const res = await axios.get(`/sessions/${this.session.id}/status/`)
-            this.n_cameras_connected = res.data.n_cameras_connected
-            this.n_videos_uploaded = res.data.n_videos_uploaded
+            this.applyStatusCounts(res.data)
 
             if (this.n_cameras_connected > this.n_calibrated_cameras) {
               this.showExtraCameraWarning()
@@ -1961,8 +1987,7 @@
       startPoll() {
         this.statusPoll = window.setTimeout(async () => {
           const res = await axios.get(`/sessions/${this.session.id}/status/`)
-          this.n_cameras_connected = res.data.n_cameras_connected
-          this.n_videos_uploaded = res.data.n_videos_uploaded
+          this.applyStatusCounts(res.data)
   
           if (res.data.status !== 'uploading') {
             // Show error if any
@@ -1975,7 +2000,9 @@
                   this.showExtraCameraWarning()
                 } else {
                   const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
-                  apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.transferProgressDescription + ". Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                  const expectedLabel = this.pluralize(this.n_calibrated_cameras, 'camera', 'cameras')
+                  const missingLabel = this.pluralize(num_missing_cameras, 'camera', 'cameras')
+                  apiErrorRes(res.data, `${this.n_calibrated_cameras} ${expectedLabel} expected and ${this.transferProgressDescription}. Please reconnect the missing ${num_missing_cameras} ${missingLabel} to the session using the QR code at the top of the screen.`);
                 }
               }
             }
