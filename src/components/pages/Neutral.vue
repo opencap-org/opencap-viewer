@@ -13,6 +13,22 @@
       </v-btn>
     </template>
 
+    <v-dialog v-model="confirmUploadDialog" max-width="420" persistent>
+      <v-card>
+        <v-card-title>Recording complete</v-card-title>
+        <v-card-text>
+          Was the subject holding a good, still neutral pose, visible to all
+          cameras, for the whole recording? Sending it for processing takes a
+          few minutes.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="discardNeutralRecording">Discard &amp; retake</v-btn>
+          <v-btn color="primary" @click="confirmUploadNeutral">Send for processing</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <div class="neutral-wrapper">
       <div class="neutral-content">
         <v-card v-if="imgs" class="step-4-1 pa-2 d-flex flex-column">
@@ -505,6 +521,7 @@ export default {
       busy: false,
       disabledNextButton: true,
       imgs: null,
+      confirmUploadDialog: false,
       lastPolledStatus: "",
       buttonCaptions: {
         recording: "Recording",
@@ -960,7 +977,7 @@ export default {
 
           if (await this.$refs.observer.validate()) {
             apiInfo("Recording...")
-            this.lastPolledStatus = "";
+            this.lastPolledStatus = "recording";
             this.busy = true;
             this.setNeutral({
                 subject: this.subject,
@@ -991,12 +1008,17 @@ export default {
                       }
                   }
               )
-              
+
+              // auto_stop=false: the phones record the neutral pose, but we
+              // hold off on triggering the upload (which normally happens
+              // automatically after ~2s server-side) until the user confirms
+              // the take was good.
               const res = await axios.get(
                 `/sessions/${this.session.id}/record/`,
                 {
                   params: {
                     name: "neutral",
+                    auto_stop: false,
                     subject_id: this.identifier,
                     subject_mass: this.weight,
                     subject_height: this.height,
@@ -1008,13 +1030,41 @@ export default {
                 }
               );
               this.setTrialId(res.data.id);
-              this.pollStatus();
+
+              // Mirrors the ~2s capture window the backend used to wait out
+              // before auto-stopping. After it elapses, recording is done
+              // but nothing has been uploaded yet - ask before sending it.
+              setTimeout(() => {
+                this.confirmUploadDialog = true;
+              }, 2000);
             } catch (error) {
               apiError(error);
+              this.busy = false;
             }
           }
         }
       }
+    },
+    async confirmUploadNeutral() {
+      this.confirmUploadDialog = false;
+      try {
+        await axios.get(`/sessions/${this.session.id}/stop/`);
+        this.pollStatus();
+      } catch (error) {
+        apiError(error);
+        this.busy = false;
+      }
+    },
+    async discardNeutralRecording() {
+      this.confirmUploadDialog = false;
+      try {
+        await axios.get(`/sessions/${this.session.id}/cancel_trial/`);
+      } catch (error) {
+        apiError(error);
+      }
+      this.busy = false;
+      this.lastPolledStatus = "";
+      apiInfo("Discarded. You can record again when ready.", 4000);
     },
     async pollStatus() {
       try {
