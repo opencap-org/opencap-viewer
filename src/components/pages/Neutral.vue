@@ -141,7 +141,7 @@
               </v-card>
             </div>
       
-            <div class="advanced-settings-row d-flex justify-center" v-if="!isMonocularMode">
+            <div class="advanced-settings-row d-flex justify-center" v-if="hasAdvancedSettings">
                 <v-btn
                   color="primary-dark"
                   class="mt-4 mb-2"
@@ -170,6 +170,7 @@
                       </v-card-actions>
 
                       <div class="advanced-settings-body">
+                        <template v-if="showStandardAdvancedSettings">
                         <v-card-title class="justify-center data-title">
                           <span class="mr-2">Scaling setup</span>
                           <v-tooltip bottom="" max-width="500px">
@@ -317,6 +318,29 @@
                           item-value="value"
                           ></v-combobox>
                         </v-card-text>
+                        </template>
+
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Save on Phone</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            When enabled, recording data will be saved only on the recording phone instead of uploading during recording. Upload the videos from the iOS app later before OpenCap can process the data and show results.
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-switch
+                            :input-value="saveDataLocally"
+                            label="Save recording data on the phone"
+                            color="blue lighten-1"
+                            inset
+                            hide-details
+                            readonly
+                            :disabled="loadingSaveLocal || savingSaveLocal"
+                            @click.native.stop.prevent="toggleSaveLocal"
+                          />
+                        </v-card-text>
 
                         <template v-if="canUseLidar">
                           <v-card-title class="justify-center data-title">
@@ -339,7 +363,7 @@
                                     inset
                                     hide-details
                                     readonly
-                                    :disabled="lidarLockedByFramerate"
+                                    :disabled="lidarLockedByFramerate || savingUseLidar"
                                     @click.native.stop.prevent="toggleUseLidar"
                                   />
                                 </div>
@@ -360,22 +384,17 @@
                         >
                           Close
                         </v-btn>
-                        <v-tooltip top :disabled="hasUnsavedAdvancedSettings && !savingAdvancedSettings">
-                          <template v-slot:activator="{ on }">
-                            <span v-on="on" class="advanced-settings-save-wrapper">
-                              <v-btn
-                                text
-                                class="advanced-settings-save-btn"
-                                :loading="savingAdvancedSettings"
-                                :disabled="savingAdvancedSettings || !hasUnsavedAdvancedSettings"
-                                @click="saveAdvancedSettingsAndClose"
-                              >
-                                Save and exit
-                              </v-btn>
-                            </span>
-                          </template>
-                          <span>{{ saveAdvancedSettingsDisabledMessage }}</span>
-                        </v-tooltip>
+                        <span v-if="hasSaveableAdvancedSettings" class="advanced-settings-save-wrapper">
+                          <v-btn
+                            text
+                            class="advanced-settings-save-btn"
+                            :loading="savingAdvancedSettings"
+                            :disabled="savingAdvancedSettings"
+                            @click="saveAdvancedSettingsAndClose"
+                          >
+                            Save and exit
+                          </v-btn>
+                        </span>
                       </v-card-actions>
                     </v-card>
                   </v-dialog>
@@ -466,7 +485,7 @@ import MainLayout from "@/layout/MainLayout";
 import ExampleImage from "@/components/ui/ExampleImage";
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
-import { canShowLidarToggle } from '@/util/staffAccess.js'
+import { canShowLidarToggle, loadUserGroups } from '@/util/staffAccess.js'
 
 export default {
   name: "Neutral",
@@ -559,8 +578,13 @@ export default {
       tempFilterFrequency: 'default',
       componentKey: 0,
       isAuditoryFeedbackEnabled: false,
+      saveDataLocally: false,
+      loadingSaveLocal: false,
+      savingSaveLocal: false,
       useLidar: false,
+      savingUseLidar: false,
       lidarMaxFramerate: 60,
+      userGroups: [],
     };
   },
   created() {
@@ -573,10 +597,21 @@ export default {
       trialId: state => state.data.trialId,
       genders: state => state.data.genders,
       sexes: state => state.data.sexes,
-      username: state => state.auth.username,
     }),
+    showStandardAdvancedSettings() {
+      return !this.isMonocularMode;
+    },
     canUseLidar() {
-      return canShowLidarToggle({ username: this.username });
+      return canShowLidarToggle({ groups: this.userGroups });
+    },
+    canUseSaveLocal() {
+      return true;
+    },
+    hasAdvancedSettings() {
+      return this.showStandardAdvancedSettings || this.canUseSaveLocal || this.canUseLidar;
+    },
+    hasSaveableAdvancedSettings() {
+      return this.showStandardAdvancedSettings;
     },
     lidarFramerateLockReason() {
       return `LiDAR captures depth data at up to ${this.lidarMaxFramerate}fps, so higher framerates are unavailable while LiDAR is on.`;
@@ -659,10 +694,6 @@ export default {
       if (!this.savedAdvancedSettingsSnapshot) return false
       return JSON.stringify(this.currentAdvancedSettings) !== JSON.stringify(this.savedAdvancedSettingsSnapshot)
     },
-    saveAdvancedSettingsDisabledMessage() {
-      if (this.savingAdvancedSettings) return 'Saving advanced settings'
-      return 'Make a change to enable Save and exit'
-    },
     backButtonLabel() {
       if (this.isMonocularMode && this.$route.query.fromDevice === 'true') {
         return 'Back';
@@ -686,6 +717,8 @@ export default {
     },
   },
   async mounted() {
+    this.loadBetaAccessGroups()
+
     if (this.$route.query.isMono === 'true') {
       this.isMonocularMode = true;
     }
@@ -694,7 +727,9 @@ export default {
     }
     await this.loadSession(this.$route.params.id)
     this.applySavedAdvancedSettings()
+    this.syncSaveLocalFromSession()
     this.syncUseLidarFromSession()
+    this.loadSaveLocalPreference()
     await this.ensureAdvancedSettingsMetadata()
     this.updateSavedAdvancedSettingsSnapshot()
     if (this.$route.query.autoRecord) {
@@ -727,25 +762,135 @@ export default {
     },
   },
   methods: {
-    ...mapMutations("data", ["setNeutral", "setTrialId", "setSessionUseLidar"]),
+    ...mapMutations("data", ["setNeutral", "setTrialId", "setSessionSaveLocal", "setSessionUseLidar"]),
     ...mapActions("data", ["loadSubjects", "loadSession"]),
+    async loadBetaAccessGroups() {
+      try {
+        this.userGroups = await loadUserGroups()
+      } catch {
+        this.userGroups = []
+      }
+    },
     parseUseLidar(value) {
       if (value === true || value === '') return true
       if (value === false || value == null) return false
       return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())
     },
+    parseSaveLocal(value) {
+      if (value === true || value === '') return true
+      if (value === false || value == null) return false
+      return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())
+    },
+    getSaveLocalFromResponse(data) {
+      if (!data) return undefined
+      if (typeof data.save_local !== 'undefined') return data.save_local
+      if (typeof data.saveLocal !== 'undefined') return data.saveLocal
+      if (typeof data.save_data_locally !== 'undefined') return data.save_data_locally
+      if (typeof data.saveDataLocally !== 'undefined') return data.saveDataLocally
+      return undefined
+    },
+    getSaveLocalFromSession() {
+      if (!this.session) return null
+      if (typeof this.session.save_local !== 'undefined') {
+        return this.parseSaveLocal(this.session.save_local)
+      }
+      if (typeof this.session.saveLocal !== 'undefined') {
+        return this.parseSaveLocal(this.session.saveLocal)
+      }
+      if (typeof this.session.save_data_locally !== 'undefined') {
+        return this.parseSaveLocal(this.session.save_data_locally)
+      }
+      if (typeof this.session.saveDataLocally !== 'undefined') {
+        return this.parseSaveLocal(this.session.saveDataLocally)
+      }
+      return null
+    },
+    syncSaveLocalFromSession() {
+      const sessionValue = this.getSaveLocalFromSession()
+      this.saveDataLocally = sessionValue !== null ? sessionValue : false
+    },
+    async loadSaveLocalPreference() {
+      if (!this.session?.id) return
+      this.loadingSaveLocal = true
+
+      try {
+        const res = await axios.get(`/sessions/${this.session.id}/save_local/`)
+        const rawSaveLocal = this.getSaveLocalFromResponse(res.data)
+        const savedValue = this.parseSaveLocal(
+          typeof rawSaveLocal === 'undefined' ? this.saveDataLocally : rawSaveLocal
+        )
+        this.saveDataLocally = savedValue
+        this.setSessionSaveLocal(savedValue)
+      } catch (error) {
+        this.syncSaveLocalFromSession()
+      } finally {
+        this.loadingSaveLocal = false
+      }
+    },
+    async toggleSaveLocal() {
+      if (this.loadingSaveLocal || this.savingSaveLocal) return
+      await this.applySaveLocal(!this.saveDataLocally)
+    },
+    async applySaveLocal(nextValue) {
+      const previousValue = this.saveDataLocally
+      this.saveDataLocally = nextValue
+      this.savingSaveLocal = true
+
+      try {
+        const res = await axios.patch(`/sessions/${this.session.id}/save_local/`, {
+          save_local: Boolean(nextValue)
+        })
+        const rawSaveLocal = this.getSaveLocalFromResponse(res.data)
+        const savedValue = this.parseSaveLocal(
+          typeof rawSaveLocal === 'undefined' ? nextValue : rawSaveLocal
+        )
+        this.saveDataLocally = savedValue
+        this.setSessionSaveLocal(savedValue)
+      } catch (error) {
+        this.saveDataLocally = previousValue
+        this.setSessionSaveLocal(previousValue)
+        apiError('Could not update local data storage setting. Please try again.')
+      } finally {
+        this.savingSaveLocal = false
+      }
+    },
     syncUseLidarFromSession() {
       this.useLidar = this.parseUseLidar(this.session?.useLidar)
     },
-    toggleUseLidar() {
-      if (this.lidarLockedByFramerate) return
-      this.applyUseLidar(!this.useLidar)
+    getUseLidarFromResponse(data) {
+      if (!data) return undefined
+      if (typeof data.useLidar !== 'undefined') return data.useLidar
+      if (typeof data.use_lidar !== 'undefined') return data.use_lidar
+      if (typeof data.use_lidar_data !== 'undefined') return data.use_lidar_data
+      if (typeof data.useLidarData !== 'undefined') return data.useLidarData
+      return undefined
     },
-    applyUseLidar(nextValue) {
+    async toggleUseLidar() {
+      if (this.lidarLockedByFramerate || this.savingUseLidar) return
+      await this.applyUseLidar(!this.useLidar)
+    },
+    async applyUseLidar(nextValue) {
+      const previousValue = this.useLidar
       this.useLidar = nextValue
-      // NOTE: persistence to the DB (useLidar on the session) is intentionally
-      // not wired up yet. We only keep the value in the store for now.
-      this.setSessionUseLidar(nextValue)
+      this.savingUseLidar = true
+
+      try {
+        const res = await axios.patch(`/sessions/${this.session.id}/useLidar/`, {
+          useLidar: Boolean(nextValue)
+        })
+        const rawUseLidar = this.getUseLidarFromResponse(res.data)
+        const savedValue = this.parseUseLidar(
+          typeof rawUseLidar === 'undefined' ? nextValue : rawUseLidar
+        )
+        this.useLidar = savedValue
+        this.setSessionUseLidar(savedValue)
+      } catch (error) {
+        this.useLidar = previousValue
+        this.setSessionUseLidar(previousValue)
+        apiError('Could not update LiDAR setting. Please try again.')
+      } finally {
+        this.savingUseLidar = false
+      }
     },
     navigateBack() {
       if (this.isMonocularMode) {
