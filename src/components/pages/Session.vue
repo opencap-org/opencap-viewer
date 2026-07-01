@@ -83,9 +83,12 @@
                   </div>
                 </div>
   
-                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="lidarCooldownActive || ((busy || invalid) && !(state === 'recording' && n_cameras_connected === 0))" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
+                  <p v-if="lidarCooldownActive" class="white--text text-center mb-4 px-2">
+                    Applying the LiDAR change on the phone. Please wait {{ lidarCooldownRemaining }}s before recording.
+                  </p>
                   <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
                     {{ displayDeviceCount }} devices are recording
                     <template v-if="sessionFramerate">at {{ sessionFramerate }} Hz</template>,
@@ -1059,6 +1062,10 @@
               recordingTimer: null,
               recordingStatusPoll: null,
 
+              // Reactive clock + timer used to count down the LiDAR switch cooldown
+              lidarCooldownNow: Date.now(),
+              lidarCooldownTimer: null,
+
               trialsPoll: null,
               showSessionMenuButtons: false,
               leftMenuOpen: false,
@@ -1127,7 +1134,8 @@
             weight: state => state.data.weight,
             height: state => state.data.height,
             gender: state => state.data.gender,
-            isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed
+            isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed,
+            lidarSwitchCooldownUntil: state => state.data.lidarSwitchCooldownUntil
           }),
         sessionUrl() {
           return location.origin + "/session/" + (this.session?.id || '');
@@ -1166,7 +1174,19 @@
           if (!this.trial || !this.trial.results) return false
           return this.trial.results.some(r => r.tag === 'visualizerTransforms-json')
         },
+        lidarCooldownRemaining() {
+          if (!this.lidarSwitchCooldownUntil) return 0
+          const msLeft = this.lidarSwitchCooldownUntil - this.lidarCooldownNow
+          return msLeft > 0 ? Math.ceil(msLeft / 1000) : 0
+        },
+        lidarCooldownActive() {
+          // Only block starting a new recording, never stopping an ongoing one.
+          return this.state === 'ready' && this.lidarCooldownRemaining > 0
+        },
         buttonCaption() {
+          if (this.lidarCooldownActive) {
+            return `Switching camera… ${this.lidarCooldownRemaining}s`
+          }
           switch (this.state) {
             case 'recording': {
               const time = moment
@@ -1389,6 +1409,7 @@
       this.cancelRecordTimer()
       this.cancelRecordingStatusPoll()
       this.cancelTrialsPoll()
+      this.stopLidarCooldownTicker()
   
       if (this.resizeObserver) {
         this.resizeObserver.disconnect()
@@ -1406,6 +1427,12 @@
       this.disposeScene();
     },
     watch: {
+      lidarSwitchCooldownUntil: {
+        immediate: true,
+        handler() {
+          this.startLidarCooldownTicker()
+        }
+      },
       dialog(isOpen) {
         if (!isOpen) {
           this.$nextTick(() => {
@@ -1527,6 +1554,10 @@
       async changeState() {
         switch (this.state) {
           case 'ready': {
+            // Block starting a recording while the phone is switching capture
+            // pipelines (AVFoundation <-> ARKit) after a LiDAR toggle.
+            if (this.lidarCooldownActive) return
+
             this.submitted = true
   
             if (await this.$refs.observer.validate()) {
@@ -1685,6 +1716,23 @@
         if (this.recordingStatusPoll) {
           window.clearTimeout(this.recordingStatusPoll)
           this.recordingStatusPoll = null
+        }
+      },
+      startLidarCooldownTicker() {
+        this.lidarCooldownNow = Date.now()
+        if (this.lidarCooldownTimer) return
+        if (!this.lidarSwitchCooldownUntil || this.lidarSwitchCooldownUntil <= this.lidarCooldownNow) return
+        this.lidarCooldownTimer = window.setInterval(() => {
+          this.lidarCooldownNow = Date.now()
+          if (this.lidarCooldownNow >= this.lidarSwitchCooldownUntil) {
+            this.stopLidarCooldownTicker()
+          }
+        }, 250)
+      },
+      stopLidarCooldownTicker() {
+        if (this.lidarCooldownTimer) {
+          window.clearInterval(this.lidarCooldownTimer)
+          this.lidarCooldownTimer = null
         }
       },
       extraCameraWarningText() {
