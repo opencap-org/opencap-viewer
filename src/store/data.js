@@ -73,7 +73,12 @@ export default {
     subjectTags: {},
     trialTags: {},
     isSyncDownloadAllowed: JSON.parse(localStorage.getItem("isSyncDownloadAllowed")),
-    analysis: {}
+    analysis: {},
+
+    // Timestamp (ms) until which recording should be blocked after the LiDAR
+    // preference changes. The mobile app needs a few seconds to switch its
+    // capture pipeline between AVFoundation (RGB) and ARKit (LiDAR).
+    lidarSwitchCooldownUntil: 0
   },
   mutations: {
     setAnalysis(state, trial, analysisData){
@@ -109,6 +114,9 @@ export default {
     },
     setSessionUseLidar (state, useLidar) {
       Vue.set(state.session, 'useLidar', useLidar)
+    },
+    setLidarSwitchCooldownUntil (state, timestamp) {
+      state.lidarSwitchCooldownUntil = timestamp || 0
     },
     setExistingSessions (state, sessions) {
 
