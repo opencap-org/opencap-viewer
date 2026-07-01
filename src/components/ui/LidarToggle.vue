@@ -5,7 +5,7 @@
         <div
           class="lidar-toggle"
           :class="{
-            'lidar-toggle--disabled': !hasSession,
+            'lidar-toggle--disabled': !hasSession || loadingPreference,
             'lidar-toggle--on': useLidar
           }"
           role="switch"
@@ -27,7 +27,7 @@
             hide-details
             readonly
             :aria-label="ariaLabel"
-            :disabled="!hasSession"
+            :disabled="!hasSession || loadingPreference || saving"
             @click.native.stop.prevent="requestToggle" />
         </div>
       </template>
@@ -57,11 +57,19 @@
 
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn text @click="cancelLidar">Cancel</v-btn>
+          <v-btn text :disabled="saving" @click="cancelLidar">Cancel</v-btn>
           <v-btn
             color="blue darken-1"
             text
+            :disabled="saving"
             @click="confirmLidar">
+            <v-progress-circular
+              v-if="saving"
+              indeterminate
+              class="mr-2"
+              color="grey"
+              size="14"
+              width="2" />
             Use LiDAR
           </v-btn>
         </v-card-actions>
@@ -72,6 +80,8 @@
 
 <script>
 import { mapState } from 'vuex'
+import axios from 'axios'
+import { apiError } from '@/util/ErrorMessage.js'
 
 export default {
   name: 'LidarToggle',
@@ -79,6 +89,9 @@ export default {
     return {
       useLidar: false,
       lastValue: false,
+      loadingPreference: false,
+      saving: false,
+      preferenceRequestId: 0,
       confirmDialog: false
     }
   },
@@ -92,8 +105,12 @@ export default {
     hasSession () {
       return !!this.session?.id
     },
+    useLidarUrl () {
+      return this.hasSession ? `/sessions/${this.session.id}/useLidar/` : null
+    },
     tooltipText () {
       if (!this.hasSession) return 'Session must load before changing LiDAR.'
+      if (this.loadingPreference) return 'Loading LiDAR setting.'
       return this.useLidar
         ? 'LiDAR depth data will be captured during recording.'
         : 'LiDAR depth data will not be captured during recording.'
@@ -101,11 +118,11 @@ export default {
   },
   watch: {
     'session.id' () {
-      this.syncFromSession()
+      this.loadPreference()
     }
   },
   mounted () {
-    this.syncFromSession()
+    this.loadPreference()
   },
   methods: {
     parseUseLidar (value) {
@@ -113,13 +130,65 @@ export default {
       if (value === false || value == null) return false
       return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())
     },
-    syncFromSession () {
-      const value = this.parseUseLidar(this.session?.useLidar)
-      this.useLidar = value
-      this.lastValue = value
+    getUseLidarFromResponse (data) {
+      if (!data) return undefined
+      if (typeof data.useLidar !== 'undefined') return data.useLidar
+      if (typeof data.use_lidar !== 'undefined') return data.use_lidar
+      if (typeof data.use_lidar_data !== 'undefined') return data.use_lidar_data
+      if (typeof data.useLidarData !== 'undefined') return data.useLidarData
+      return undefined
+    },
+    getSessionPreference () {
+      if (!this.session) return null
+      if (typeof this.session.useLidar !== 'undefined') {
+        return this.parseUseLidar(this.session.useLidar)
+      }
+      if (typeof this.session.use_lidar !== 'undefined') {
+        return this.parseUseLidar(this.session.use_lidar)
+      }
+
+      return null
+    },
+    async loadPreference () {
+      const sessionId = this.session?.id
+      const currentRequestId = this.preferenceRequestId + 1
+      this.preferenceRequestId = currentRequestId
+
+      if (!sessionId) {
+        this.useLidar = false
+        this.lastValue = false
+        return
+      }
+
+      this.loadingPreference = true
+
+      try {
+        const res = await axios.get(`/sessions/${sessionId}/useLidar/`)
+        if (this.preferenceRequestId !== currentRequestId) return
+
+        const rawUseLidar = this.getUseLidarFromResponse(res.data)
+        const value = this.parseUseLidar(rawUseLidar)
+        this.useLidar = value
+        this.lastValue = value
+        this.$emit('change', {
+          sessionId,
+          useLidar: value
+        })
+      } catch (error) {
+        if (this.preferenceRequestId !== currentRequestId) return
+
+        const sessionPreference = this.getSessionPreference()
+        const fallbackValue = sessionPreference !== null ? sessionPreference : false
+        this.useLidar = fallbackValue
+        this.lastValue = fallbackValue
+      } finally {
+        if (this.preferenceRequestId === currentRequestId) {
+          this.loadingPreference = false
+        }
+      }
     },
     requestToggle () {
-      if (!this.hasSession) return
+      if (!this.hasSession || this.loadingPreference || this.saving) return
 
       if (!this.useLidar) {
         this.confirmDialog = true
@@ -128,26 +197,53 @@ export default {
 
       this.applyValue(false)
     },
-    applyValue (nextValue) {
+    async applyValue (nextValue) {
+      const previousValue = this.lastValue
       this.useLidar = nextValue
-      this.lastValue = nextValue
-      // NOTE: persistence to the DB (useLidar on the session) is intentionally
-      // not wired up yet. We only emit the new value for now.
-      this.$emit('change', {
-        sessionId: this.session?.id,
-        useLidar: nextValue
-      })
+      this.saving = true
+
+      try {
+        const savedValue = await this.savePreference(nextValue)
+        this.useLidar = savedValue
+        this.lastValue = savedValue
+        return true
+      } catch (error) {
+        this.useLidar = previousValue
+        apiError('Could not update LiDAR setting. Please try again.')
+        return false
+      } finally {
+        this.saving = false
+      }
     },
     cancelLidar () {
+      if (this.saving) return
+
       this.confirmDialog = false
       this.useLidar = this.lastValue
     },
     onConfirmDialogInput (isOpen) {
       if (!isOpen) this.cancelLidar()
     },
-    confirmLidar () {
-      this.applyValue(true)
-      this.confirmDialog = false
+    async confirmLidar () {
+      const saved = await this.applyValue(true)
+      if (saved) this.confirmDialog = false
+    },
+    async savePreference (value) {
+      const res = await axios.patch(this.useLidarUrl, {
+        useLidar: Boolean(value)
+      })
+
+      const rawUseLidar = this.getUseLidarFromResponse(res.data)
+      const useLidar = this.parseUseLidar(
+        typeof rawUseLidar === 'undefined' ? value : rawUseLidar
+      )
+
+      this.$emit('change', {
+        sessionId: this.session?.id,
+        useLidar
+      })
+
+      return useLidar
     }
   }
 }
