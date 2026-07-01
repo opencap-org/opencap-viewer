@@ -83,7 +83,7 @@
                   </div>
                 </div>
   
-                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="recordingStopCooldownActive || lidarCooldownActive || ((busy || invalid) && !(state === 'recording' && n_cameras_connected === 0))" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="recordingStopCooldownActive || lidarCooldownActive || (state === 'ready' && (busy || invalid))" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
                   <p v-if="lidarCooldownActive" class="white--text text-center mb-4 px-2">
@@ -1391,6 +1391,8 @@
         }
       }
 
+      await this.syncInitialSessionStateFromStatus()
+
       if (this.user_id == this.session.user) {
         this.show_controls = true
         this.showSessionMenuButtons = false
@@ -1411,7 +1413,7 @@
   
       const doneTrials = this.filteredTrials.filter(trial => trial.status === 'done')
   
-      if (doneTrials.length > 0) {
+      if (this.state === 'ready' && doneTrials.length > 0) {
         console.log("Done trials:")
         console.log(doneTrials[0])
         this.loadTrial(doneTrials[0])
@@ -1555,6 +1557,47 @@
         }
         if (typeof data.n_cameras_using_lidar !== 'undefined') {
           this.n_cameras_using_lidar = data.n_cameras_using_lidar
+        }
+      },
+      mergeReturnedTrials(updatedTrials = []) {
+        updatedTrials.forEach(updatedT => {
+          const existingIndex = this.session.trials.findIndex(t => t.id === updatedT.id)
+          if (existingIndex < 0) {
+            this.addTrial(updatedT)
+          } else {
+            this.updateTrial(updatedT)
+          }
+        })
+      },
+      async syncInitialSessionStateFromStatus() {
+        try {
+          const res = await axios.get(`/sessions/${this.session.id}/status/?ret_session=True`)
+          this.applyStatusCounts(res.data)
+
+          const returnedTrials = res.data.session?.trials || []
+          this.mergeReturnedTrials(returnedTrials)
+
+          if (res.data.status === 'uploading' || res.data.status === 'processing') {
+            this.state = 'processing'
+            this.trialInProcess = returnedTrials.find(trial => ['uploading', 'processing'].includes(trial.status)) || null
+            this.startPoll()
+            return
+          }
+
+          if (res.data.status === 'ready') {
+            const recordingTrial = returnedTrials.find(trial => trial.status === 'recording')
+            if (recordingTrial) {
+              this.state = 'recording'
+              this.trialInProcess = recordingTrial
+              this.recordingStarted = moment()
+              this.recordingTimePassed = 0
+              this.cancelRecordTimer()
+              this.recordingTimer = window.setTimeout(this.recordTimerHandler, 500)
+              this.startRecordingStatusPoll()
+            }
+          }
+        } catch (error) {
+          // Keep the default ready state if the initial status refresh fails.
         }
       },
       bindControlGestureGuards() {

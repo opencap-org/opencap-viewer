@@ -83,9 +83,10 @@ import { mapState, mapMutations } from 'vuex'
 import axios from 'axios'
 import { apiError } from '@/util/ErrorMessage.js'
 
-// The mobile app needs a few seconds to switch its capture pipeline between
+// The mobile app needs time to switch its capture pipeline between
 // AVFoundation (RGB) and ARKit (LiDAR). Block recording during that window.
-const LIDAR_SWITCH_COOLDOWN_MS = 5000
+const LIDAR_ENABLE_COOLDOWN_MS = 2000
+const LIDAR_DISABLE_COOLDOWN_MS = 10000
 
 export default {
   name: 'LidarToggle',
@@ -130,6 +131,9 @@ export default {
   },
   methods: {
     ...mapMutations('data', ['setLidarSwitchCooldownUntil']),
+    getLidarSwitchCooldownMs (useLidar) {
+      return useLidar ? LIDAR_ENABLE_COOLDOWN_MS : LIDAR_DISABLE_COOLDOWN_MS
+    },
     parseUseLidar (value) {
       if (value === true || value === '') return true
       if (value === false || value == null) return false
@@ -213,7 +217,7 @@ export default {
         this.lastValue = savedValue
         // Give the mobile app time to switch between AVFoundation and ARKit
         // before the user is allowed to start a recording.
-        this.setLidarSwitchCooldownUntil(Date.now() + LIDAR_SWITCH_COOLDOWN_MS)
+        this.setLidarSwitchCooldownUntil(Date.now() + this.getLidarSwitchCooldownMs(savedValue))
         return true
       } catch (error) {
         this.useLidar = previousValue

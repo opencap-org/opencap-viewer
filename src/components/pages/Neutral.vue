@@ -487,6 +487,9 @@ import DialogComponent from '@/components/ui/SubjectDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { canShowLidarToggle, loadUserGroups } from '@/util/staffAccess.js'
 
+const LIDAR_ENABLE_COOLDOWN_MS = 2000
+const LIDAR_DISABLE_COOLDOWN_MS = 10000
+
 export default {
   name: "Neutral",
   components: {
@@ -762,7 +765,7 @@ export default {
     },
   },
   methods: {
-    ...mapMutations("data", ["setNeutral", "setTrialId", "setSessionSaveLocal", "setSessionUseLidar"]),
+    ...mapMutations("data", ["setNeutral", "setTrialId", "setSessionSaveLocal", "setSessionUseLidar", "setLidarSwitchCooldownUntil"]),
     ...mapActions("data", ["loadSubjects", "loadSession"]),
     async loadBetaAccessGroups() {
       try {
@@ -775,6 +778,9 @@ export default {
       if (value === true || value === '') return true
       if (value === false || value == null) return false
       return ['true', '1', 'yes', 'on'].includes(String(value).toLowerCase())
+    },
+    getLidarSwitchCooldownMs(useLidar) {
+      return useLidar ? LIDAR_ENABLE_COOLDOWN_MS : LIDAR_DISABLE_COOLDOWN_MS
     },
     parseSaveLocal(value) {
       if (value === true || value === '') return true
@@ -884,6 +890,7 @@ export default {
         )
         this.useLidar = savedValue
         this.setSessionUseLidar(savedValue)
+        this.setLidarSwitchCooldownUntil(Date.now() + this.getLidarSwitchCooldownMs(savedValue))
       } catch (error) {
         this.useLidar = previousValue
         this.setSessionUseLidar(previousValue)
