@@ -83,19 +83,50 @@
                   </div>
                 </div>
   
-                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="recordingStopCooldownActive || lidarCooldownActive || (state === 'ready' && (busy || invalid))" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
+                  <p v-if="lidarCooldownActive" class="white--text text-center mb-4 px-2">
+                    Applying the LiDAR change on the phone. Please wait {{ lidarCooldownRemaining }}s before recording.
+                  </p>
                   <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
-                    {{ displayDeviceCount }} devices are recording
-                    <template v-if="sessionFramerate">at {{ sessionFramerate }} Hz</template>,
+                    {{ recordingStatusText }}
+                    <template v-if="recordingDisplayFramerate"> at {{ recordingDisplayFramerate }} Hz</template><template v-if="isLidarRecordingEnabled">, {{ lidarRecordingStatusText }}</template>,
                     do not refresh
                   </p>
                   <p v-if="state === 'processing'">{{ processingProgressText }}</p>
               </ValidationObserver>
 
-              <div class="show-removed-trials-sidebar mb-2">
+              <div class="show-removed-trials-sidebar mb-2 d-flex align-center">
                 <v-checkbox v-model="show_trashed" label="Show removed trials" hide-details dense class="toolbar-checkbox"></v-checkbox>
+                <v-spacer></v-spacer>
+                <v-menu
+                  open-on-hover
+                  offset-y
+                  left
+                  :close-on-content-click="false"
+                  content-class="trial-legend-menu">
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn icon small dark v-bind="attrs" v-on="on" aria-label="Trial color legend">
+                      <v-icon small>mdi-palette-outline</v-icon>
+                    </v-btn>
+                  </template>
+                  <div class="trial-legend">
+                    <div class="trial-legend__title">Trial status</div>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--done"></span>Done
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--processing"></span>Processing
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--error"></span>Error
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--local"></span>Saved on phone
+                    </span>
+                  </div>
+                </v-menu>
               </div>
 
               <div class="trials-wrapper flex-grow-1">
@@ -921,6 +952,7 @@
   import SpeedControl from '@/components/ui/SpeedControl'
   import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   import { debounce } from 'lodash'
+  import { isTester, loadUserGroups } from '@/util/staffAccess.js'
 
   let openpose_bones = [
     [20, 21],
@@ -1031,13 +1063,19 @@
               recordingTimer: null,
               recordingStatusPoll: null,
 
+              // Reactive clock + timer used to count down the LiDAR switch cooldown
+              lidarCooldownNow: Date.now(),
+              lidarCooldownTimer: null,
+
               trialsPoll: null,
               showSessionMenuButtons: false,
               leftMenuOpen: false,
   
               n_calibrated_cameras: 0,
               n_cameras_connected: 0,
+              n_cameras_using_lidar: 0,
               n_videos_uploaded: 0,
+              recordingFramerate: null,
   
               trial_rename_dialog: false,
               trial_rename_index: 0,
@@ -1062,6 +1100,7 @@
               controlGestureGuard: null,
 
               sessionNotification: { show: false, text: '', type: 'error' },
+              userGroups: [],
 
               // Performance optimization properties
               lastFrameTime: 0,
@@ -1099,7 +1138,8 @@
             weight: state => state.data.weight,
             height: state => state.data.height,
             gender: state => state.data.gender,
-            isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed
+            isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed,
+            lidarSwitchCooldownUntil: state => state.data.lidarSwitchCooldownUntil
           }),
         sessionUrl() {
           return location.origin + "/session/" + (this.session?.id || '');
@@ -1121,6 +1161,9 @@
           const framerate = this.session?.meta?.settings?.framerate ?? null;
           return framerate !== null ? Number(framerate) : null;
         },
+        recordingDisplayFramerate() {
+          return this.recordingFramerate ?? this.sessionFramerate
+        },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
         },
@@ -1138,7 +1181,22 @@
           if (!this.trial || !this.trial.results) return false
           return this.trial.results.some(r => r.tag === 'visualizerTransforms-json')
         },
+        lidarCooldownRemaining() {
+          if (!this.lidarSwitchCooldownUntil) return 0
+          const msLeft = this.lidarSwitchCooldownUntil - this.lidarCooldownNow
+          return msLeft > 0 ? Math.ceil(msLeft / 1000) : 0
+        },
+        lidarCooldownActive() {
+          // Only block starting a new recording, never stopping an ongoing one.
+          return this.state === 'ready' && this.lidarCooldownRemaining > 0
+        },
+        recordingStopCooldownActive() {
+          return this.state === 'recording' && this.recordingTimePassed < 2
+        },
         buttonCaption() {
+          if (this.lidarCooldownActive) {
+            return `Switching camera… ${this.lidarCooldownRemaining}s`
+          }
           switch (this.state) {
             case 'recording': {
               const time = moment
@@ -1219,14 +1277,23 @@
         displayDeviceCount() {
           return Math.max(this.n_cameras_connected, this.n_videos_uploaded, 1)
         },
+        isLidarRecordingEnabled() {
+          return this.parseTruthy(this.session?.useLidar ?? this.session?.use_lidar)
+        },
+        isTesterUser() {
+          return isTester({ groups: this.userGroups })
+        },
+        displayLidarDeviceCount() {
+          return Math.max(this.n_cameras_using_lidar, 0)
+        },
+        recordingStatusText() {
+          return `${this.displayDeviceCount} ${this.pluralize(this.displayDeviceCount, 'camera', 'cameras')} recording`
+        },
+        lidarRecordingStatusText() {
+          return `${this.displayLidarDeviceCount} with lidar`
+        },
         isSaveLocalPage() {
-          const isTruthySaveLocal = raw => {
-            if (raw === true || raw === '') return true
-            if (raw === false || raw == null) return false
-            return ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase())
-          }
-
-          return isTruthySaveLocal(this.session?.save_local ?? this.session?.saveLocal)
+          return this.parseTruthy(this.session?.save_local ?? this.session?.saveLocal)
         },
         savedLocallyProgressText() {
           const videoText = this.n_videos_uploaded === 1 ? 'video' : 'videos'
@@ -1239,7 +1306,9 @@
           return `${calibratedLabel}, ${savedLabel}, do not refresh.`
         },
         uploadedProgressText() {
-          return `${this.n_videos_uploaded} of ${this.displayDeviceCount} videos uploaded, do not refresh.`
+          const uploadedLabel = this.pluralize(this.n_videos_uploaded, 'video', 'videos')
+          const expectedLabel = this.pluralize(this.displayDeviceCount, 'video', 'videos')
+          return `${this.n_videos_uploaded} ${uploadedLabel} of ${this.displayDeviceCount} ${expectedLabel} uploaded, do not refresh.`
         },
         processingProgressText() {
           return this.isSaveLocalPage
@@ -1308,6 +1377,7 @@
       }
 
       this.loadTrialTags()
+      this.loadUserGroupsForAccess()
 
       // Check if something went wrong with loading session. Usually there was a redirect to Login page.
       if (this.session.id == undefined) {
@@ -1324,7 +1394,9 @@
           this.n_calibrated_cameras = 0
         }
       }
-  
+
+      await this.syncInitialSessionStateFromStatus()
+
       if (this.user_id == this.session.user) {
         this.show_controls = true
         this.showSessionMenuButtons = false
@@ -1345,7 +1417,7 @@
   
       const doneTrials = this.filteredTrials.filter(trial => trial.status === 'done')
   
-      if (doneTrials.length > 0) {
+      if (this.state === 'ready' && doneTrials.length > 0) {
         console.log("Done trials:")
         console.log(doneTrials[0])
         this.loadTrial(doneTrials[0])
@@ -1361,6 +1433,7 @@
       this.cancelRecordTimer()
       this.cancelRecordingStatusPoll()
       this.cancelTrialsPoll()
+      this.stopLidarCooldownTicker()
   
       if (this.resizeObserver) {
         this.resizeObserver.disconnect()
@@ -1378,6 +1451,12 @@
       this.disposeScene();
     },
     watch: {
+      lidarSwitchCooldownUntil: {
+        immediate: true,
+        handler() {
+          this.startLidarCooldownTicker()
+        }
+      },
       dialog(isOpen) {
         if (!isOpen) {
           this.$nextTick(() => {
@@ -1458,6 +1537,85 @@
         'loadSession',
         'initSessionSameSetup',
         'loadAnalysisFunctions', 'loadAnalysisFunctionsPending', 'loadAnalysisFunctionsStates', 'loadTrialTags']),
+      async loadUserGroupsForAccess() {
+        try {
+          this.userGroups = await loadUserGroups()
+        } catch {
+          this.userGroups = []
+        }
+      },
+      parseTruthy(raw) {
+        if (raw === true || raw === '') return true
+        if (raw === false || raw == null) return false
+        return ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase())
+      },
+      pluralize(count, singular, plural = `${singular}s`) {
+        return Number(count) === 1 ? singular : plural
+      },
+      applyStatusCounts(data = {}) {
+        if (typeof data.n_cameras_connected !== 'undefined') {
+          this.n_cameras_connected = data.n_cameras_connected
+        }
+        if (typeof data.n_videos_uploaded !== 'undefined') {
+          this.n_videos_uploaded = data.n_videos_uploaded
+        }
+        if (typeof data.n_cameras_using_lidar !== 'undefined') {
+          this.n_cameras_using_lidar = data.n_cameras_using_lidar
+        }
+        const framerate = this.getStatusFramerate(data)
+        if (framerate !== null) {
+          this.recordingFramerate = framerate
+        }
+      },
+      getStatusFramerate(data = {}) {
+        if (typeof data.framerate !== 'undefined' && data.framerate !== null && data.framerate !== '') {
+          const parsed = Number(data.framerate)
+          return Number.isNaN(parsed) ? data.framerate : parsed
+        }
+
+        return null
+      },
+      mergeReturnedTrials(updatedTrials = []) {
+        updatedTrials.forEach(updatedT => {
+          const existingIndex = this.session.trials.findIndex(t => t.id === updatedT.id)
+          if (existingIndex < 0) {
+            this.addTrial(updatedT)
+          } else {
+            this.updateTrial(updatedT)
+          }
+        })
+      },
+      async syncInitialSessionStateFromStatus() {
+        try {
+          const res = await axios.get(`/sessions/${this.session.id}/status/?ret_session=True`)
+          this.applyStatusCounts(res.data)
+
+          const returnedTrials = res.data.session?.trials || []
+          this.mergeReturnedTrials(returnedTrials)
+
+          if (res.data.status === 'uploading' || res.data.status === 'processing') {
+            this.state = 'processing'
+            this.trialInProcess = returnedTrials.find(trial => ['uploading', 'processing'].includes(trial.status)) || null
+            this.startPoll()
+            return
+          }
+
+          if (res.data.status === 'ready') {
+            const recordingTrial = returnedTrials.find(trial => trial.status === 'recording')
+            if (recordingTrial) {
+              this.state = 'recording'
+              this.trialInProcess = recordingTrial
+              this.recordingStarted = moment()
+              this.recordingTimePassed = 0
+              this.cancelRecordTimer()
+              this.recordingTimer = window.setTimeout(this.recordTimerHandler, 500)
+              this.startRecordingStatusPoll()
+            }
+          }
+        } catch (error) {
+          // Keep the default ready state if the initial status refresh fails.
+        }
+      },
       bindControlGestureGuards() {
         this.controlGestureGuard = (event) => {
           const target = event.target
@@ -1499,10 +1657,15 @@
       async changeState() {
         switch (this.state) {
           case 'ready': {
+            // Block starting a recording while the phone is switching capture
+            // pipelines (AVFoundation <-> ARKit) after a LiDAR toggle.
+            if (this.lidarCooldownActive) return
+
             this.submitted = true
   
             if (await this.$refs.observer.validate()) {
               this.busy = true
+              this.recordingTimePassed = 0
   
               try {
                 // store in vuex
@@ -1521,8 +1684,7 @@
 
                 // Get n_cameras_connected.
                 const res_status = await axios.get(`/sessions/${this.session.id}/status/`, {})
-                this.n_videos_uploaded = res_status.data.n_videos_uploaded
-                this.n_cameras_connected = res_status.data.n_cameras_connected
+                this.applyStatusCounts(res_status.data)
 
                 // If no calibrated cameras...
                 if (this.n_calibrated_cameras === 0) {
@@ -1558,7 +1720,7 @@
                     // Retry fetching the status
                     await new Promise(r => setTimeout(r, 500)); // Wait before retrying
                     const retryRes = await axios.get(`/sessions/${this.session.id}/status/`, {});
-                    this.n_cameras_connected = retryRes.data.n_cameras_connected;
+                    this.applyStatusCounts(retryRes.data)
                     if (this.n_cameras_connected > this.n_calibrated_cameras) {
                       this.showExtraCameraWarning()
                     }
@@ -1638,8 +1800,7 @@
           if (this.state !== 'recording') return
           try {
             const res = await axios.get(`/sessions/${this.session.id}/status/`)
-            this.n_cameras_connected = res.data.n_cameras_connected
-            this.n_videos_uploaded = res.data.n_videos_uploaded
+            this.applyStatusCounts(res.data)
 
             if (this.n_cameras_connected > this.n_calibrated_cameras) {
               this.showExtraCameraWarning()
@@ -1657,6 +1818,23 @@
         if (this.recordingStatusPoll) {
           window.clearTimeout(this.recordingStatusPoll)
           this.recordingStatusPoll = null
+        }
+      },
+      startLidarCooldownTicker() {
+        this.lidarCooldownNow = Date.now()
+        if (this.lidarCooldownTimer) return
+        if (!this.lidarSwitchCooldownUntil || this.lidarSwitchCooldownUntil <= this.lidarCooldownNow) return
+        this.lidarCooldownTimer = window.setInterval(() => {
+          this.lidarCooldownNow = Date.now()
+          if (this.lidarCooldownNow >= this.lidarSwitchCooldownUntil) {
+            this.stopLidarCooldownTicker()
+          }
+        }, 250)
+      },
+      stopLidarCooldownTicker() {
+        if (this.lidarCooldownTimer) {
+          window.clearInterval(this.lidarCooldownTimer)
+          this.lidarCooldownTimer = null
         }
       },
       extraCameraWarningText() {
@@ -1885,8 +2063,7 @@
       startPoll() {
         this.statusPoll = window.setTimeout(async () => {
           const res = await axios.get(`/sessions/${this.session.id}/status/`)
-          this.n_cameras_connected = res.data.n_cameras_connected
-          this.n_videos_uploaded = res.data.n_videos_uploaded
+          this.applyStatusCounts(res.data)
   
           if (res.data.status !== 'uploading') {
             // Show error if any
@@ -1899,7 +2076,9 @@
                   this.showExtraCameraWarning()
                 } else {
                   const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
-                  apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.transferProgressDescription + ". Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                  const expectedLabel = this.pluralize(this.n_calibrated_cameras, 'camera', 'cameras')
+                  const missingLabel = this.pluralize(num_missing_cameras, 'camera', 'cameras')
+                  apiErrorRes(res.data, `${this.n_calibrated_cameras} ${expectedLabel} expected and ${this.transferProgressDescription}. Please reconnect the missing ${num_missing_cameras} ${missingLabel} to the session using the QR code at the top of the screen.`);
                 }
               }
             }
@@ -1925,8 +2104,15 @@
               const existingIndex = this.session.trials.findIndex(t => t.id === updatedT.id)
               if (existingIndex < 0) {
                 this.addTrial(updatedT)
-              } else if (this.session.trials[existingIndex].status !== updatedT.status) {
-                this.updateTrial(updatedT)
+              } else {
+                const existing = this.session.trials[existingIndex]
+                const statusChanged = existing.status !== updatedT.status
+                // Videos can flip to saved_local after the status settles (e.g. local
+                // saving on phone), so refresh when that state changes too.
+                const savedLocalChanged = this.isTrialSavedLocally(existing) !== this.isTrialSavedLocally(updatedT)
+                if (statusChanged || savedLocalChanged) {
+                  this.updateTrial(updatedT)
+                }
               }
             })
           } catch (e) {
@@ -1943,7 +2129,17 @@
         }
       },
       trialClasses(trial) {
-        return trial.trashed ? 'trashed' : 'cursor-pointer';
+        const classes = [trial.trashed ? 'trashed' : 'cursor-pointer'];
+        if (this.isTrialSavedLocally(trial)) {
+          classes.push('trial-saved-local');
+        }
+        return classes;
+      },
+      isTrialSavedLocally(trial) {
+        const videos = trial?.videos;
+        if (!Array.isArray(videos) || videos.length === 0) return false;
+        const isTruthy = raw => raw === true || ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase());
+        return videos.every(v => v && isTruthy(v.saved_local));
       },
       clickOutsideDialogTrialHideMenu(e) {
         if (e.target.className === 'v-overlay__scrim') {
@@ -2671,7 +2867,6 @@
       },
       recordingTimeLimit() {
         // Default value is 60.
-        // Set -1 for no limit.
         const DEFAULT_TIME_LIMIT = 60;
         const VALID_FRAMERATES = [60, 120, 240];
 
@@ -2683,7 +2878,7 @@
           timelimit = 60 / (framerate / 60);
         }
 
-        return timelimit;
+        return this.isTesterUser ? timelimit * 5 : timelimit;
       },
       toggleSessionMenuButtons() {
         this.showSessionMenuButtons = !this.showSessionMenuButtons;
@@ -2761,6 +2956,49 @@
   /* Trial context menu - prevent overflow on small screens */
   .trial-context-menu {
     max-width: min(320px, calc(100vw - 24px));
+  }
+
+  /* Trial color legend popover */
+  .trial-legend-menu {
+    background-color: #37474f;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  .trial-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #eceff1;
+
+    &__title {
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 2px;
+    }
+
+    &__item {
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    &__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      flex-shrink: 0;
+
+      &--done { background-color: green; }
+      &--processing { background-color: orange; }
+      &--error { background-color: red; }
+      &--local { background-color: #9c27b0; }
+    }
   }
 
   /* Analysis submenu - adequate touch targets and width on mobile */
@@ -2981,6 +3219,10 @@
 
       .show-removed-trials-sidebar {
         flex-shrink: 0;
+      }
+
+      .show-removed-trials-sidebar .toolbar-checkbox {
+        flex-grow: 0;
       }
 
       .toolbar-checkbox {
