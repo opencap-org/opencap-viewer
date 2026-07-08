@@ -83,7 +83,7 @@
                   </div>
                 </div>
   
-                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="(busy || invalid) && !(state === 'recording' && n_cameras_connected === 0)" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="recordingActionInFlight || ((busy || invalid) && !(state === 'recording' && n_cameras_connected === 0))" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
                   <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
@@ -913,6 +913,7 @@
   import { apiError, apiErrorRes, apiSuccess, clearToastMessages } from '@/util/ErrorMessage.js'
   import { playRecordingSound, playRecordingFinishedSound } from "@/util/SoundMessage.js";
   import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
+  import { axiosGetWithRetry } from "@/util/network.js";
   import Status from '@/components/ui/Status'
   import * as THREE from 'three'
   import * as THREE_OC from '@/orbitControls'
@@ -1030,6 +1031,7 @@
               recordingTimePassed: 0,
               recordingTimer: null,
               recordingStatusPoll: null,
+              recordingActionInFlight: false,
 
               trialsPoll: null,
               showSessionMenuButtons: false,
@@ -1497,124 +1499,142 @@
         return `trial-${trialId}-video-${id || media || index}`
       },
       async changeState() {
-        switch (this.state) {
-          case 'ready': {
-            this.submitted = true
-  
-            if (await this.$refs.observer.validate()) {
-              this.busy = true
-  
-              try {
-                // store in vuex
-                this.setSessionStep5(this.trialName)
-  
-                // api
-                const res = await axios.get(`/sessions/${this.session.id}/record/`, {
-                  params: {
-                    name: this.trialName
+        if (this.recordingActionInFlight) return
+        this.recordingActionInFlight = true
+
+        try {
+          switch (this.state) {
+            case 'ready': {
+              this.submitted = true
+    
+              if (await this.$refs.observer.validate()) {
+                this.busy = true
+    
+                try {
+                  // store in vuex
+                  this.setSessionStep5(this.trialName)
+    
+                  // api
+                  const res = await axiosGetWithRetry(`/sessions/${this.session.id}/record/`, {
+                    params: {
+                      name: this.trialName
+                    }
+                  }, { retries: 2, backoffFactor: 0.2, maxJitterMs: 100, timeout: 4500 })
+    
+                  // add to the list
+                  this.trialInProcess = res.data
+                  this.addTrial(this.trialInProcess)
+
+                  // Get n_cameras_connected.
+                  const res_status = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {}, { retries: 1, backoffFactor: 0.2, maxJitterMs: 100, timeout: 2000 })
+                  this.n_videos_uploaded = res_status.data.n_videos_uploaded
+                  this.n_cameras_connected = res_status.data.n_cameras_connected
+
+                  // If no calibrated cameras...
+                  if (this.n_calibrated_cameras === 0) {
+                    const noCamMsg = "There are no calibrated cameras for this trial."
+                    apiError(noCamMsg)
+                    throw new Error(noCamMsg)
                   }
-                })
-  
-                // add to the list
-                this.trialInProcess = res.data
-                this.addTrial(this.trialInProcess)
 
-                // Get n_cameras_connected.
-                const res_status = await axios.get(`/sessions/${this.session.id}/status/`, {})
-                this.n_videos_uploaded = res_status.data.n_videos_uploaded
-                this.n_cameras_connected = res_status.data.n_cameras_connected
+                  // Transition to recording state
+                  this.state = 'recording';
 
-                // If no calibrated cameras...
-                if (this.n_calibrated_cameras === 0) {
-                  const noCamMsg = "There are no calibrated cameras for this trial."
-                  apiError(noCamMsg)
-                  throw new Error(noCamMsg)
-                }
-
-                // Transition to recording state
-                this.state = 'recording';
-
-                // If too many cameras are connected, warn but allow the trial to continue.
-                if (this.n_cameras_connected > this.n_calibrated_cameras) {
-                    this.showExtraCameraWarning()
-                }
-
-                // Check if the appropriate number of cameras is connected.
-                const startTime = Date.now();
-                while (this.n_cameras_connected < this.n_calibrated_cameras) {
-                    if (Date.now() - startTime > 5000) { // 5-second timeout
-                        const res_stop = await axios.get(`/sessions/${this.session.id}/stop/`, {})
-                        const res_cancel = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
-                        this.cancelPoll()
-                        this.cancelRecordingStatusPoll()
-                        this.state = 'ready'
-                        this.trialInProcess.status = "error"
-                        const timeoutMsg = (this.n_calibrated_cameras === 1 && this.n_cameras_connected === 0)
-                                ? "No camera connected. Please connect 1 camera to start recording."
-                                : `Expected ${this.n_calibrated_cameras} camera${this.n_calibrated_cameras === 1 ? '' : 's'} but ${this.n_cameras_connected} connected. Please connect the required cameras to start recording.`
-                        throw new Error(timeoutMsg)
-                    }
-
-                    // Retry fetching the status
-                    await new Promise(r => setTimeout(r, 500)); // Wait before retrying
-                    const retryRes = await axios.get(`/sessions/${this.session.id}/status/`, {});
-                    this.n_cameras_connected = retryRes.data.n_cameras_connected;
-                    if (this.n_cameras_connected > this.n_calibrated_cameras) {
+                  // If too many cameras are connected, warn but allow the trial to continue.
+                  if (this.n_cameras_connected > this.n_calibrated_cameras) {
                       this.showExtraCameraWarning()
-                    }
+                  }
+
+                  // Check if the appropriate number of cameras is connected.
+                  const startTime = Date.now();
+                  while (this.n_cameras_connected < this.n_calibrated_cameras) {
+                      if (Date.now() - startTime > 5000) { // 5-second timeout
+                          await axiosGetWithRetry(`/sessions/${this.session.id}/stop/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
+                          await axiosGetWithRetry(`/sessions/${this.session.id}/cancel_trial/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
+                          this.cancelPoll()
+                          this.cancelRecordingStatusPoll()
+                          this.state = 'ready'
+                          this.trialInProcess.status = "error"
+                          const timeoutMsg = (this.n_calibrated_cameras === 1 && this.n_cameras_connected === 0)
+                                  ? "No camera connected. Please connect 1 camera to start recording."
+                                  : `Expected ${this.n_calibrated_cameras} camera${this.n_calibrated_cameras === 1 ? '' : 's'} but ${this.n_cameras_connected} connected. Please connect the required cameras to start recording.`
+                          throw new Error(timeoutMsg)
+                      }
+
+                      // Retry fetching the status
+                      await new Promise(r => setTimeout(r, 500)); // Wait before retrying
+                      const retryRes = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {}, { retries: 1, backoffFactor: 0.2, maxJitterMs: 100, timeout: 2000 });
+                      this.n_cameras_connected = retryRes.data.n_cameras_connected;
+                      if (this.n_cameras_connected > this.n_calibrated_cameras) {
+                        this.showExtraCameraWarning()
+                      }
+                  }
+
+                  if (this.n_cameras_connected <= this.n_calibrated_cameras) {
+                    this.sessionNotification = { show: false, text: '', type: 'error' }
+                  }
+
+                  // Start recording timer.
+                  this.recordingStarted = moment()
+                  this.recordingTimePassed = 0
+                  this.recordingTimer = window.setTimeout(this.recordTimerHandler, 500)
+                  this.startRecordingStatusPoll()
+
+                  // Play sound indicating the subject can start motion.
+                  if (this.isAuditoryFeedbackEnabled)
+                    playRecordingSound()
+                } catch (error) {
+                  apiError(error)
                 }
+    
+                this.busy = false
+              }
+    
+              break
+            }
+            case 'recording': {
+              this.busy = true
+              this.cancelRecordTimer()
+              this.cancelRecordingStatusPoll()
 
-                if (this.n_cameras_connected <= this.n_calibrated_cameras) {
-                  this.sessionNotification = { show: false, text: '', type: 'error' }
-                }
+              try {
+                const res = await axiosGetWithRetry(`/sessions/${this.session.id}/stop/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
 
-                // Start recording timer.
-                this.recordingStarted = moment()
-                this.recordingTimePassed = 0
-                this.recordingTimer = window.setTimeout(this.recordTimerHandler, 500)
-                this.startRecordingStatusPoll()
-
-                // Play sound indicating the subject can start motion.
+                // Play sound indicating the subject can stop motion.
                 if (this.isAuditoryFeedbackEnabled)
-                  playRecordingSound()
+                  playRecordingFinishedSound();
+
+                this.trialInProcess.status = res.data.status
+                this.state = 'processing'
+    
+                this.startPoll()
               } catch (error) {
                 apiError(error)
+              } finally {
+                this.busy = false
               }
-  
-              this.busy = false
+    
+              break
             }
-  
-            break
-          }
-          case 'recording': {
-            this.cancelRecordTimer()
-            this.cancelRecordingStatusPoll()
-
-            try {
-              const res = await axios.get(`/sessions/${this.session.id}/stop/`, {})
-
-              // Play sound indicating the subject can stop motion.
-              if (this.isAuditoryFeedbackEnabled)
-                playRecordingFinishedSound();
-
-              this.trialInProcess.status = res.data.status
-              this.state = 'processing'
-  
-              this.startPoll()
-            } catch (error) {
-              apiError(error)
+            case 'processing': {
+              this.busy = true
+              try {
+                await axiosGetWithRetry(`/sessions/${this.session.id}/cancel_trial/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
+                this.cancelPoll()
+                this.state = 'ready'
+              } catch (error) {
+                apiError(error)
+              } finally {
+                this.busy = false
+              }
+              break
             }
-  
-            break
           }
-          case 'processing': {
-            const res = await axios.get(`/sessions/${this.session.id}/cancel_trial/`, {})
-            this.cancelPoll()
-            this.state = 'ready'
-            break
-          }
+
+          await new Promise(r => setTimeout(r, 500));
+        } finally {
+          this.recordingActionInFlight = false
         }
-        await new Promise(r => setTimeout(r, 500));
       },
       recordTimerHandler() {
         this.recordingTimePassed = moment().diff(this.recordingStarted, 'seconds')
@@ -1884,7 +1904,7 @@
       },
       startPoll() {
         this.statusPoll = window.setTimeout(async () => {
-          const res = await axios.get(`/sessions/${this.session.id}/status/`)
+          const res = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`)
           this.n_cameras_connected = res.data.n_cameras_connected
           this.n_videos_uploaded = res.data.n_videos_uploaded
   
