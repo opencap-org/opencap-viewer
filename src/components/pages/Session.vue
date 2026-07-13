@@ -1498,9 +1498,21 @@
         // Tie key to the active trial so DOM can't be reused across trials.
         return `trial-${trialId}-video-${id || media || index}`
       },
+      recordingActionMinLockDuration(state) {
+        return state === 'processing' ? 1500 : 1000
+      },
+      async waitForRecordingActionMinLock(startedAt, duration) {
+        const remaining = Math.max(0, duration - (Date.now() - startedAt))
+        if (remaining > 0) {
+          await new Promise(resolve => window.setTimeout(resolve, remaining))
+        }
+      },
       async changeState() {
         if (this.recordingActionInFlight) return
         this.recordingActionInFlight = true
+        const actionStartedAt = Date.now()
+        const minLockDuration = this.recordingActionMinLockDuration(this.state)
+        let enforceMinLock = false
 
         try {
           switch (this.state) {
@@ -1583,6 +1595,7 @@
                   // Play sound indicating the subject can start motion.
                   if (this.isAuditoryFeedbackEnabled)
                     playRecordingSound()
+                  enforceMinLock = true
                 } catch (error) {
                   apiError(error)
                 }
@@ -1606,6 +1619,7 @@
 
                 this.trialInProcess.status = res.data.status
                 this.state = 'processing'
+                enforceMinLock = true
     
                 this.startPoll()
               } catch (error) {
@@ -1622,6 +1636,7 @@
                 await axiosGetWithRetry(`/sessions/${this.session.id}/cancel_trial/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
                 this.cancelPoll()
                 this.state = 'ready'
+                enforceMinLock = true
               } catch (error) {
                 apiError(error)
               } finally {
@@ -1631,7 +1646,9 @@
             }
           }
 
-          await new Promise(r => setTimeout(r, 500));
+          if (enforceMinLock) {
+            await this.waitForRecordingActionMinLock(actionStartedAt, minLockDuration)
+          }
         } finally {
           this.recordingActionInFlight = false
         }
