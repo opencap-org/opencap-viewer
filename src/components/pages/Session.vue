@@ -83,19 +83,47 @@
                   </div>
                 </div>
   
-                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="recordingActionInFlight || ((busy || invalid) && !(state === 'recording' && n_cameras_connected === 0))" @click="changeState">
+                  <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="recordingActionInFlight || recordingStopCooldownActive || lidarCooldownActive || (state === 'ready' && (busy || invalid))" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
                   <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
-                    {{ displayDeviceCount }} devices are recording
-                    <template v-if="sessionFramerate">at {{ sessionFramerate }} Hz</template>,
+                    {{ recordingStatusText }}
+                    <template v-if="recordingDisplayFramerate"> at {{ recordingDisplayFramerate }} Hz</template><template v-if="isLidarRecordingEnabled">, {{ lidarRecordingStatusText }}</template>,
                     do not refresh
                   </p>
                   <p v-if="state === 'processing'">{{ processingProgressText }}</p>
               </ValidationObserver>
 
-              <div class="show-removed-trials-sidebar mb-2">
+              <div class="show-removed-trials-sidebar mb-2 d-flex align-center">
                 <v-checkbox v-model="show_trashed" label="Show removed trials" hide-details dense class="toolbar-checkbox"></v-checkbox>
+                <v-spacer></v-spacer>
+                <v-menu
+                  open-on-hover
+                  offset-y
+                  left
+                  :close-on-content-click="false"
+                  content-class="trial-legend-menu">
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-btn icon small dark v-bind="attrs" v-on="on" aria-label="Trial color legend">
+                      <v-icon small>mdi-palette-outline</v-icon>
+                    </v-btn>
+                  </template>
+                  <div class="trial-legend">
+                    <div class="trial-legend__title">Trial status</div>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--done"></span>Done
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--processing"></span>Processing
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--error"></span>Error
+                    </span>
+                    <span class="trial-legend__item">
+                      <span class="trial-legend__dot trial-legend__dot--local"></span>Saved on phone
+                    </span>
+                  </div>
+                </v-menu>
               </div>
 
               <div class="trials-wrapper flex-grow-1">
@@ -922,6 +950,7 @@
   import SpeedControl from '@/components/ui/SpeedControl'
   import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
   import { debounce } from 'lodash'
+  import { isTester, loadUserGroups } from '@/util/staffAccess.js'
 
   let openpose_bones = [
     [20, 21],
@@ -1033,13 +1062,19 @@
               recordingStatusPoll: null,
               recordingActionInFlight: false,
 
+              // Reactive clock + timer used to count down the LiDAR switch cooldown
+              lidarCooldownNow: Date.now(),
+              lidarCooldownTimer: null,
+
               trialsPoll: null,
               showSessionMenuButtons: false,
               leftMenuOpen: false,
   
               n_calibrated_cameras: 0,
               n_cameras_connected: 0,
+              n_cameras_using_lidar: 0,
               n_videos_uploaded: 0,
+              recordingFramerate: null,
   
               trial_rename_dialog: false,
               trial_rename_index: 0,
@@ -1064,9 +1099,11 @@
               controlGestureGuard: null,
 
               sessionNotification: { show: false, text: '', type: 'error' },
+              userGroups: [],
 
               // Performance optimization properties
               lastFrameTime: 0,
+              renderLoopActive: false,
               frameSkipCounter: 0,
               maxFrameSkip: 2,
               materialCache: new Map(),
@@ -1101,7 +1138,8 @@
             weight: state => state.data.weight,
             height: state => state.data.height,
             gender: state => state.data.gender,
-            isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed
+            isSyncDownloadAllowed: state => state.data.isSyncDownloadAllowed,
+            lidarSwitchCooldownUntil: state => state.data.lidarSwitchCooldownUntil
           }),
         sessionUrl() {
           return location.origin + "/session/" + (this.session?.id || '');
@@ -1123,12 +1161,21 @@
           const framerate = this.session?.meta?.settings?.framerate ?? null;
           return framerate !== null ? Number(framerate) : null;
         },
+        recordingDisplayFramerate() {
+          return this.recordingFramerate ?? this.sessionFramerate
+        },
         filteredTrialsWithMenu() {
           return this.filteredTrials.map(trial => ({...trial, isMenuOpen: false}));
         },
         filteredTrials() {
           const trials = this.session?.trials || []
           return trials.filter(trial => trial && trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
+        },
+        selectedTrialFromList() {
+          if (!this.trial?.id || !Array.isArray(this.session?.trials)) {
+            return null
+          }
+          return this.session.trials.find(trial => trial.id === this.trial.id) || null
         },
         videoControlsDisabled() {
           return !this.trial || this.trial.name === 'neutral' || this.frames.length === 0
@@ -1140,7 +1187,22 @@
           if (!this.trial || !this.trial.results) return false
           return this.trial.results.some(r => r.tag === 'visualizerTransforms-json')
         },
+        lidarCooldownRemaining() {
+          if (!this.lidarSwitchCooldownUntil) return 0
+          const msLeft = this.lidarSwitchCooldownUntil - this.lidarCooldownNow
+          return msLeft > 0 ? Math.ceil(msLeft / 1000) : 0
+        },
+        lidarCooldownActive() {
+          // Only block starting a new recording, never stopping an ongoing one.
+          return this.state === 'ready' && this.lidarCooldownRemaining > 0
+        },
+        recordingStopCooldownActive() {
+          return this.state === 'recording' && this.recordingTimePassed < 2
+        },
         buttonCaption() {
+          if (this.lidarCooldownActive) {
+            return `Switching camera… ${this.lidarCooldownRemaining}s`
+          }
           switch (this.state) {
             case 'recording': {
               const time = moment
@@ -1221,14 +1283,23 @@
         displayDeviceCount() {
           return Math.max(this.n_cameras_connected, this.n_videos_uploaded, 1)
         },
+        isLidarRecordingEnabled() {
+          return this.parseTruthy(this.session?.useLidar ?? this.session?.use_lidar)
+        },
+        isTesterUser() {
+          return isTester({ groups: this.userGroups })
+        },
+        displayLidarDeviceCount() {
+          return Math.max(this.n_cameras_using_lidar, 0)
+        },
+        recordingStatusText() {
+          return `${this.displayDeviceCount} ${this.pluralize(this.displayDeviceCount, 'camera', 'cameras')} recording`
+        },
+        lidarRecordingStatusText() {
+          return `${this.displayLidarDeviceCount} with lidar`
+        },
         isSaveLocalPage() {
-          const isTruthySaveLocal = raw => {
-            if (raw === true || raw === '') return true
-            if (raw === false || raw == null) return false
-            return ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase())
-          }
-
-          return isTruthySaveLocal(this.session?.save_local ?? this.session?.saveLocal)
+          return this.parseTruthy(this.session?.save_local ?? this.session?.saveLocal)
         },
         savedLocallyProgressText() {
           const videoText = this.n_videos_uploaded === 1 ? 'video' : 'videos'
@@ -1241,7 +1312,9 @@
           return `${calibratedLabel}, ${savedLabel}, do not refresh.`
         },
         uploadedProgressText() {
-          return `${this.n_videos_uploaded} of ${this.displayDeviceCount} videos uploaded, do not refresh.`
+          const uploadedLabel = this.pluralize(this.n_videos_uploaded, 'video', 'videos')
+          const expectedLabel = this.pluralize(this.displayDeviceCount, 'video', 'videos')
+          return `${this.n_videos_uploaded} ${uploadedLabel} of ${this.displayDeviceCount} ${expectedLabel} uploaded, do not refresh.`
         },
         processingProgressText() {
           return this.isSaveLocalPage
@@ -1310,6 +1383,7 @@
       }
 
       this.loadTrialTags()
+      this.loadUserGroupsForAccess()
 
       // Check if something went wrong with loading session. Usually there was a redirect to Login page.
       if (this.session.id == undefined) {
@@ -1326,7 +1400,9 @@
           this.n_calibrated_cameras = 0
         }
       }
-  
+
+      await this.syncInitialSessionStateFromStatus()
+
       if (this.user_id == this.session.user) {
         this.show_controls = true
         this.showSessionMenuButtons = false
@@ -1347,13 +1423,14 @@
   
       const doneTrials = this.filteredTrials.filter(trial => trial.status === 'done')
   
-      if (doneTrials.length > 0) {
+      if (this.state === 'ready' && doneTrials.length > 0) {
         console.log("Done trials:")
         console.log(doneTrials[0])
         this.loadTrial(doneTrials[0])
       }
 
       // Add keyboard event listener
+      window.addEventListener('keydown', this.handleTrialListShortcut)
       window.addEventListener('keydown', this.handleKeyboard)
       window.addEventListener('resize', this.onResize)
       this.bindControlGestureGuards()
@@ -1363,6 +1440,7 @@
       this.cancelRecordTimer()
       this.cancelRecordingStatusPoll()
       this.cancelTrialsPoll()
+      this.stopLidarCooldownTicker()
   
       if (this.resizeObserver) {
         this.resizeObserver.disconnect()
@@ -1370,6 +1448,7 @@
       }
 
       // Remove keyboard event listener
+      window.removeEventListener('keydown', this.handleTrialListShortcut)
       window.removeEventListener('keydown', this.handleKeyboard)
       window.removeEventListener('resize', this.onResize)
       this.unbindControlGestureGuards()
@@ -1380,6 +1459,12 @@
       this.disposeScene();
     },
     watch: {
+      lidarSwitchCooldownUntil: {
+        immediate: true,
+        handler() {
+          this.startLidarCooldownTicker()
+        }
+      },
       dialog(isOpen) {
         if (!isOpen) {
           this.$nextTick(() => {
@@ -1460,6 +1545,85 @@
         'loadSession',
         'initSessionSameSetup',
         'loadAnalysisFunctions', 'loadAnalysisFunctionsPending', 'loadAnalysisFunctionsStates', 'loadTrialTags']),
+      async loadUserGroupsForAccess() {
+        try {
+          this.userGroups = await loadUserGroups()
+        } catch {
+          this.userGroups = []
+        }
+      },
+      parseTruthy(raw) {
+        if (raw === true || raw === '') return true
+        if (raw === false || raw == null) return false
+        return ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase())
+      },
+      pluralize(count, singular, plural = `${singular}s`) {
+        return Number(count) === 1 ? singular : plural
+      },
+      applyStatusCounts(data = {}) {
+        if (typeof data.n_cameras_connected !== 'undefined') {
+          this.n_cameras_connected = data.n_cameras_connected
+        }
+        if (typeof data.n_videos_uploaded !== 'undefined') {
+          this.n_videos_uploaded = data.n_videos_uploaded
+        }
+        if (typeof data.n_cameras_using_lidar !== 'undefined') {
+          this.n_cameras_using_lidar = data.n_cameras_using_lidar
+        }
+        const framerate = this.getStatusFramerate(data)
+        if (framerate !== null) {
+          this.recordingFramerate = framerate
+        }
+      },
+      getStatusFramerate(data = {}) {
+        if (typeof data.framerate !== 'undefined' && data.framerate !== null && data.framerate !== '') {
+          const parsed = Number(data.framerate)
+          return Number.isNaN(parsed) ? data.framerate : parsed
+        }
+
+        return null
+      },
+      mergeReturnedTrials(updatedTrials = []) {
+        updatedTrials.forEach(updatedT => {
+          const existingIndex = this.session.trials.findIndex(t => t.id === updatedT.id)
+          if (existingIndex < 0) {
+            this.addTrial(updatedT)
+          } else {
+            this.updateTrial(updatedT)
+          }
+        })
+      },
+      async syncInitialSessionStateFromStatus() {
+        try {
+          const res = await axios.get(`/sessions/${this.session.id}/status/?ret_session=True`)
+          this.applyStatusCounts(res.data)
+
+          const returnedTrials = res.data.session?.trials || []
+          this.mergeReturnedTrials(returnedTrials)
+
+          if (res.data.status === 'uploading' || res.data.status === 'processing') {
+            this.state = 'processing'
+            this.trialInProcess = returnedTrials.find(trial => ['uploading', 'processing'].includes(trial.status)) || null
+            this.startPoll()
+            return
+          }
+
+          if (res.data.status === 'ready') {
+            const recordingTrial = returnedTrials.find(trial => trial.status === 'recording')
+            if (recordingTrial) {
+              this.state = 'recording'
+              this.trialInProcess = recordingTrial
+              this.recordingStarted = moment()
+              this.recordingTimePassed = 0
+              this.cancelRecordTimer()
+              this.recordingTimer = window.setTimeout(this.recordTimerHandler, 500)
+              this.startRecordingStatusPoll()
+            }
+          }
+        } catch (error) {
+          // Keep the default ready state if the initial status refresh fails.
+        }
+      },
       bindControlGestureGuards() {
         this.controlGestureGuard = (event) => {
           const target = event.target
@@ -1517,10 +1681,15 @@
         try {
           switch (this.state) {
             case 'ready': {
+              // Block starting a recording while the phone is switching capture
+              // pipelines (AVFoundation <-> ARKit) after a LiDAR toggle.
+              if (this.lidarCooldownActive) return
+
               this.submitted = true
     
               if (await this.$refs.observer.validate()) {
                 this.busy = true
+                this.recordingTimePassed = 0
     
                 try {
                   // store in vuex
@@ -1539,8 +1708,7 @@
 
                   // Get n_cameras_connected.
                   const res_status = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {}, { retries: 1, backoffFactor: 0.2, maxJitterMs: 100, timeout: 2000 })
-                  this.n_videos_uploaded = res_status.data.n_videos_uploaded
-                  this.n_cameras_connected = res_status.data.n_cameras_connected
+                  this.applyStatusCounts(res_status.data)
 
                   // If no calibrated cameras...
                   if (this.n_calibrated_cameras === 0) {
@@ -1576,7 +1744,7 @@
                       // Retry fetching the status
                       await new Promise(r => setTimeout(r, 500)); // Wait before retrying
                       const retryRes = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {}, { retries: 1, backoffFactor: 0.2, maxJitterMs: 100, timeout: 2000 });
-                      this.n_cameras_connected = retryRes.data.n_cameras_connected;
+                      this.applyStatusCounts(retryRes.data)
                       if (this.n_cameras_connected > this.n_calibrated_cameras) {
                         this.showExtraCameraWarning()
                       }
@@ -1675,8 +1843,7 @@
           if (this.state !== 'recording') return
           try {
             const res = await axios.get(`/sessions/${this.session.id}/status/`)
-            this.n_cameras_connected = res.data.n_cameras_connected
-            this.n_videos_uploaded = res.data.n_videos_uploaded
+            this.applyStatusCounts(res.data)
 
             if (this.n_cameras_connected > this.n_calibrated_cameras) {
               this.showExtraCameraWarning()
@@ -1694,6 +1861,23 @@
         if (this.recordingStatusPoll) {
           window.clearTimeout(this.recordingStatusPoll)
           this.recordingStatusPoll = null
+        }
+      },
+      startLidarCooldownTicker() {
+        this.lidarCooldownNow = Date.now()
+        if (this.lidarCooldownTimer) return
+        if (!this.lidarSwitchCooldownUntil || this.lidarSwitchCooldownUntil <= this.lidarCooldownNow) return
+        this.lidarCooldownTimer = window.setInterval(() => {
+          this.lidarCooldownNow = Date.now()
+          if (this.lidarCooldownNow >= this.lidarSwitchCooldownUntil) {
+            this.stopLidarCooldownTicker()
+          }
+        }, 250)
+      },
+      stopLidarCooldownTicker() {
+        if (this.lidarCooldownTimer) {
+          window.clearInterval(this.lidarCooldownTimer)
+          this.lidarCooldownTimer = null
         }
       },
       extraCameraWarningText() {
@@ -1922,8 +2106,7 @@
       startPoll() {
         this.statusPoll = window.setTimeout(async () => {
           const res = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`)
-          this.n_cameras_connected = res.data.n_cameras_connected
-          this.n_videos_uploaded = res.data.n_videos_uploaded
+          this.applyStatusCounts(res.data)
   
           if (res.data.status !== 'uploading') {
             // Show error if any
@@ -1936,7 +2119,9 @@
                   this.showExtraCameraWarning()
                 } else {
                   const num_missing_cameras = this.n_calibrated_cameras - this.n_videos_uploaded
-                  apiErrorRes(res.data, this.n_calibrated_cameras + " devices expected and " + this.transferProgressDescription + ". Please reconnect the missing " + num_missing_cameras + " devices to the session using the QR code at the top of the screen.");
+                  const expectedLabel = this.pluralize(this.n_calibrated_cameras, 'camera', 'cameras')
+                  const missingLabel = this.pluralize(num_missing_cameras, 'camera', 'cameras')
+                  apiErrorRes(res.data, `${this.n_calibrated_cameras} ${expectedLabel} expected and ${this.transferProgressDescription}. Please reconnect the missing ${num_missing_cameras} ${missingLabel} to the session using the QR code at the top of the screen.`);
                 }
               }
             }
@@ -1962,8 +2147,15 @@
               const existingIndex = this.session.trials.findIndex(t => t.id === updatedT.id)
               if (existingIndex < 0) {
                 this.addTrial(updatedT)
-              } else if (this.session.trials[existingIndex].status !== updatedT.status) {
-                this.updateTrial(updatedT)
+              } else {
+                const existing = this.session.trials[existingIndex]
+                const statusChanged = existing.status !== updatedT.status
+                // Videos can flip to saved_local after the status settles (e.g. local
+                // saving on phone), so refresh when that state changes too.
+                const savedLocalChanged = this.isTrialSavedLocally(existing) !== this.isTrialSavedLocally(updatedT)
+                if (statusChanged || savedLocalChanged) {
+                  this.updateTrial(updatedT)
+                }
               }
             })
           } catch (e) {
@@ -1980,7 +2172,17 @@
         }
       },
       trialClasses(trial) {
-        return trial.trashed ? 'trashed' : 'cursor-pointer';
+        const classes = [trial.trashed ? 'trashed' : 'cursor-pointer'];
+        if (this.isTrialSavedLocally(trial)) {
+          classes.push('trial-saved-local');
+        }
+        return classes;
+      },
+      isTrialSavedLocally(trial) {
+        const videos = trial?.videos;
+        if (!Array.isArray(videos) || videos.length === 0) return false;
+        const isTruthy = raw => raw === true || ['true', '1', 'yes', 'on'].includes(String(raw).toLowerCase());
+        return videos.every(v => v && isTruthy(v.saved_local));
       },
       clickOutsideDialogTrialHideMenu(e) {
         if (e.target.className === 'v-overlay__scrim') {
@@ -2168,6 +2370,15 @@
         }
       },
       disposeScene() {
+        this.stopRenderLoop()
+        if (this.controls) {
+          this.controls.dispose()
+          this.controls = null
+        }
+        if (this.renderer) {
+          this.renderer.dispose()
+          this.renderer = null
+        }
         if (this.scene) {
           this.scene.traverse((object) => {
             if (object.isMesh) {
@@ -2235,6 +2446,7 @@
           this.synced = false
           this.trialLoading = true
           this.sceneReady = false
+          this.stopRenderLoop()
           this.togglePlay(false)
 
           try {
@@ -2480,13 +2692,10 @@
 
                 delay(timeout).then(() => {
                   this.sceneReady = true
-                  // The fixed number 5 is here as a warkaround for Safari.
-                  // For neutral: start the render loop so meshes appear as OBJ files load,
-                  // but skip vid.play() so videos stay paused at frame 0.
-                  if (this.trial?.name === 'neutral') {
-                    this.playing = true
-                    this.animate()
-                  } else {
+                  // Keep the render loop running so OrbitControls work while paused.
+                  this.startRenderLoop()
+                  // For neutral trials, leave videos paused at frame 0.
+                  if (this.trial?.name !== 'neutral') {
                     this.togglePlay(true)
                   }
                 });
@@ -2529,57 +2738,76 @@
           }
         }
       },
+      startRenderLoop() {
+        if (this.renderLoopActive) return
+        this.renderLoopActive = true
+        this.animate()
+      },
+      stopRenderLoop() {
+        this.renderLoopActive = false
+      },
       animate() {
-        // cancel display cycle if loading of new trial started
-        if (this.playing && !this.trialLoading) {
+        if (!this.renderLoopActive || this.trialLoading || !this.renderer) {
+          this.renderLoopActive = false
+          return
+        }
+
+        requestAnimationFrame(this.animate)
+
+        if (this.playing) {
           // Check if enough time has passed for next frame (cap at 60fps)
-          const now = performance.now();
+          const now = performance.now()
           if (now - this.lastFrameTime >= 16) {
-            this.lastFrameTime = now;
-            this.animateOneFrame();
+            this.lastFrameTime = now
+            this.animateOneFrame()
           }
-          requestAnimationFrame(this.animate);
+        } else if (this.scene && this.camera) {
+          this.renderer.render(this.scene, this.camera)
         }
       },
       animateOneFrame() {
-        let cframe
+        let cframe = 0
+        const frameCount = this.frames.length
+        const video = this.vid0()
+        const hasValidDuration = video && !isNaN(video.duration) && video.duration > 0
 
-        let frames = this.frames.length
-        let duration = 0
-        if (this.vid0()) duration = this.vid0().duration
-        if (this.vid0() && !isNaN(this.vid0().duration)) {
-          let framerate = frames / duration
+        if (frameCount > 0) {
+          if (hasValidDuration && this.videos.length > 0) {
+            if (this.playing) {
+              const t = video.currentTime
 
-          if (this.videos.length > 0) {
-            let t = 0
-            if (this.vid0()) t = this.vid0().currentTime;
-
-            // Skip frames on low performance devices
-            if (this.isLowPerformance && this.frameSkipCounter < this.maxFrameSkip) {
-              this.frameSkipCounter++;
-              // Still render but skip updates
-              if (this.renderer && this.scene && this.camera) {
-                this.renderer.render(this.scene, this.camera);
+              // Skip frames on low performance devices
+              if (this.isLowPerformance && this.frameSkipCounter < this.maxFrameSkip) {
+                this.frameSkipCounter++
+                if (this.renderer && this.scene && this.camera) {
+                  this.renderer.render(this.scene, this.camera)
+                }
+                return
               }
-              return;
+              this.frameSkipCounter = 0
+
+              cframe = this.frameIndexAtTime(t)
+              this.frame = cframe
+              this.time = this.formatMotionTime(this.frameTimeAt(cframe))
+            } else {
+              cframe = Math.min(frameCount - 1, Math.max(0, this.frame))
+              this.time = this.formatMotionTime(this.frameTimeAt(cframe))
             }
-            this.frameSkipCounter = 0;
-
-            cframe = (Math.round(t * framerate)) > this.frames.length ? this.frames.length - 1 : (Math.round(t * framerate))
-            this.frame = cframe
-            if (this.vid0()) this.time = this.frame == 0 ? 0 : parseFloat(this.vid0().currentTime.toFixed(2))
+          } else if (this.videos.length === 0 && this.playing) {
+            cframe = this.frame
+            this.frame++
+            if (this.frame >= frameCount) {
+              this.frame = frameCount - 1
+            }
           } else {
-            cframe = this.frame++
-
-            if (this.frame >= this.frames.length) {
-              this.frame = this.frames.length - 1
-              this.time = this.vid0().duration
+            cframe = Math.min(frameCount - 1, Math.max(0, this.frame))
+            if (this.hasFrameTimestamps()) {
+              this.time = this.formatMotionTime(this.frameTimeAt(cframe))
             }
           }
 
-          if (cframe < this.frames.length) {
-            // display the frame
-            let json = this.animation_json;
+          if (cframe < frameCount) {
+            const json = this.animation_json
             for (let body in json.bodies) {
               json.bodies[body].attachedGeometries.forEach((geom) => {
                 if (this.meshes[body + geom]) {
@@ -2590,14 +2818,16 @@
                   var euler = new THREE.Euler(
                       json.bodies[body].rotation[cframe][0],
                       json.bodies[body].rotation[cframe][1],
-                      json.bodies[body].rotation[cframe][2]);
+                      json.bodies[body].rotation[cframe][2])
                   this.meshes[body + geom].quaternion.setFromEuler(euler)
                 }
               })
             }
           }
 
-          this.syncVideos()
+          if (hasValidDuration) {
+            this.syncVideos()
+          }
         }
 
         // Always render the 3D scene regardless of video metadata state.
@@ -2626,10 +2856,14 @@
       onVideoEnded(index) {
         if (index === 0) {
           if (this.loopPlayback) {
+            const startTime = this.frameTimeAt(0)
+            this.frame = 0
             this.videos.forEach((video, index) => {
               const vid_element = this.videoElement(index)
-              vid_element.currentTime = 0
-              vid_element.play()
+              if (vid_element) {
+                vid_element.currentTime = startTime
+                vid_element.play()
+              }
             })
           } else {
             this.togglePlay(false)
@@ -2637,11 +2871,11 @@
         }
       },
       onVideoLoadedMetadata(index) {
-        // On Safari, seeking to 0 after metadata loads forces the first frame to paint
+        // On Safari, seeking after metadata loads forces the first frame to paint
         // even when the video is paused (important for neutral trials).
         const el = this.videoElement(index)
         if (el) {
-          el.currentTime = 0
+          el.currentTime = this.frameTimeAt(0)
         }
       },
       videoElement(index) {
@@ -2654,6 +2888,60 @@
       vid0() {
         return this.videoElement(0)
       },
+      hasFrameTimestamps() {
+        return Array.isArray(this.frames) &&
+          this.frames.length > 0 &&
+          typeof this.frames[0] === 'number' &&
+          !Number.isNaN(this.frames[0])
+      },
+      frameTimeAt(index) {
+        const frameCount = this.frames.length
+        if (frameCount === 0) return 0
+
+        const clamped = Math.max(0, Math.min(index, frameCount - 1))
+        if (this.hasFrameTimestamps()) {
+          return this.frames[clamped]
+        }
+
+        const video = this.vid0()
+        if (video && !isNaN(video.duration) && video.duration > 0) {
+          return clamped * video.duration / frameCount
+        }
+        return clamped
+      },
+      frameIndexAtTime(t) {
+        const frameCount = this.frames.length
+        if (frameCount === 0) return 0
+
+        const time = parseFloat(t)
+        if (!Number.isFinite(time)) return 0
+
+        if (this.hasFrameTimestamps()) {
+          const times = this.frames
+          if (time <= times[0]) return 0
+          if (time >= times[frameCount - 1]) return frameCount - 1
+
+          let lo = 0
+          let hi = frameCount - 1
+          while (lo < hi) {
+            const mid = Math.ceil((lo + hi) / 2)
+            if (times[mid] <= time) lo = mid
+            else hi = mid - 1
+          }
+          return lo
+        }
+
+        const video = this.vid0()
+        if (video && !isNaN(video.duration) && video.duration > 0) {
+          const frame = Math.round(time * frameCount / video.duration)
+          return Math.max(0, Math.min(frame, frameCount - 1))
+        }
+        return 0
+      },
+      formatMotionTime(time) {
+        const t = Number(time)
+        return Number.isFinite(t) ? parseFloat(t.toFixed(2)) : 0
+      },
       isSelected(trial) {
         return this.trial && this.trial.id === trial.id
       },
@@ -2664,19 +2952,16 @@
       },
       togglePlay(value) {
         this.playing = value
-  
+
         if (this.playing) {
-          this.animate()
-  
           this.videos.forEach((video, index) => {
             const vid_element = this.videoElement(index)
-            vid_element.play()
+            if (vid_element) vid_element.play()
           })
-  
         } else {
           this.videos.forEach((video, index) => {
             const vid_element = this.videoElement(index)
-            vid_element.pause()
+            if (vid_element) vid_element.pause()
           })
         }
       },
@@ -2687,20 +2972,37 @@
         this.mobileVideoSizeIndex = (this.mobileVideoSizeIndex + 1) % 3
       },
       onNavigate(frame) {
-        const step = this.vid0().duration / this.frames.length
-        const newPosition = frame * step
-  
-        this.eachVideo(videoElement => {
-          videoElement.currentTime = newPosition
-        })
-  
+        if (!this.frames.length) return
+
+        const clampedFrame = Math.max(0, Math.min(frame, this.frames.length - 1))
+        this.frame = clampedFrame
+
+        const video = this.vid0()
+        if (video && !isNaN(video.duration) && video.duration > 0) {
+          const newPosition = this.frameTimeAt(clampedFrame)
+
+          this.eachVideo(videoElement => {
+            if (videoElement) videoElement.currentTime = newPosition
+          })
+          this.time = this.formatMotionTime(newPosition)
+        } else if (this.hasFrameTimestamps()) {
+          this.time = this.formatMotionTime(this.frameTimeAt(clampedFrame))
+        }
+
         this.animateOneFrame()
       },
       onChangeTime(time) {
+        const video = this.vid0()
+        if (!video) return
+
         this.eachVideo(videoElement => {
-          videoElement.currentTime = time
+          if (videoElement) videoElement.currentTime = time
         })
-  
+
+        if (!this.playing && this.frames.length > 0) {
+          this.frame = this.frameIndexAtTime(time)
+        }
+
         this.animateOneFrame()
       },
       maxVideoDuration() {
@@ -2708,7 +3010,6 @@
       },
       recordingTimeLimit() {
         // Default value is 60.
-        // Set -1 for no limit.
         const DEFAULT_TIME_LIMIT = 60;
         const VALID_FRAMERATES = [60, 120, 240];
 
@@ -2720,7 +3021,7 @@
           timelimit = 60 / (framerate / 60);
         }
 
-        return timelimit;
+        return this.isTesterUser ? timelimit * 5 : timelimit;
       },
       toggleSessionMenuButtons() {
         this.showSessionMenuButtons = !this.showSessionMenuButtons;
@@ -2756,14 +3057,130 @@
         }
         window.alert(`Result with tag "${tag}" not found`);
       },
+      isTypingInEditableField(event) {
+        const target = event.target
+        if (!target) return false
+        const tagName = target.tagName
+        return tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable
+      },
+      isSessionDialogOpen() {
+        return !!(
+          this.remove_dialog ||
+          this.restore_dialog ||
+          this.permanent_delete_dialog ||
+          this.trial_rename_dialog ||
+          this.session_rename_dialog ||
+          this.trial_modify_tags ||
+          this.showAnalysisDialog ||
+          this.new_session_confirm_dialog ||
+          this.new_session_same_setup_confirm_dialog ||
+          this.dialog ||
+          this.showArchiveDialog ||
+          this.showTrialMenuSheet
+        )
+      },
+      isDeleteShortcut(event) {
+        return event.key === 'Backspace' || event.key === 'Delete'
+      },
+      isPermanentDeleteShortcut(event) {
+        return this.isDeleteShortcut(event) && (event.metaKey || event.ctrlKey)
+      },
+      isTrialNavigationShortcut(event) {
+        return !event.metaKey && !event.ctrlKey && !event.altKey && ['ArrowUp', 'ArrowDown'].includes(event.key)
+      },
+      openSelectedTrialTrashDialog() {
+        const selectedTrial = this.selectedTrialFromList
+        if (!selectedTrial || selectedTrial.trashed) return false
+
+        this.trialForTrashDialog = selectedTrial
+        this.remove_dialog = true
+        return true
+      },
+      openSelectedTrialPermanentDeleteDialog() {
+        const selectedTrial = this.selectedTrialFromList
+        if (!selectedTrial) return false
+
+        this.trialForPermanentDeleteDialog = selectedTrial
+        this.permanent_delete_dialog = true
+        return true
+      },
+      navigateSelectedTrial(direction) {
+        if (this.trialLoading) return false
+
+        const trials = this.filteredTrials
+        if (trials.length === 0) return false
+
+        const selectedTrial = this.selectedTrialFromList
+        if (!selectedTrial) {
+          if (direction > 0) {
+            this.loadTrial(trials[0])
+            return true
+          }
+          return false
+        }
+
+        const currentIndex = trials.findIndex(trial => trial.id === selectedTrial.id)
+        if (currentIndex < 0) {
+          if (direction > 0) {
+            this.loadTrial(trials[0])
+            return true
+          }
+          return false
+        }
+
+        const nextIndex = currentIndex + direction
+        if (nextIndex < 0 || nextIndex >= trials.length) return true
+
+        this.loadTrial(trials[nextIndex])
+        return true
+      },
+      handleTrialListShortcut(event) {
+        if (
+          event.defaultPrevented ||
+          this.isTypingInEditableField(event) ||
+          this.isSessionDialogOpen()
+        ) {
+          return
+        }
+
+        if (this.isDeleteShortcut(event)) {
+          const openedDialog = this.isPermanentDeleteShortcut(event)
+            ? this.openSelectedTrialPermanentDeleteDialog()
+            : this.openSelectedTrialTrashDialog()
+
+          if (openedDialog) {
+            event.preventDefault()
+          }
+          return
+        }
+
+        if (this.isTrialNavigationShortcut(event)) {
+          const handled = this.navigateSelectedTrial(event.key === 'ArrowUp' ? -1 : 1)
+          if (handled) {
+            event.preventDefault()
+          }
+        }
+      },
       handleKeyboard: debounce(function(event) {
-        // Only handle keyboard events when trial is loaded and video controls are enabled
-        if (this.videoControlsDisabled) {
+        if (event.defaultPrevented) {
           return
         }
 
         // Ignore if user is typing in an input field
-        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        if (this.isTypingInEditableField(event)) {
+          return
+        }
+
+        if (this.isSessionDialogOpen() && this.isTrialNavigationShortcut(event)) {
+          return
+        }
+
+        if (this.isTrialNavigationShortcut(event)) {
+          return
+        }
+
+        // Only handle playback keyboard events when trial video controls are enabled
+        if (this.videoControlsDisabled) {
           return
         }
 
@@ -2798,6 +3215,49 @@
   /* Trial context menu - prevent overflow on small screens */
   .trial-context-menu {
     max-width: min(320px, calc(100vw - 24px));
+  }
+
+  /* Trial color legend popover */
+  .trial-legend-menu {
+    background-color: #37474f;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+  .trial-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #eceff1;
+
+    &__title {
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 2px;
+    }
+
+    &__item {
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    &__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      flex-shrink: 0;
+
+      &--done { background-color: green; }
+      &--processing { background-color: orange; }
+      &--error { background-color: red; }
+      &--local { background-color: #9c27b0; }
+    }
   }
 
   /* Analysis submenu - adequate touch targets and width on mobile */
@@ -3018,6 +3478,10 @@
 
       .show-removed-trials-sidebar {
         flex-shrink: 0;
+      }
+
+      .show-removed-trials-sidebar .toolbar-checkbox {
+        flex-grow: 0;
       }
 
       .toolbar-checkbox {

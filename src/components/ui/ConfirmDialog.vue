@@ -94,6 +94,57 @@ export default {
       type: Function,
       default: () => {}
     }
+  },
+  data() {
+    return {
+      enterKeyHandler: null
+    }
+  },
+  watch: {
+    value: {
+      immediate: true,
+      handler(isOpen) {
+        if (isOpen) {
+          this.bindEnterKeyHandler()
+        } else {
+          this.unbindEnterKeyHandler()
+        }
+      }
+    }
+  },
+  beforeDestroy() {
+    this.unbindEnterKeyHandler()
+  },
+  methods: {
+    isTypingInEditableField(event) {
+      const target = event.target
+      if (!target) return false
+      const tagName = target.tagName
+      return tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable
+    },
+    bindEnterKeyHandler() {
+      if (typeof window === 'undefined') return
+      if (this.enterKeyHandler) return
+
+      this.enterKeyHandler = event => {
+        if (!this.value || event.key !== 'Enter' || this.confirmDisabled || this.isTypingInEditableField(event)) {
+          return
+        }
+
+        event.preventDefault()
+        event.stopPropagation()
+        this.$emit('confirm')
+      }
+
+      window.addEventListener('keydown', this.enterKeyHandler, true)
+    },
+    unbindEnterKeyHandler() {
+      if (typeof window === 'undefined') return
+      if (!this.enterKeyHandler) return
+
+      window.removeEventListener('keydown', this.enterKeyHandler, true)
+      this.enterKeyHandler = null
+    }
   }
 }
 </script>
