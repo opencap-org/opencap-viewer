@@ -212,8 +212,8 @@
                   </div>
 
                   <div class="row">
-                    <div class="col-md-6">
-                      <vue-country-dropdown
+                    <div class="col-12">
+                      <country-dropdown
                         ref="vcd"
                         @onSelect="onSelectCountry"
                         :preferredCountries="['US']"
@@ -222,7 +222,7 @@
                         :enabledFlags="true"
                         :enabledCountryCode="false"
                         :showNameInput="true">
-                      </vue-country-dropdown>
+                      </country-dropdown>
                     </div>
                   </div>
 
@@ -449,7 +449,7 @@
 </template>
 
 <script>
-import VueCountryDropdown from 'vue-country-dropdown'
+import CountryDropdown from '@/components/ui/CountryDropdown.vue'
 import allCountries from "@/util/allCountries.js"
 import { mapState, mapActions } from 'vuex'
 import axios from 'axios'
@@ -458,7 +458,7 @@ import { copyProfileUrlToClipboard } from "@/util/CopyUrlToClipboard.js";
 
 export default {
   components: {
-    VueCountryDropdown
+    CountryDropdown
   },
   computed: {
     ...mapState({
@@ -1065,43 +1065,5 @@ export default {
 <style>
 .v-main:has(.profile-page-wrapper) {
   overflow: visible;
-}
-
-/* vue-country-dropdown dark theme for Edit Profile */
-.profile-page-wrapper .vue-country-select .country-name {
-  color: hsla(0, 0%, 100%, 0.7) !important;
-}
-.profile-page-wrapper div.dropdown.open {
-  background-color: black !important;
-}
-.profile-page-wrapper .vue-country-select .country-name:hover {
-  color: hsla(0, 0%, 100%, 0.7) !important;
-}
-.profile-page-wrapper .dropdown:hover {
-  background-color: black !important;
-}
-.profile-page-wrapper li.dropdown-item {
-  background-color: black !important;
-}
-.profile-page-wrapper li.dropdown-item:hover {
-  background-color: rgb(46, 46, 46) !important;
-}
-.profile-page-wrapper li.dropdown-item > strong {
-  font-weight: normal !important;
-  color: hsla(0, 0%, 100%, 0.7);
-}
-.profile-page-wrapper .vue-country-select {
-  width: 100%;
-  border-color: hsla(0, 0%, 100%, 0.7) !important;
-}
-.profile-page-wrapper .vue-country-select:hover {
-  border-color: white !important;
-}
-.profile-page-wrapper .vue-country-select:focus,
-.profile-page-wrapper .vue-country-select:active {
-  border-color: white !important;
-}
-.profile-page-wrapper li.dropdown-item > span {
-  display: none;
 }
 </style>

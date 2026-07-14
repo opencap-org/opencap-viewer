@@ -1,10 +1,11 @@
 <template>
-  <v-menu offset-y>
+  <v-menu offset-y :disabled="disabled">
     <template v-slot:activator="{ on, attrs }">
       <v-btn
         v-bind="attrs"
         v-on="on"
         small
+        :disabled="disabled"
         class="speed-control-button">
         {{ selectedSpeedLabel }}
         <v-icon small right>mdi-menu-down</v-icon>
@@ -33,6 +34,10 @@ export default {
     value: {
       type: Number,
       default: 1
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
