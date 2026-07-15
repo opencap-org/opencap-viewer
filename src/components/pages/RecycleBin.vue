@@ -118,10 +118,31 @@
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  v-for="trial in trialsMapped"
-                  :key="trial.id"
-                >
+                <tr v-if="trial_loading">
+                  <td colspan="2">
+                    <div class="recycle-trials-loading">
+                      <v-progress-circular
+                        indeterminate
+                        size="28"
+                        width="3"
+                        color="grey lighten-1">
+                      </v-progress-circular>
+                      <span>Loading trials...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-else-if="trialsMapped.length === 0">
+                  <td colspan="2">
+                    <div class="recycle-trials-empty">
+                      No trials found
+                    </div>
+                  </td>
+                </tr>
+                <template v-else>
+                  <tr
+                    v-for="trial in trialsMapped"
+                    :key="trial.id"
+                  >
                     <td>
                     <div class="float-right">
                       <template v-if="$vuetify.breakpoint.smAndDown && trial.trashed">
@@ -155,7 +176,8 @@
                     <div class="mt-2">{{ trial.name }}</div>
                   </td>
                   <td>{{ trial.status }}</td>
-                </tr>
+                  </tr>
+                </template>
               </tbody>
             </template>
           </v-simple-table>
@@ -344,12 +366,13 @@ export default {
       trashed_sessions: [],
       session_options: {},
 
-      trial_loading: true,
+      trial_loading: false,
       trial_start: 0,
       trial_quantity: 40,
       trial_total: 0,
       trashed_trials: [],
       trial_options: {},
+      selectedSessionRequestId: 0,
 
       restore_session_dialog: false,
       remove_session_dialog: false,
@@ -444,14 +467,32 @@ export default {
         this.session_loading = false
       })
     },
-    onSelect({item, value}) {
+    async onSelect({item, value}) {
       if (value) {
-        axios.get(`/sessions/${item.id}/`).then((res) => {
-          console.log(res)
-          this.selected = res.data
-        })
+        const requestId = this.selectedSessionRequestId + 1
+        this.selectedSessionRequestId = requestId
+        this.selected = { ...item, trials: null }
+        this.trial_loading = true
+
+        try {
+          const res = await axios.get(`/sessions/${item.id}/`)
+          if (this.selectedSessionRequestId === requestId) {
+            this.selected = res.data
+          }
+        } catch (error) {
+          if (this.selectedSessionRequestId === requestId) {
+            apiError(error)
+            this.selected = null
+          }
+        } finally {
+          if (this.selectedSessionRequestId === requestId) {
+            this.trial_loading = false
+          }
+        }
       } else {
+        this.selectedSessionRequestId += 1
         this.selected = null
+        this.trial_loading = false
       }
     },
     onRowClick(item, params) {
@@ -846,6 +887,19 @@ export default {
   @media (max-width: 599px) {
     margin: 0 4px 8px 4px;
   }
+}
+
+.recycle-trials-loading,
+.recycle-trials-empty {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.recycle-trials-loading {
+  gap: 12px;
 }
 
 .recycle-session-context-menu,
