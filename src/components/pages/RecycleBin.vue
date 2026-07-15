@@ -591,13 +591,38 @@ export default {
     },
     async permanentRemoveTrial(trial) {
       try {
+        if (!trial || !trial.id || !trial.trashed) {
+          return
+        }
+
+        await axios.post(`/trials/${trial.id}/permanent_remove/`);
+
         if (this.selected && this.selected.trials) {
           const index = this.selected.trials.findIndex(x => x.id === trial.id);
-          await axios.post(`/trials/${trial.id}/permanent_remove/`);
           if (index >= 0) {
             this.selected.trials.splice(index, 1);
+            this.syncSelectedSessionInRecycleBin()
           }
-          this.syncSelectedSessionInRecycleBin()
+        }
+
+        const sessionIndex = this.trashed_sessions.findIndex(session =>
+          session.trials && session.trials.some(item => item.id === trial.id)
+        )
+        if (sessionIndex >= 0) {
+          const session = this.trashed_sessions[sessionIndex]
+          const trials = session.trials.filter(item => item.id !== trial.id)
+          const recycleBinTrials = this.getRecycleBinTrials({ ...session, trials })
+
+          if (!session.trashed && recycleBinTrials.length === 0) {
+            this.removeSessionFromRecycleBin(session.id)
+          } else {
+            Vue.set(this.trashed_sessions, sessionIndex, {
+              ...session,
+              trials,
+              trials_count: recycleBinTrials.length,
+              isMenuOpen: false,
+            })
+          }
         }
       } catch (error) {
         apiError(error)
