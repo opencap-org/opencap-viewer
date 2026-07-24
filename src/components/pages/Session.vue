@@ -2798,7 +2798,7 @@
           this.renderer.render(this.scene, this.camera)
         }
 
-        if (this.trial?.name !== 'neutral') {
+        if (this.trial?.name === 'neutral') {
             this.togglePlay(false)
         }
       },
