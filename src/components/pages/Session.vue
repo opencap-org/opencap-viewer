@@ -86,9 +86,6 @@
                   <v-btn class="mb-4 w-100" v-show="show_controls && !showOpenInAppButton" :disabled="recordingStopCooldownActive || lidarCooldownActive || (state === 'ready' && (busy || invalid))" @click="changeState">
                       {{ buttonCaption }}
                   </v-btn>
-                  <p v-if="lidarCooldownActive" class="white--text text-center mb-4 px-2">
-                    Applying the LiDAR change on the phone. Please wait {{ lidarCooldownRemaining }}s before recording.
-                  </p>
                   <p v-if="state === 'recording' && n_cameras_connected >= n_calibrated_cameras">
                     {{ recordingStatusText }}
                     <template v-if="recordingDisplayFramerate"> at {{ recordingDisplayFramerate }} Hz</template><template v-if="isLidarRecordingEnabled">, {{ lidarRecordingStatusText }}</template>,
@@ -1104,6 +1101,7 @@
 
               // Performance optimization properties
               lastFrameTime: 0,
+              renderLoopActive: false,
               frameSkipCounter: 0,
               maxFrameSkip: 2,
               materialCache: new Map(),
@@ -1170,6 +1168,12 @@
         filteredTrials() {
           const trials = this.session?.trials || []
           return trials.filter(trial => trial && trial.name !== 'calibration' && !(trial.name === 'neutral' && trial.status === 'error')).filter(t => this.show_trashed || !t.trashed)
+        },
+        selectedTrialFromList() {
+          if (!this.trial?.id || !Array.isArray(this.session?.trials)) {
+            return null
+          }
+          return this.session.trials.find(trial => trial.id === this.trial.id) || null
         },
         videoControlsDisabled() {
           return !this.trial || this.trial.name === 'neutral' || this.frames.length === 0
@@ -1424,6 +1428,7 @@
       }
 
       // Add keyboard event listener
+      window.addEventListener('keydown', this.handleTrialListShortcut)
       window.addEventListener('keydown', this.handleKeyboard)
       window.addEventListener('resize', this.onResize)
       this.bindControlGestureGuards()
@@ -1441,6 +1446,7 @@
       }
 
       // Remove keyboard event listener
+      window.removeEventListener('keydown', this.handleTrialListShortcut)
       window.removeEventListener('keydown', this.handleKeyboard)
       window.removeEventListener('resize', this.onResize)
       this.unbindControlGestureGuards()
@@ -2327,6 +2333,15 @@
         }
       },
       disposeScene() {
+        this.stopRenderLoop()
+        if (this.controls) {
+          this.controls.dispose()
+          this.controls = null
+        }
+        if (this.renderer) {
+          this.renderer.dispose()
+          this.renderer = null
+        }
         if (this.scene) {
           this.scene.traverse((object) => {
             if (object.isMesh) {
@@ -2394,6 +2409,7 @@
           this.synced = false
           this.trialLoading = true
           this.sceneReady = false
+          this.stopRenderLoop()
           this.togglePlay(false)
 
           try {
@@ -2639,15 +2655,10 @@
 
                 delay(timeout).then(() => {
                   this.sceneReady = true
-                  // The fixed number 5 is here as a warkaround for Safari.
-                  // For neutral: start the render loop so meshes appear as OBJ files load,
-                  // but skip vid.play() so videos stay paused at frame 0.
-                  if (this.trial?.name === 'neutral') {
-                    this.playing = true
-                    this.animate()
-                  } else {
-                    this.togglePlay(true)
-                  }
+                  // Keep the render loop running so OrbitControls work while paused.
+                  this.startRenderLoop()
+                  // For neutral trials, leave videos paused at frame 0.
+                  this.togglePlay(true)
                 });
               })
             }
@@ -2688,57 +2699,76 @@
           }
         }
       },
+      startRenderLoop() {
+        if (this.renderLoopActive) return
+        this.renderLoopActive = true
+        this.animate()
+      },
+      stopRenderLoop() {
+        this.renderLoopActive = false
+      },
       animate() {
-        // cancel display cycle if loading of new trial started
-        if (this.playing && !this.trialLoading) {
+        if (!this.renderLoopActive || this.trialLoading || !this.renderer) {
+          this.renderLoopActive = false
+          return
+        }
+
+        requestAnimationFrame(this.animate)
+
+        if (this.playing) {
           // Check if enough time has passed for next frame (cap at 60fps)
-          const now = performance.now();
+          const now = performance.now()
           if (now - this.lastFrameTime >= 16) {
-            this.lastFrameTime = now;
-            this.animateOneFrame();
+            this.lastFrameTime = now
+            this.animateOneFrame()
           }
-          requestAnimationFrame(this.animate);
+        } else if (this.scene && this.camera) {
+          this.renderer.render(this.scene, this.camera)
         }
       },
       animateOneFrame() {
-        let cframe
+        let cframe = 0
+        const frameCount = this.frames.length
+        const video = this.vid0()
+        const hasValidDuration = video && !isNaN(video.duration) && video.duration > 0
 
-        let frames = this.frames.length
-        let duration = 0
-        if (this.vid0()) duration = this.vid0().duration
-        if (this.vid0() && !isNaN(this.vid0().duration)) {
-          let framerate = frames / duration
+        if (frameCount > 0) {
+          if (hasValidDuration && this.videos.length > 0) {
+            if (this.playing) {
+              const t = video.currentTime
 
-          if (this.videos.length > 0) {
-            let t = 0
-            if (this.vid0()) t = this.vid0().currentTime;
-
-            // Skip frames on low performance devices
-            if (this.isLowPerformance && this.frameSkipCounter < this.maxFrameSkip) {
-              this.frameSkipCounter++;
-              // Still render but skip updates
-              if (this.renderer && this.scene && this.camera) {
-                this.renderer.render(this.scene, this.camera);
+              // Skip frames on low performance devices
+              if (this.isLowPerformance && this.frameSkipCounter < this.maxFrameSkip) {
+                this.frameSkipCounter++
+                if (this.renderer && this.scene && this.camera) {
+                  this.renderer.render(this.scene, this.camera)
+                }
+                return
               }
-              return;
+              this.frameSkipCounter = 0
+
+              cframe = this.frameIndexAtTime(t)
+              this.frame = cframe
+              this.time = this.formatMotionTime(this.frameTimeAt(cframe))
+            } else {
+              cframe = Math.min(frameCount - 1, Math.max(0, this.frame))
+              this.time = this.formatMotionTime(this.frameTimeAt(cframe))
             }
-            this.frameSkipCounter = 0;
-
-            cframe = (Math.round(t * framerate)) > this.frames.length ? this.frames.length - 1 : (Math.round(t * framerate))
-            this.frame = cframe
-            if (this.vid0()) this.time = this.frame == 0 ? 0 : parseFloat(this.vid0().currentTime.toFixed(2))
+          } else if (this.videos.length === 0 && this.playing) {
+            cframe = this.frame
+            this.frame++
+            if (this.frame >= frameCount) {
+              this.frame = frameCount - 1
+            }
           } else {
-            cframe = this.frame++
-
-            if (this.frame >= this.frames.length) {
-              this.frame = this.frames.length - 1
-              this.time = this.vid0().duration
+            cframe = Math.min(frameCount - 1, Math.max(0, this.frame))
+            if (this.hasFrameTimestamps()) {
+              this.time = this.formatMotionTime(this.frameTimeAt(cframe))
             }
           }
 
-          if (cframe < this.frames.length) {
-            // display the frame
-            let json = this.animation_json;
+          if (cframe < frameCount) {
+            const json = this.animation_json
             for (let body in json.bodies) {
               json.bodies[body].attachedGeometries.forEach((geom) => {
                 if (this.meshes[body + geom]) {
@@ -2749,14 +2779,16 @@
                   var euler = new THREE.Euler(
                       json.bodies[body].rotation[cframe][0],
                       json.bodies[body].rotation[cframe][1],
-                      json.bodies[body].rotation[cframe][2]);
+                      json.bodies[body].rotation[cframe][2])
                   this.meshes[body + geom].quaternion.setFromEuler(euler)
                 }
               })
             }
           }
 
-          this.syncVideos()
+          if (hasValidDuration) {
+            this.syncVideos()
+          }
         }
 
         // Always render the 3D scene regardless of video metadata state.
@@ -2764,6 +2796,10 @@
         // would otherwise leave the canvas permanently black.
         if (this.renderer && this.scene && this.camera) {
           this.renderer.render(this.scene, this.camera)
+        }
+
+        if (this.trial?.name === 'neutral') {
+            this.togglePlay(false)
         }
       },
       syncVideos() {
@@ -2785,10 +2821,14 @@
       onVideoEnded(index) {
         if (index === 0) {
           if (this.loopPlayback) {
+            const startTime = this.frameTimeAt(0)
+            this.frame = 0
             this.videos.forEach((video, index) => {
               const vid_element = this.videoElement(index)
-              vid_element.currentTime = 0
-              vid_element.play()
+              if (vid_element) {
+                vid_element.currentTime = startTime
+                vid_element.play()
+              }
             })
           } else {
             this.togglePlay(false)
@@ -2796,11 +2836,11 @@
         }
       },
       onVideoLoadedMetadata(index) {
-        // On Safari, seeking to 0 after metadata loads forces the first frame to paint
+        // On Safari, seeking after metadata loads forces the first frame to paint
         // even when the video is paused (important for neutral trials).
         const el = this.videoElement(index)
         if (el) {
-          el.currentTime = 0
+          el.currentTime = this.frameTimeAt(0)
         }
       },
       videoElement(index) {
@@ -2813,6 +2853,60 @@
       vid0() {
         return this.videoElement(0)
       },
+      hasFrameTimestamps() {
+        return Array.isArray(this.frames) &&
+          this.frames.length > 0 &&
+          typeof this.frames[0] === 'number' &&
+          !Number.isNaN(this.frames[0])
+      },
+      frameTimeAt(index) {
+        const frameCount = this.frames.length
+        if (frameCount === 0) return 0
+
+        const clamped = Math.max(0, Math.min(index, frameCount - 1))
+        if (this.hasFrameTimestamps()) {
+          return this.frames[clamped]
+        }
+
+        const video = this.vid0()
+        if (video && !isNaN(video.duration) && video.duration > 0) {
+          return clamped * video.duration / frameCount
+        }
+        return clamped
+      },
+      frameIndexAtTime(t) {
+        const frameCount = this.frames.length
+        if (frameCount === 0) return 0
+
+        const time = parseFloat(t)
+        if (!Number.isFinite(time)) return 0
+
+        if (this.hasFrameTimestamps()) {
+          const times = this.frames
+          if (time <= times[0]) return 0
+          if (time >= times[frameCount - 1]) return frameCount - 1
+
+          let lo = 0
+          let hi = frameCount - 1
+          while (lo < hi) {
+            const mid = Math.ceil((lo + hi) / 2)
+            if (times[mid] <= time) lo = mid
+            else hi = mid - 1
+          }
+          return lo
+        }
+
+        const video = this.vid0()
+        if (video && !isNaN(video.duration) && video.duration > 0) {
+          const frame = Math.round(time * frameCount / video.duration)
+          return Math.max(0, Math.min(frame, frameCount - 1))
+        }
+        return 0
+      },
+      formatMotionTime(time) {
+        const t = Number(time)
+        return Number.isFinite(t) ? parseFloat(t.toFixed(2)) : 0
+      },
       isSelected(trial) {
         return this.trial && this.trial.id === trial.id
       },
@@ -2823,19 +2917,16 @@
       },
       togglePlay(value) {
         this.playing = value
-  
+
         if (this.playing) {
-          this.animate()
-  
           this.videos.forEach((video, index) => {
             const vid_element = this.videoElement(index)
-            vid_element.play()
+            if (vid_element) vid_element.play()
           })
-  
         } else {
           this.videos.forEach((video, index) => {
             const vid_element = this.videoElement(index)
-            vid_element.pause()
+            if (vid_element) vid_element.pause()
           })
         }
       },
@@ -2846,20 +2937,37 @@
         this.mobileVideoSizeIndex = (this.mobileVideoSizeIndex + 1) % 3
       },
       onNavigate(frame) {
-        const step = this.vid0().duration / this.frames.length
-        const newPosition = frame * step
-  
-        this.eachVideo(videoElement => {
-          videoElement.currentTime = newPosition
-        })
-  
+        if (!this.frames.length) return
+
+        const clampedFrame = Math.max(0, Math.min(frame, this.frames.length - 1))
+        this.frame = clampedFrame
+
+        const video = this.vid0()
+        if (video && !isNaN(video.duration) && video.duration > 0) {
+          const newPosition = this.frameTimeAt(clampedFrame)
+
+          this.eachVideo(videoElement => {
+            if (videoElement) videoElement.currentTime = newPosition
+          })
+          this.time = this.formatMotionTime(newPosition)
+        } else if (this.hasFrameTimestamps()) {
+          this.time = this.formatMotionTime(this.frameTimeAt(clampedFrame))
+        }
+
         this.animateOneFrame()
       },
       onChangeTime(time) {
+        const video = this.vid0()
+        if (!video) return
+
         this.eachVideo(videoElement => {
-          videoElement.currentTime = time
+          if (videoElement) videoElement.currentTime = time
         })
-  
+
+        if (!this.playing && this.frames.length > 0) {
+          this.frame = this.frameIndexAtTime(time)
+        }
+
         this.animateOneFrame()
       },
       maxVideoDuration() {
@@ -2914,14 +3022,130 @@
         }
         window.alert(`Result with tag "${tag}" not found`);
       },
+      isTypingInEditableField(event) {
+        const target = event.target
+        if (!target) return false
+        const tagName = target.tagName
+        return tagName === 'INPUT' || tagName === 'TEXTAREA' || target.isContentEditable
+      },
+      isSessionDialogOpen() {
+        return !!(
+          this.remove_dialog ||
+          this.restore_dialog ||
+          this.permanent_delete_dialog ||
+          this.trial_rename_dialog ||
+          this.session_rename_dialog ||
+          this.trial_modify_tags ||
+          this.showAnalysisDialog ||
+          this.new_session_confirm_dialog ||
+          this.new_session_same_setup_confirm_dialog ||
+          this.dialog ||
+          this.showArchiveDialog ||
+          this.showTrialMenuSheet
+        )
+      },
+      isDeleteShortcut(event) {
+        return event.key === 'Backspace' || event.key === 'Delete'
+      },
+      isPermanentDeleteShortcut(event) {
+        return this.isDeleteShortcut(event) && (event.metaKey || event.ctrlKey)
+      },
+      isTrialNavigationShortcut(event) {
+        return !event.metaKey && !event.ctrlKey && !event.altKey && ['ArrowUp', 'ArrowDown'].includes(event.key)
+      },
+      openSelectedTrialTrashDialog() {
+        const selectedTrial = this.selectedTrialFromList
+        if (!selectedTrial || selectedTrial.trashed) return false
+
+        this.trialForTrashDialog = selectedTrial
+        this.remove_dialog = true
+        return true
+      },
+      openSelectedTrialPermanentDeleteDialog() {
+        const selectedTrial = this.selectedTrialFromList
+        if (!selectedTrial) return false
+
+        this.trialForPermanentDeleteDialog = selectedTrial
+        this.permanent_delete_dialog = true
+        return true
+      },
+      navigateSelectedTrial(direction) {
+        if (this.trialLoading) return false
+
+        const trials = this.filteredTrials
+        if (trials.length === 0) return false
+
+        const selectedTrial = this.selectedTrialFromList
+        if (!selectedTrial) {
+          if (direction > 0) {
+            this.loadTrial(trials[0])
+            return true
+          }
+          return false
+        }
+
+        const currentIndex = trials.findIndex(trial => trial.id === selectedTrial.id)
+        if (currentIndex < 0) {
+          if (direction > 0) {
+            this.loadTrial(trials[0])
+            return true
+          }
+          return false
+        }
+
+        const nextIndex = currentIndex + direction
+        if (nextIndex < 0 || nextIndex >= trials.length) return true
+
+        this.loadTrial(trials[nextIndex])
+        return true
+      },
+      handleTrialListShortcut(event) {
+        if (
+          event.defaultPrevented ||
+          this.isTypingInEditableField(event) ||
+          this.isSessionDialogOpen()
+        ) {
+          return
+        }
+
+        if (this.isDeleteShortcut(event)) {
+          const openedDialog = this.isPermanentDeleteShortcut(event)
+            ? this.openSelectedTrialPermanentDeleteDialog()
+            : this.openSelectedTrialTrashDialog()
+
+          if (openedDialog) {
+            event.preventDefault()
+          }
+          return
+        }
+
+        if (this.isTrialNavigationShortcut(event)) {
+          const handled = this.navigateSelectedTrial(event.key === 'ArrowUp' ? -1 : 1)
+          if (handled) {
+            event.preventDefault()
+          }
+        }
+      },
       handleKeyboard: debounce(function(event) {
-        // Only handle keyboard events when trial is loaded and video controls are enabled
-        if (this.videoControlsDisabled) {
+        if (event.defaultPrevented) {
           return
         }
 
         // Ignore if user is typing in an input field
-        if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        if (this.isTypingInEditableField(event)) {
+          return
+        }
+
+        if (this.isSessionDialogOpen() && this.isTrialNavigationShortcut(event)) {
+          return
+        }
+
+        if (this.isTrialNavigationShortcut(event)) {
+          return
+        }
+
+        // Only handle playback keyboard events when trial video controls are enabled
+        if (this.videoControlsDisabled) {
           return
         }
 

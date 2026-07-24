@@ -86,7 +86,7 @@ import { apiError } from '@/util/ErrorMessage.js'
 // The mobile app needs time to switch its capture pipeline between
 // AVFoundation (RGB) and ARKit (LiDAR). Block recording during that window.
 const LIDAR_ENABLE_COOLDOWN_MS = 2000
-const LIDAR_DISABLE_COOLDOWN_MS = 10000
+const LIDAR_DISABLE_COOLDOWN_MS = 2000
 
 export default {
   name: 'LidarToggle',

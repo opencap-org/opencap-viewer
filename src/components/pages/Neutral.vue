@@ -490,7 +490,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
 
 const LIDAR_ENABLE_COOLDOWN_MS = 2000
-const LIDAR_DISABLE_COOLDOWN_MS = 10000
+const LIDAR_DISABLE_COOLDOWN_MS = 2000
 
 export default {
   name: "Neutral",
