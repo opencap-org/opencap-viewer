@@ -2658,9 +2658,7 @@
                   // Keep the render loop running so OrbitControls work while paused.
                   this.startRenderLoop()
                   // For neutral trials, leave videos paused at frame 0.
-                  if (this.trial?.name !== 'neutral') {
-                    this.togglePlay(true)
-                  }
+                  this.togglePlay(true)
                 });
               })
             }
@@ -2798,6 +2796,10 @@
         // would otherwise leave the canvas permanently black.
         if (this.renderer && this.scene && this.camera) {
           this.renderer.render(this.scene, this.camera)
+        }
+
+        if (this.trial?.name === 'neutral') {
+            this.togglePlay(false)
         }
       },
       syncVideos() {
