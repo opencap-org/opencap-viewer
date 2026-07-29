@@ -483,6 +483,7 @@ import axios from "axios";
 import { mapMutations, mapActions, mapState } from "vuex";
 import { apiError, apiSuccess, apiErrorRes, apiWarning, apiInfo, clearToastMessages } from "@/util/ErrorMessage.js";
 import { playNeutralFinishedSound } from "@/util/SoundMessage.js";
+import { axiosGetWithRetry } from "@/util/network.js";
 import MainLayout from "@/layout/MainLayout";
 import ExampleImage from "@/components/ui/ExampleImage";
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
@@ -583,6 +584,8 @@ export default {
       tempFilterFrequency: 'default',
       componentKey: 0,
       isAuditoryFeedbackEnabled: false,
+      timeoutID: null,
+      pollID: 0,
       saveDataLocally: false,
       loadingSaveLocal: false,
       savingSaveLocal: false,
@@ -761,12 +764,14 @@ export default {
     if (this.isMonocularMode) {
       this.n_calibrated_cameras = 1
     } else {
-      const res = await axios.get(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+      const res = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
       this.n_calibrated_cameras = res.data.data
     }
     this.loadSubjectsList(false)
   },
   beforeDestroy() {
+    this.pollID++
+    this.cancelPoll()
     this.stopLidarCooldownTicker()
   },
   watch: {
@@ -1062,7 +1067,7 @@ export default {
     async saveAdvancedSettings() {
       this.savingAdvancedSettings = true
       try {
-        await axios.get(
+        await axiosGetWithRetry(
           `/sessions/${this.session.id}/set_metadata/`,
           {
             params: this.getAdvancedSettingsMetadataParams(),
@@ -1089,7 +1094,7 @@ export default {
       if (this.hasSavedAdvancedSettingsMetadata) return
 
       try {
-        await axios.get(
+        await axiosGetWithRetry(
           `/sessions/${this.session.id}/set_metadata/`,
           {
             params: this.getAdvancedSettingsMetadataParams(),
@@ -1233,6 +1238,8 @@ export default {
           }
 
           if (await this.$refs.observer.validate()) {
+            this.cancelPoll()
+            const pollID = ++this.pollID
             apiInfo("Recording...")
             this.lastPolledStatus = "";
             this.busy = true;
@@ -1247,7 +1254,7 @@ export default {
               filter_frequency: this.filter_frequency,
             });
             try {
-              await axios.get(
+              await axiosGetWithRetry(
                 `/sessions/${this.session.id}/set_metadata/`,
                 {
                   params: {
@@ -1257,7 +1264,7 @@ export default {
                 }
               );
 
-              await axios.get(
+              await axiosGetWithRetry(
                   `/sessions/${this.session.id}/set_subject/`,
                   {
                       params: {
@@ -1266,7 +1273,7 @@ export default {
                   }
               )
               
-              const res = await axios.get(
+              const res = await axiosGetWithRetry(
                 `/sessions/${this.session.id}/record/`,
                 {
                   params: {
@@ -1279,24 +1286,33 @@ export default {
                     subject_data_sharing: this.data_sharing,
                     subject_pose_model: this.pose_model,
                   },
+                },
+                {
+                  retries: 2,
+                  backoffFactor: 0.2,
+                  maxJitterMs: 100,
+                  timeout: 4500,
                 }
               );
               this.setTrialId(res.data.id);
-              this.pollStatus();
+              this.pollStatus(pollID);
             } catch (error) {
               apiError(error);
+              this.busy = false;
             }
           }
         }
       }
     },
-    async pollStatus() {
+    async pollStatus(pollID = this.pollID) {
       try {
-        const res = await axios.get(
+        const res = await axiosGetWithRetry(
           `/sessions/${this.session.id}/neutral_img/`
         );
+        if (pollID !== this.pollID) return
         switch (res.data.status) {
           case "done": {
+            this.cancelPoll()
             clearToastMessages()
             this.$router.push({
               name: "Session",
@@ -1308,17 +1324,21 @@ export default {
             break;
           }
           case "error": {
-            const resTrial = await axios.get(`/trials/${this.trialId}/`);
+            this.cancelPoll()
+            const resTrial = await axiosGetWithRetry(`/trials/${this.trialId}/`);
+            if (pollID !== this.pollID) return
             clearToastMessages();
             apiErrorRes(resTrial, "Error in processing neutral pose");
             this.busy = false;
 
-            const resStatus = await axios.get(`/sessions/${this.$route.params.id}/status/`, {})
+            const resStatus = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/status/`, {})
+            if (pollID !== this.pollID) return
 
             this.n_cameras_connected = resStatus.data.n_cameras_connected
             this.n_videos_uploaded = resStatus.data.n_videos_uploaded
 
-            const resCalibratedCameras = await axios.get(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+            const resCalibratedCameras = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/get_n_calibrated_cameras/`, {})
+            if (pollID !== this.pollID) return
 
             this.n_calibrated_cameras = resCalibratedCameras.data.data
 
@@ -1330,7 +1350,8 @@ export default {
             break;
           }
           default: {
-            const resStatus = await axios.get(`/sessions/${this.$route.params.id}/status/`, {})
+            const resStatus = await axiosGetWithRetry(`/sessions/${this.$route.params.id}/status/`, {})
+            if (pollID !== this.pollID) return
 
             this.n_videos_uploaded = resStatus.data.n_videos_uploaded
 
@@ -1345,20 +1366,27 @@ export default {
                 playNeutralFinishedSound()
             }
             this.lastPolledStatus = res.data.status;
-            window.setTimeout(this.pollStatus, 1000);
+            if (this.busy) this.timeoutID = window.setTimeout(() => this.pollStatus(pollID), 1000);
             break;
           }
         }
       } catch (error) {
+        if (pollID !== this.pollID) return
+        this.cancelPoll()
         apiError(error);
+        this.busy = false;
       }
+    },
+    cancelPoll() {
+      if (this.timeoutID) window.clearTimeout(this.timeoutID)
+      this.timeoutID = null
     },
     openAdvancedSettings() {
       this.advancedSettingsDialog = true;
       this.getAvailableFramerates()
     },
     async getAvailableFramerates() {
-      const session_settings = await axios.get(`/sessions/${this.session.id}/get_session_settings/`)
+      const session_settings = await axiosGetWithRetry(`/sessions/${this.session.id}/get_session_settings/`)
       if('data' in session_settings && 'framerates' in session_settings.data) {
         this.framerates_available = []
         session_settings.data.framerates.forEach(element => {
@@ -1416,7 +1444,7 @@ export default {
       if (await this.$refs.observer.validate()) {
         this.busy = true;
         try {
-          await axios.get(
+          await axiosGetWithRetry(
             `/sessions/${this.session.id}/set_metadata/`,
             {
               params: {
@@ -1433,7 +1461,7 @@ export default {
             }
           );
 
-          await axios.get(
+          await axiosGetWithRetry(
             `/sessions/${this.session.id}/set_subject/`,
             {
               params: {
