@@ -2096,12 +2096,18 @@
       async newSessionSameSetup() {
         // Snapshot before initSessionSameSetup: new_subject response may omit isMono on the new session.
         const wasMonocular = !!(this.session?.isMono ?? this.session?.is_mono)
+        const wasSameDevice = this.isSameDevice
         const advancedSettings = this.getAdvancedSettingsMetadataParams(this.session?.meta?.settings)
         await this.initSessionSameSetup()
         if (!wasMonocular && Object.keys(advancedSettings).length > 0) {
           await axios.get(`/sessions/${this.session.id}/set_metadata/`, { params: advancedSettings })
         }
-        const query = wasMonocular ? { isMono: 'true', fromDevice: 'true' } : {}
+        const query = wasMonocular
+          ? {
+            isMono: 'true',
+            ...(wasSameDevice ? { fromDevice: 'true' } : {})
+          }
+          : {}
         this.$router.push({name: 'Neutral', params: {id: this.session.id}, query})
       },
       startPoll() {
