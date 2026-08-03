@@ -48,20 +48,27 @@
 
       <v-card-text class="d-flex calibration-card-content">
         <div class="d-flex flex-grow-1 align-center inputs">
-          <v-text-field
-            v-model="rows"
-            label="Rows"
+          <v-select
+            v-model="checkerboardMode"
+            :items="['Default', 'Custom']"
+            label="Checkerboard Dimensions"
             class="mr-3"/>
+          <template v-if="checkerboardMode === 'Custom'">
+            <v-text-field
+              v-model="rows"
+              label="Rows"
+              class="mr-3"/>
 
-          <v-text-field
-            v-model="cols"
-            label="Columns"
-            class="mr-3"/>
+            <v-text-field
+              v-model="cols"
+              label="Columns"
+              class="mr-3"/>
 
-          <v-text-field
-            v-model="squareSize"
-            label="Square size (mm)"
-            class="mr-3"/>
+            <v-text-field
+              v-model="squareSize"
+              label="Square size (mm)"
+              class="mr-3"/>
+            </template>
 
           <v-select
             v-model="placement"
@@ -130,6 +137,7 @@ export default {
   },
   data () {
     return {
+      checkerboardMode: 'Default',
       rows: 4,
       cols: 5,
       squareSize: 35,
@@ -159,6 +167,15 @@ export default {
     },
     rightButtonLabel() {
       return this.busy ? 'Processing' : 'Calibrate'
+    }
+  },
+  watch: {
+    checkerboardMode(newValue) {
+      if (newValue === 'Default') {
+        this.rows = 4
+        this.cols = 5
+        this.squareSize = 35
+      }
     }
   },
   mounted () {
