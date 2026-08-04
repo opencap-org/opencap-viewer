@@ -2057,6 +2057,7 @@
           { storedKey: 'openSimModel', paramKey: 'settings_openSimModel' },
           { storedKey: 'augmentermodel', paramKey: 'settings_augmenter_model' },
           { storedKey: 'filterfrequency', paramKey: 'settings_filter_frequency' },
+          { storedKey: 'sync_ver', paramKey: 'settings_synchronization_version' },
         ]
 
         settingKeys.forEach(({ storedKey, paramKey }) => {
