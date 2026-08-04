@@ -607,6 +607,7 @@ export default {
         openSimModel: this.openSimModel,
         augmenter_model: this.augmenter_model,
         filter_frequency: this.filter_frequency,
+        synchronization_version: this.synchronization_version,
       }
     },
     hasSavedAdvancedSettingsMetadata() {
@@ -620,6 +621,7 @@ export default {
         'openSimModel',
         'augmentermodel',
         'filterfrequency',
+        'synchronization_version'
       ].every(key => settings[key] !== undefined && settings[key] !== null && settings[key] !== '')
     },
     hasUnsavedAdvancedSettings() {
@@ -771,6 +773,7 @@ export default {
         this.tempFilterFrequency = this.filter_frequency
         this.componentKey += 1
       })
+      assignIfPresent('synchronization_version', value => { this.synchronization_version = value })
     },
     updateSavedAdvancedSettingsSnapshot() {
       this.savedAdvancedSettingsSnapshot = {...this.currentAdvancedSettings}
@@ -783,6 +786,7 @@ export default {
         settings_openSimModel: this.openSimModel,
         settings_augmenter_model: this.augmenter_model,
         settings_filter_frequency: this.filter_frequency,
+        settings_synchronization_version: this.synchronization_version
       }
     },
     setAdvancedSettingsDialog(value) {
@@ -1181,6 +1185,7 @@ export default {
                 settings_openSimModel: this.openSimModel,
                 // settings_augmenter_model: this.augmenter_model,
                 // settings_filter_frequency: this.filter_frequency,
+                settings_synchronization_version: this.synchronization_version,
               },
             }
           );
