@@ -211,7 +211,7 @@
         </div>
       </template>
       <template v-slot:item.sessionName="{ item }">
-        <div class="session-name-text">{{ item.sessionName || 'Untitled' }}</div>
+        <div class="session-name-text" :title="item.sessionName || 'Untitled'">{{ item.sessionName || 'Untitled' }}</div>
       </template>
       <template v-slot:item.isMono="{ item }">
         <span>{{ item.isMono ? 'Yes' : 'No' }}</span>
@@ -980,15 +980,16 @@ export default {
         align-items: center;
         gap: 6px;
         min-width: 0;
-        width: fit-content;
+        width: 100%;
         max-width: 100%;
       }
 
       .session-id-preview {
         font-family: inherit;
         font-size: 0.8rem;
-        flex: 0 0 10ch;
-        width: 10ch;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 10ch;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1039,6 +1040,9 @@ export default {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
         padding-left: 12px;
       }
       
@@ -1071,31 +1075,31 @@ export default {
         overflow: visible;
       }
 
-      // Percentage widths so columns always fit (sum 100%). Session ID wide enough for preview + copy button (no overflow).
-      th:nth-child(1), td:nth-child(1) { width: 15%; } /* Session Name */
-      th:nth-child(2), td:nth-child(2) { width: 13%; } /* Date */
+      // Percentage widths so columns always fit (sum 100%). Session ID only needs preview + copy.
+      th:nth-child(1), td:nth-child(1) { width: 18%; } /* Session Name */
+      th:nth-child(2), td:nth-child(2) { width: 14%; } /* Date */
       th:nth-child(3), td:nth-child(3) { width: 8%; }  /* Actions (burger on sm) */
-      th:nth-child(4), td:nth-child(4) { width: 22%; } /* Session ID (preview + copy button) */
-      th:nth-child(5), td:nth-child(5) { width: 17%; } /* Subject Name */
-      th:nth-child(6), td:nth-child(6) { width: 9%; } /* # trials */
-      th:nth-child(7), td:nth-child(7) { width: 12%; } /* Monocular */
+      th:nth-child(4), td:nth-child(4) { width: 14%; } /* Session ID (preview + copy button) */
+      th:nth-child(5), td:nth-child(5) { width: 20%; } /* Subject Name */
+      th:nth-child(6), td:nth-child(6) { width: 10%; } /* # trials */
+      th:nth-child(7), td:nth-child(7) { width: 16%; } /* Monocular */
     }
   }
 
   // Desktop (960px+): Actions enough for buttons; Session ID close to Actions; Date full; !important overrides Vuetify.
   @media (min-width: 960px) {
     .sessions-table .v-data-table__wrapper {
-      th:nth-child(1), td:nth-child(1) { width: 12% !important; }
-      th:nth-child(2), td:nth-child(2) { width: 11% !important; } /* Date: full "Feb. 24, 2026" */
+      th:nth-child(1), td:nth-child(1) { width: 16% !important; }
+      th:nth-child(2), td:nth-child(2) { width: 12% !important; } /* Date: full "Feb. 24, 2026" */
       th:nth-child(3), td:nth-child(3) { 
-        width: 26% !important; 
+        width: 24% !important; 
         min-width: 200px !important;
         overflow: visible !important;
       } /* Actions: no huge gap before Session ID */
-      th:nth-child(4), td:nth-child(4) { width: 21% !important; } /* Session ID: closer to Actions */
-      th:nth-child(5), td:nth-child(5) { width: 12% !important; }
-      th:nth-child(6), td:nth-child(6) { width: 9% !important; }
-      th:nth-child(7), td:nth-child(7) { width: 9% !important; }
+      th:nth-child(4), td:nth-child(4) { width: 12% !important; } /* Session ID: preview + copy only */
+      th:nth-child(5), td:nth-child(5) { width: 16% !important; }
+      th:nth-child(6), td:nth-child(6) { width: 10% !important; }
+      th:nth-child(7), td:nth-child(7) { width: 10% !important; }
     }
     
     .sessions-table .session-controls-cell {
@@ -1117,7 +1121,7 @@ export default {
       table {
         min-width: 0 !important;
         width: 100% !important;
-        table-layout: auto;
+        table-layout: fixed;
       }
 
       tbody td {
@@ -1136,10 +1140,22 @@ export default {
         white-space: nowrap;
       }
 
+      // Session name: cap width so a long name cannot push Date/Actions off-screen
+      th:nth-child(1),
+      td:nth-child(1) {
+        width: 52% !important;
+        max-width: 0;
+      }
+
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: 30% !important;
+      }
+
       // Actions column: keep burger visible; header and buttons left-aligned so they line up
       th:nth-child(3),
       td:nth-child(3) {
-        width: 1%;
+        width: 18%;
         min-width: 48px;
         white-space: nowrap;
         overflow: visible;

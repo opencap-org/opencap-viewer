@@ -1,6 +1,6 @@
 <template>
   <div class="profile-dropdown" @click="toggleDropdown">
-    <span class="profile-username d-none d-sm-inline">{{ username }}</span>
+    <span class="profile-username d-none d-lg-inline">{{ username }}</span>
     <img :src="profile_picture_url" alt="Profile" class="profile-image" />
     <transition name="fade">
       <div v-if="isDropdownOpen" class="dropdown-content">
