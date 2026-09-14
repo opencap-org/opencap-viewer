@@ -31,14 +31,26 @@
       <v-spacer class="navbar-spacer"></v-spacer>
 
       <div class="navbar-actions d-flex align-center">
-        <LocalDataSaveToggle
-          v-if="showSessionNavbarControls"
-          class="navbar-local-save"
-          @change="onLocalDataSaveChange" />
-        <LidarToggle
-          v-if="showLidarNavbarControls"
-          class="navbar-lidar"
-          @change="onLidarChange" />
+        <!-- md+ (~960px, iPad landscape and up): inline toggles. Narrower: gear menu. -->
+        <div
+          v-if="showNavbarSettings"
+          class="navbar-inline-toggles d-none d-md-flex align-center">
+          <LocalDataSaveToggle
+            v-if="showSessionNavbarControls"
+            class="navbar-local-save"
+            @change="onLocalDataSaveChange" />
+          <LidarToggle
+            v-if="showLidarNavbarControls"
+            class="navbar-lidar"
+            @change="onLidarChange" />
+        </div>
+        <NavbarSettings
+          v-if="showNavbarSettings"
+          class="navbar-settings d-flex d-md-none"
+          :show-local-save="showSessionNavbarControls"
+          :show-lidar="showLidarNavbarControls"
+          @local-save-change="onLocalDataSaveChange"
+          @lidar-change="onLidarChange" />
         <QRCodeDialog class="navbar-qr"/>
         <profile-dropdown v-if="showProfileInNavbar" class="navbar-profile"></profile-dropdown>
       </div>
@@ -57,6 +69,7 @@ import { notificationState, hideNotification, clearNotifications } from '@/util/
 import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
+import NavbarSettings from './components/ui/NavbarSettings.vue'
 import LocalDataSaveToggle from './components/ui/LocalDataSaveToggle.vue'
 import LidarToggle from './components/ui/LidarToggle.vue'
 import ProfileDropdown from './components/ui/ProfileDropDown.vue';
@@ -64,6 +77,7 @@ import ProfileDropdown from './components/ui/ProfileDropDown.vue';
 export default {
   name: 'App',
   components: {
+    NavbarSettings,
     LocalDataSaveToggle,
     LidarToggle,
     QRCodeDialog,
@@ -149,6 +163,9 @@ export default {
       return this.$route.name === 'Session' &&
         canShowLidarToggle({ groups: this.userGroups })
     },
+    showNavbarSettings () {
+      return this.showSessionNavbarControls || this.showLidarNavbarControls
+    },
     appStyle () {
       return {
         background: this.$vuetify.theme.themes.dark.background
@@ -172,6 +189,7 @@ export default {
       this.cancelTimer()
       this.startTimer()
       this.resetMainScroll()
+      this.loadBetaAccessGroups()
     },
     verified () {
       this.loadBetaAccessGroups()
@@ -184,12 +202,16 @@ export default {
 .logo-link {
   display: flex;
   align-items: center;
-  flex-shrink: 1;
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: 50%;
-  
+  max-width: min(220px, 42%);
+
   @media (max-width: 599px) {
-    max-width: 40%;
+    max-width: 36%;
+  }
+
+  @media (min-width: 600px) and (max-width: 959px) {
+    max-width: 160px;
   }
 }
 
@@ -214,47 +236,58 @@ export default {
     height: 42px;
     margin-top: 7px;
     margin-bottom: 7px;
-    max-width: 200px;
+    max-width: 160px;
   }
 }
 
 .navbar-spacer {
   flex: 1 1 auto;
-  min-width: 16px;
+  min-width: 8px;
 }
 
 .navbar-actions {
-  flex-shrink: 0;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  gap: 4px;
   position: relative;
   z-index: 1001;
   min-width: 0;
-  
-  @media (max-width: 599px) {
-    gap: 4px;
+  justify-content: flex-end;
+
+  @media (min-width: 960px) {
+    gap: 8px;
   }
 }
 
-.navbar-qr {
+.navbar-inline-toggles {
+  gap: 4px;
   flex-shrink: 0;
-  
+
+  @media (min-width: 960px) {
+    gap: 8px;
+  }
+}
+
+.navbar-settings,
+.navbar-local-save,
+.navbar-lidar,
+.navbar-qr,
+.navbar-profile {
+  flex-shrink: 0;
+}
+
+.navbar-qr {
   @media (max-width: 599px) {
     min-width: auto;
   }
 }
 
-.navbar-local-save {
-  flex-shrink: 0;
-}
-
-.navbar-lidar {
-  flex-shrink: 0;
-}
-
 .navbar-profile {
   margin-left: 0;
-  
-  @media (min-width: 600px) {
+
+  @media (min-width: 1264px) {
     margin-left: 16px;
   }
 }
@@ -263,29 +296,45 @@ export default {
   z-index: 1100;
   background: rgba(30, 30, 30, 0.98) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  
+
   .v-toolbar__content {
     flex-wrap: nowrap;
     overflow: visible;
     min-width: 0;
-    
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    @media (max-width: 959px) {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
     @media (max-width: 599px) {
       padding: 4px 8px;
     }
   }
 }
 
-// Ensure QR button is visible on mobile
-::v-deep .navbar-qr {
+// Ensure QR and settings buttons are visible on mobile
+::v-deep .navbar-qr,
+::v-deep .navbar-settings {
   .v-btn {
     min-width: auto !important;
     padding: 0 8px !important;
-    
+    color: #ffffff !important;
+
     @media (max-width: 599px) {
       padding: 0 4px !important;
       min-width: 36px !important;
       width: auto !important;
     }
+  }
+
+  .v-icon,
+  svg {
+    color: #ffffff !important;
+    fill: #ffffff;
   }
 }
 </style>

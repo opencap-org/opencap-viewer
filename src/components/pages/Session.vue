@@ -97,19 +97,35 @@
               <div class="show-removed-trials-sidebar mb-2 d-flex align-center">
                 <v-checkbox v-model="show_trashed" label="Show removed trials" hide-details dense class="toolbar-checkbox"></v-checkbox>
                 <v-spacer></v-spacer>
-                <v-menu
-                  open-on-hover
-                  offset-y
-                  left
-                  :close-on-content-click="false"
-                  content-class="trial-legend-menu">
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn icon small dark v-bind="attrs" v-on="on" aria-label="Trial color legend">
-                      <v-icon small>mdi-palette-outline</v-icon>
-                    </v-btn>
-                  </template>
-                  <div class="trial-legend">
-                    <div class="trial-legend__title">Trial status</div>
+                <div class="trial-legend-wrap">
+                  <v-btn
+                    icon
+                    small
+                    dark
+                    aria-label="Trial color legend"
+                    aria-haspopup="true"
+                    :aria-expanded="String(trialLegendOpen)"
+                    @click.stop="toggleTrialLegend">
+                    <v-icon small>mdi-palette-outline</v-icon>
+                  </v-btn>
+                  <div
+                    v-show="trialLegendOpen"
+                    class="trial-legend"
+                    role="dialog"
+                    aria-label="Trial status"
+                    @click.stop>
+                    <div class="trial-legend__header">
+                      <div class="trial-legend__title">Trial status</div>
+                      <v-btn
+                        icon
+                        x-small
+                        dark
+                        class="trial-legend__close"
+                        aria-label="Close trial status legend"
+                        @click.stop="closeTrialLegend">
+                        <v-icon x-small>mdi-close</v-icon>
+                      </v-btn>
+                    </div>
                     <span class="trial-legend__item">
                       <span class="trial-legend__dot trial-legend__dot--done"></span>Done
                     </span>
@@ -123,7 +139,7 @@
                       <span class="trial-legend__dot trial-legend__dot--local"></span>Saved on phone
                     </span>
                   </div>
-                </v-menu>
+                </div>
               </div>
 
               <div class="trials-wrapper flex-grow-1">
@@ -1070,6 +1086,7 @@
               trialsPollActive: false,
               showSessionMenuButtons: false,
               leftMenuOpen: false,
+              trialLegendOpen: false,
   
               n_calibrated_cameras: 0,
               n_cameras_connected: 0,
@@ -1453,6 +1470,7 @@
       window.removeEventListener('keydown', this.handleKeyboard)
       window.removeEventListener('resize', this.onResize)
       this.unbindControlGestureGuards()
+      this.setTrialLegendOutsideClickListener(false)
 
       // Clear caches
       this.materialCache.clear();
@@ -1551,6 +1569,29 @@
           this.userGroups = await loadUserGroups()
         } catch {
           this.userGroups = []
+        }
+      },
+      toggleTrialLegend() {
+        this.trialLegendOpen = !this.trialLegendOpen
+        this.setTrialLegendOutsideClickListener(this.trialLegendOpen)
+      },
+      closeTrialLegend() {
+        if (!this.trialLegendOpen) return
+        this.trialLegendOpen = false
+        this.setTrialLegendOutsideClickListener(false)
+      },
+      onTrialLegendClickOutside(event) {
+        const wrap = this.$el && this.$el.querySelector('.trial-legend-wrap')
+        if (wrap && wrap.contains(event.target)) return
+        this.closeTrialLegend()
+      },
+      setTrialLegendOutsideClickListener(active) {
+        if (active) {
+          document.addEventListener('click', this.onTrialLegendClickOutside, true)
+          document.addEventListener('touchend', this.onTrialLegendClickOutside, true)
+        } else {
+          document.removeEventListener('click', this.onTrialLegendClickOutside, true)
+          document.removeEventListener('touchend', this.onTrialLegendClickOutside, true)
         }
       },
       parseTruthy(raw) {
@@ -3243,18 +3284,34 @@
   }
 
   /* Trial color legend popover */
-  .trial-legend-menu {
-    background-color: #37474f;
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  .trial-legend-wrap {
+    position: relative;
+    z-index: 6;
+    flex-shrink: 0;
   }
   .trial-legend {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 168px;
     padding: 10px 12px;
     font-size: 12px;
     color: #eceff1;
+    background-color: #37474f;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
 
     &__title {
       font-weight: 600;
@@ -3262,7 +3319,10 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
       opacity: 0.7;
-      margin-bottom: 2px;
+    }
+
+    &__close {
+      margin: 0 -6px 0 0 !important;
     }
 
     &__item {
@@ -3503,6 +3563,9 @@
 
       .show-removed-trials-sidebar {
         flex-shrink: 0;
+        position: relative;
+        z-index: 6;
+        overflow: visible;
       }
 
       .show-removed-trials-sidebar .toolbar-checkbox {
