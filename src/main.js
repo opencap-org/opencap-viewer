@@ -72,6 +72,13 @@ axios.defaults.baseURL = process.env.VUE_APP_API_SERVER //"https://api.opencap.a
 // axios.defaults.baseURL = "http://34.219.192.107/"
 // axios.defaults.baseURL = "http://localhost:8000/"
 
+// Disable native history restoration before the async app bootstrap. In
+// particular, Mobile Safari can otherwise restore a stale scroll position
+// after the routed content has rendered beneath the fixed app bar.
+if ('scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual'
+}
+
 store.dispatch('auth/checkToken').then(() => {
   new Vue({
     vuetify,
@@ -80,4 +87,3 @@ store.dispatch('auth/checkToken').then(() => {
     render: h => h(App)
   }).$mount('#app')  
 })
-

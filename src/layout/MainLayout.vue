@@ -115,14 +115,20 @@ export default {
 
 <style lang="scss" scoped>
 .main-layout {
-  min-height: calc(100vh - var(--app-bar-top-offset, 64px));
-  min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+  // v-main already reserves the app-bar offset, so fill its content box rather
+  // than subtracting the header a second time. The previous calculation left
+  // the navigation row one app-bar height above the mobile viewport bottom.
+  min-height: 100%;
+  box-sizing: border-box;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
 
   &.fixed-height {
-    height: calc(100vh - var(--app-bar-top-offset, 64px));
-    height: calc(100dvh - var(--app-bar-top-offset, 64px));
-    max-height: calc(100vh - var(--app-bar-top-offset, 64px));
-    max-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+    height: 100%;
+    max-height: 100%;
+  }
+
+  @media (min-width: 600px) {
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .content-wrapper {

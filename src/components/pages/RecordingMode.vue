@@ -1,9 +1,5 @@
 <template>
-  <MainLayout
-    :fixedHeight="false">
-
-    <template v-slot:left><div class="d-none"></div></template>
-    <template v-slot:right><div class="d-none"></div></template>
+  <MainLayout :showNavigation="false">
 
     <div class="recording-mode-wrapper d-flex flex-column align-center justify-center">
       <h1 class="recording-mode-title">How will you record?</h1>
@@ -64,7 +60,7 @@
         </div>
       </div>
 
-      <v-btn text class="mt-6" @click="$router.push({ name: 'SelectSession' })">
+      <v-btn text class="recording-mode-back" @click="$router.push({ name: 'SelectSession' })">
         <v-icon left>mdi-arrow-left</v-icon>
         {{ backLabel }}
       </v-btn>
@@ -292,6 +288,127 @@ export default {
 
   .option-description {
     font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 599px) {
+  .recording-mode-wrapper {
+    height: 100%;
+    min-height: 0;
+    padding: 4px 4px 8px;
+    justify-content: flex-start !important;
+  }
+
+  .recording-mode-title {
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+
+  .options-container {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .option-card {
+    height: auto;
+    min-height: 260px;
+    padding: 10px 8px !important;
+  }
+
+  .option-icon {
+    font-size: 48px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .icon-container {
+    height: 48px;
+    margin-bottom: 8px !important;
+  }
+
+  .option-card .option-title {
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .title-row {
+    min-height: 48px;
+    margin-bottom: 6px !important;
+  }
+
+  .beta-chip {
+    font-size: 0.6rem;
+  }
+
+  .option-description {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin-bottom: 0;
+  }
+
+  .best-practices-link {
+    font-size: 0.75rem;
+    line-height: 1.25;
+    margin-top: 6px !important;
+  }
+
+  .select-button {
+    min-width: 84px;
+    height: 40px !important;
+    min-height: 40px !important;
+    margin-top: 8px !important;
+    padding: 0 12px !important;
+  }
+
+  .recording-mode-back {
+    flex: 0 0 auto;
+    height: 40px !important;
+    min-height: 40px !important;
+    margin-top: 8px !important;
+  }
+}
+
+@media (max-width: 599px) and (max-height: 700px) {
+  .recording-mode-title {
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+  }
+
+  .option-card {
+    min-height: 220px;
+    padding: 8px 6px !important;
+  }
+
+  .option-icon {
+    font-size: 40px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .icon-container {
+    height: 40px;
+    margin-bottom: 4px !important;
+  }
+
+  .option-card .option-title {
+    font-size: 0.875rem;
+  }
+
+  .title-row {
+    min-height: 42px;
+    margin-bottom: 4px !important;
+  }
+
+  .option-description,
+  .best-practices-link {
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .select-button,
+  .recording-mode-back {
+    height: 36px !important;
+    min-height: 36px !important;
   }
 }
 </style>
