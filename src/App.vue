@@ -57,8 +57,8 @@
 
     </v-app-bar>
 
-    <v-main>      
-      <router-view :key="$route.fullPath"/>
+    <v-main :key="$route.fullPath">
+      <router-view/>
     </v-main>
   </v-app>
 </template>
@@ -66,7 +66,7 @@
 <script>
 import { mapActions, mapMutations, mapState } from 'vuex'
 import { notificationState, hideNotification, clearNotifications } from '@/util/notificationStore.js'
-import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
+import { resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import NavbarSettings from './components/ui/NavbarSettings.vue'
@@ -92,13 +92,13 @@ export default {
     this.startTimer()
   },
   mounted () {
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual'
-    }
+    window.addEventListener('pageshow', this.onPageShow)
+    this.resetMainScroll()
     this.loadBetaAccessGroups()
   },
   beforeDestroy () {
     this.cancelTimer()
+    window.removeEventListener('pageshow', this.onPageShow)
   },
   methods: {
     ...mapActions('auth', ['logout']),
@@ -134,10 +134,12 @@ export default {
       this.logout()
     },
     resetMainScroll () {
-      resetPageScroll()
       // Mobile Safari can apply scroll restoration after the route render.
       // Repeat reset on next frames so the new page always starts below navbar.
       resetPageScrollDeferred(this)
+    },
+    onPageShow () {
+      this.resetMainScroll()
     },
     onNotificationAction () {
       if (notificationState.actionOnClick) {

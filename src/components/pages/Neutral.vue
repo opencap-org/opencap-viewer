@@ -1,5 +1,6 @@
 \<template>
   <MainLayout
+    class="neutral-main-layout"
     :step="4"
     column
     :rightButton="rightButtonCaption"
@@ -1768,6 +1769,169 @@ export default {
 
 .checkbox-box > div {
   margin-top: 0;
+}
+
+@media (max-width: 599px) {
+  .neutral-main-layout {
+    // Keep the navigation in the visual viewport on iOS Safari. Percentage
+    // heights can otherwise resolve against the document and place this row
+    // below the browser's visible area.
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .neutral-main-layout .content-wrapper {
+    overflow-y: hidden;
+  }
+
+  .neutral-wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .neutral-content,
+  .neutral-layout,
+  .left-column.full-width {
+    min-height: 0;
+  }
+
+  .left-column.full-width {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .left-column .cards-row {
+    gap: 8px;
+  }
+
+  .left-column .session-info-card {
+    margin-bottom: 0 !important;
+  }
+
+  .session-info-card .v-card__title,
+  .data-sharing-card .data-title {
+    min-height: 0;
+    padding: 8px 10px 4px !important;
+    font-size: 1.1rem !important;
+    line-height: 1.25;
+  }
+
+  .session-info-card .v-card__text {
+    padding: 0 12px 8px !important;
+  }
+
+  .session-info-card .row {
+    margin: -4px;
+  }
+
+  .session-info-card .col {
+    padding: 4px;
+  }
+
+  .session-info-card .v-input {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .session-info-card .v-text-field__details {
+    min-height: 14px;
+    margin-bottom: 0;
+  }
+
+  .session-info-card .v-messages,
+  .session-info-card .v-messages__message {
+    min-height: 12px;
+    font-size: 0.7rem;
+    line-height: 1.15;
+  }
+
+  .data-sharing-card > .d-flex {
+    min-height: 0;
+    align-items: center;
+  }
+
+  .data-sharing-card > .d-flex > .v-icon {
+    font-size: 24px !important;
+  }
+
+  .data-sharing-card .checkbox-wrapper {
+    padding: 0 12px 8px !important;
+  }
+
+  .data-sharing-card .checkbox-box {
+    width: 100%;
+  }
+
+  .data-sharing-card .v-input--checkbox {
+    margin: 0;
+    padding: 0;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-input__slot {
+    align-items: flex-start;
+    margin-bottom: 2px;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-input--selection-controls__input {
+    margin-right: 6px;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-label {
+    font-size: 0.75rem !important;
+    line-height: 1.25;
+  }
+
+  .data-sharing-card .v-select {
+    margin-top: 2px;
+    padding-top: 0;
+  }
+
+  .data-sharing-card .v-select .v-label,
+  .data-sharing-card .v-select__selection,
+  .data-sharing-card .v-messages__message {
+    font-size: 0.75rem !important;
+    line-height: 1.2;
+  }
+
+  .advanced-settings-row .v-btn {
+    height: 40px !important;
+    min-height: 40px !important;
+    margin: 8px 0 0 !important;
+    padding: 0 16px !important;
+  }
+
+  .neutral-main-layout .page-navigation {
+    position: fixed;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    left: 8px;
+    z-index: 20;
+    width: auto !important;
+    flex-shrink: 0;
+    margin: 0 !important;
+    background: #000;
+  }
+}
+
+@media (max-width: 599px) and (max-height: 700px) {
+  .session-info-card .v-card__title,
+  .data-sharing-card .data-title {
+    padding-top: 6px !important;
+    font-size: 1rem !important;
+  }
+
+  .session-info-card .v-card__text,
+  .data-sharing-card .checkbox-wrapper {
+    padding-bottom: 6px !important;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-label,
+  .data-sharing-card .v-select .v-label,
+  .data-sharing-card .v-select__selection,
+  .data-sharing-card .v-messages__message {
+    font-size: 0.7rem !important;
+  }
 }
 
 .centered-settings {

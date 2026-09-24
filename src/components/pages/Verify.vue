@@ -62,7 +62,6 @@
 <script>
 import { mapActions, mapState } from 'vuex'
 import { apiError } from '@/util/ErrorMessage.js'
-import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import axios from "axios";
 
 export default {
@@ -88,10 +87,6 @@ export default {
     }
   },
     mounted() {
-      // Ensure content starts below navbar (fixes content hidden behind navbar on mobile).
-      resetPageScroll()
-      this.$nextTick(() => resetPageScrollDeferred(this))
-
       if (!this.skip_forcing_otp) {
         let res = axios.post('/reset-otp-challenge/')
         this.set_skip_forcing_otp(false)

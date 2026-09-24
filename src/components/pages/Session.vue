@@ -69,8 +69,8 @@
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
                 <div v-if="participantName" class="participant-context mb-3">
-                  <div class="participant-context__label">Participant</div>
-                  <div class="participant-context__name">{{ participantName }}</div>
+                  <span class="participant-context__label">Participant:</span>
+                  <span class="participant-context__name" :title="participantName">{{ participantName }}</span>
                 </div>
 
                 <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
@@ -3416,29 +3416,36 @@
     }
 
     .participant-context {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
       border: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 6px;
-      padding: 10px 14px;
+      padding: 6px 12px;
       background-color: rgba(20, 20, 20, 0.78);
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
       color: rgba(255, 255, 255, 0.92);
       max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .participant-context__label {
       color: rgba(255, 255, 255, 0.62);
-      font-size: 0.72rem;
+      font-size: 0.85rem;
       font-weight: 600;
-      line-height: 1.2;
-      text-transform: uppercase;
+      line-height: 1.25;
+      flex-shrink: 0;
     }
 
     .participant-context__name {
-      margin-top: 4px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       line-height: 1.25;
-      overflow-wrap: anywhere;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   
     .mobile-menu-toggle {

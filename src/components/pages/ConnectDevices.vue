@@ -92,7 +92,6 @@
 import { mapMutations, mapActions, mapState } from 'vuex'
 import { clearToastMessages } from "@/util/ErrorMessage.js";
 import { getSessionDeepLink } from '@/util/SessionDeepLink.js'
-import { resetPageScroll, resetPageScrollDeferred } from '@/util/scrollUtils.js'
 import MainLayout from '@/layout/MainLayout'
 
 export default {
@@ -107,10 +106,6 @@ export default {
     }
   },
   async mounted () {
-    // Ensure content starts below navbar (fixes content hidden behind navbar on navigation).
-    resetPageScroll()
-    this.$nextTick(() => resetPageScrollDeferred(this))
-
     if (this.$router.params != undefined) {
         await this.loadSession(this.$route.params.id)
     } else {
@@ -121,8 +116,6 @@ export default {
         this.loading = false
       }
     }
-    // Reset scroll again after async content loads (spinner -> QR code) to fix layout-shift scroll.
-    this.$nextTick(() => resetPageScrollDeferred(this))
   },
   computed: {
     ...mapState({ 
