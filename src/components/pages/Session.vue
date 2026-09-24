@@ -1190,6 +1190,9 @@
         analysisActionBtnColor() {
           return this.$vuetify.theme.dark ? 'grey darken-4' : 'primary'
         },
+        isDarkTheme() {
+          return this.$vuetify.theme.dark
+        },
         displaySessionName() {
           const s = this.session;
           if (!s) return 'Session';
@@ -1535,6 +1538,12 @@
         this.eachVideo(videoElement => {
           videoElement.playbackRate = this.playSpeed
         })
+      },
+      isDarkTheme() {
+        if (this.renderer) {
+          this.renderer.setClearColor(this.sceneBackgroundColor())
+          this.animateOneFrame()
+        }
       },
       showArchiveDialog(newShowArchiveDialog, oldShowArchiveDialog) {
         if (!newShowArchiveDialog) {
@@ -2649,6 +2658,7 @@
                     antialias: true,
                     powerPreference: "high-performance"
                   })
+                  this.renderer.setClearColor(this.sceneBackgroundColor())
                   this.renderer.shadowMap.enabled = true;
 
                   // Adaptive render quality
@@ -2827,6 +2837,9 @@
             this.camera.updateProjectionMatrix()
           }
         }
+      },
+      sceneBackgroundColor() {
+        return this.isDarkTheme ? 0x000000 : 0x808080
       },
       startRenderLoop() {
         if (this.renderLoopActive) return

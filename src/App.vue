@@ -47,7 +47,6 @@
             @change="onLidarChange" />
         </div>
         <NavbarSettings
-          v-if="showNavbarSettings"
           class="navbar-settings d-flex d-md-none"
           :show-local-save="showSessionNavbarControls"
           :show-lidar="showLidarNavbarControls"
@@ -55,7 +54,7 @@
           @lidar-change="onLidarChange" />
         <v-btn
           icon
-          class="theme-toggle"
+          class="theme-toggle d-none d-md-inline-flex"
           :aria-label="themeToggleLabel"
           :title="themeToggleLabel"
           @click="toggleTheme">

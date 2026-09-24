@@ -500,7 +500,7 @@ export default {
             this.animateOneFrame()
         },
         visualizerBackgroundColor() {
-            return this.isDarkTheme ? 0x000000 : 0xf4f6f8
+            return this.isDarkTheme ? 0x000000 : 0x808080
         },
         onKeydown(event) {
             const activeTag = document.activeElement?.tagName?.toLowerCase()

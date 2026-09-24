@@ -27,6 +27,7 @@
         role="menu"
         @click.stop>
         <div class="navbar-settings__header">Settings</div>
+        <ThemeToggle menu />
         <LocalDataSaveToggle
           v-if="showLocalSave"
           menu
@@ -43,12 +44,14 @@
 <script>
 import LocalDataSaveToggle from './LocalDataSaveToggle.vue'
 import LidarToggle from './LidarToggle.vue'
+import ThemeToggle from './ThemeToggle.vue'
 
 export default {
   name: 'NavbarSettings',
   components: {
     LocalDataSaveToggle,
-    LidarToggle
+    LidarToggle,
+    ThemeToggle
   },
   props: {
     showLocalSave: {
