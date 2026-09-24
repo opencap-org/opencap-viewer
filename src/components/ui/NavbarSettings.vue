@@ -15,7 +15,7 @@
         aria-hidden="true"
         focusable="false">
         <path
-          fill="#ffffff"
+          fill="currentColor"
           d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.03 7.03 0 00-1.63-.94l-.36-2.54A.49.49 0 0013.9 2h-3.8a.49.49 0 00-.49.42l-.36 2.54c-.59.24-1.13.55-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.71 8.48a.5.5 0 00.12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.16a.5.5 0 00-.12.64l1.92 3.32c.14.24.43.34.69.22l2.39-.96c.5.39 1.04.7 1.63.94l.36 2.54c.05.24.25.42.49.42h3.8c.24 0 .44-.18.49-.42l.36-2.54c.59-.24 1.13-.55 1.63-.94l2.39.96c.26.12.55.02.69-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/>
       </svg>
     </v-btn>
@@ -111,7 +111,7 @@ export default {
   width: 36px;
   height: 36px;
   padding: 0 !important;
-  color: #ffffff !important;
+  color: var(--app-bar-text, #ffffff) !important;
 }
 
 .navbar-settings__icon {
@@ -122,7 +122,7 @@ export default {
 }
 
 .navbar-settings__btn[aria-expanded='true'] {
-  background-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: var(--app-selected) !important;
 }
 
 .navbar-settings__menu {
@@ -133,10 +133,10 @@ export default {
   width: 280px;
   max-width: calc(100vw - 16px);
   padding: 8px;
-  background: rgb(30, 30, 30);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface-opaque);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 
   @media (max-width: 959px) {
     position: fixed;
@@ -152,7 +152,7 @@ export default {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
 }
 
 .fade-enter-active,

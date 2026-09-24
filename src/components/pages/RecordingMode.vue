@@ -23,7 +23,7 @@
             <p class="text-center option-description">
               Record with a single phone. Simplified setup, no calibration needed. <strong>Requires OpenCap app 2.0+ from the App Store.</strong>
             </p>
-            <v-btn color="grey darken-4" dark class="mt-4 select-button" large>Select</v-btn>
+            <v-btn class="mt-4 select-button" large>Select</v-btn>
           </div>
           <a
             class="best-practices-link"
@@ -48,7 +48,7 @@
             <p class="text-center option-description">
               Record with multiple phones for higher accuracy. Requires calibration.
             </p>
-            <v-btn color="grey darken-4" dark class="mt-4 select-button" large>Select</v-btn>
+            <v-btn class="mt-4 select-button" large>Select</v-btn>
           </div>
           <a
             class="best-practices-link"
@@ -135,11 +135,11 @@ export default {
 
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
@@ -147,7 +147,7 @@ export default {
 .recording-mode-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
   margin: 0 0 32px 0;
 }
@@ -183,10 +183,10 @@ export default {
   flex-direction: column;
   justify-content: space-between;
 
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 
   &:hover {
     transform: translateY(-4px);
@@ -196,7 +196,7 @@ export default {
 
 .option-description {
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--app-text-muted);
   max-width: 320px;
   width: 100%;
 }
@@ -217,7 +217,7 @@ export default {
 
 .option-card,
 .option-card .option-title {
-  color: #ffffff;
+  color: var(--app-text-primary);
   font-size: 1.25rem;
   text-align: center;
 }
@@ -228,7 +228,7 @@ export default {
 }
 
 .option-icon {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: var(--app-text-primary) !important;
 }
 
 .beta-chip {
@@ -239,7 +239,7 @@ export default {
 }
 
 .best-practices-link {
-  color: #ffcc80;
+  color: var(--app-warning-link);
   font-size: 0.9rem;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -248,6 +248,8 @@ export default {
 
 .select-button {
   min-width: 120px;
+  background: var(--app-action-bg) !important;
+  color: var(--app-action-text) !important;
   text-transform: none;
   font-weight: 600;
 }

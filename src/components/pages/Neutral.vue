@@ -1910,7 +1910,7 @@ export default {
     width: auto !important;
     flex-shrink: 0;
     margin: 0 !important;
-    background: #000;
+    background: var(--app-background);
   }
 }
 
@@ -1991,13 +1991,13 @@ export default {
     padding-bottom: 0;
     padding-top: 0;
     min-height: auto;
-    background-color: #252525 !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    background-color: var(--app-surface-opaque) !important;
+    box-shadow: var(--app-shadow);
     border-radius: 8px;
     
     &::before,
     &::after {
-      background-color: #252525 !important;
+      background-color: var(--app-surface-opaque) !important;
     }
     
     ::v-deep .v-card__title,
@@ -2005,40 +2005,40 @@ export default {
     ::v-deep .v-card__actions,
     ::v-deep .data-title,
     ::v-deep .checkbox-wrapper {
-      background-color: #252525 !important;
-      color: #ffffff !important;
+      background-color: var(--app-surface-opaque) !important;
+      color: var(--app-text-primary) !important;
     }
     
     ::v-deep .v-card__title span,
     ::v-deep .data-title span {
-      color: #ffffff !important;
+      color: var(--app-text-primary) !important;
       background-color: transparent !important;
     }
     
     ::v-deep .v-input {
-      background-color: #252525 !important;
+      background-color: var(--app-surface-opaque) !important;
     }
     
     ::v-deep .v-input__slot {
-      background-color: rgba(255,255,255,0.08) !important;
-      color: #ffffff !important;
+      background-color: var(--app-selected) !important;
+      color: var(--app-text-primary) !important;
     }
     
     ::v-deep .v-select__selection,
     ::v-deep .v-select__selections {
-      color: #ffffff !important;
+      color: var(--app-text-primary) !important;
     }
     
     ::v-deep .v-label {
-      color: rgba(255,255,255,0.7) !important;
+      color: var(--app-text-muted) !important;
     }
     
     ::v-deep .v-input__append-inner .v-icon {
-      color: rgba(255,255,255,0.7) !important;
+      color: var(--app-text-muted) !important;
     }
     
     ::v-deep .v-icon {
-      color: rgba(255,255,255,0.7) !important;
+      color: var(--app-text-muted) !important;
     }
     
     ::v-deep .v-tooltip span {
@@ -2061,7 +2061,7 @@ export default {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background-color: #252525 !important;
+    background-color: var(--app-surface-opaque) !important;
   }
   
   .v-card__title.data-title {
@@ -2090,7 +2090,7 @@ export default {
     min-height: auto;
     overflow: visible;
     position: relative;
-    background-color: #252525 !important;
+    background-color: var(--app-surface-opaque) !important;
     
     @media (max-width: 599px) {
       padding: 6px 12px 24px 12px !important;
@@ -2181,8 +2181,8 @@ export default {
     margin-top: 0;
     margin-bottom: 0;
     position: relative;
-    background-color: #252525 !important;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background-color: var(--app-surface-opaque) !important;
+    border-bottom: 1px solid var(--app-border);
     
     @media (max-width: 599px) {
       padding: 10px 12px 10px 12px;
@@ -2194,7 +2194,7 @@ export default {
     margin: 0 !important;
     font-size: 1.25rem !important;
     font-weight: 600;
-    color: #ffffff !important;
+    color: var(--app-text-primary) !important;
     background: transparent !important;
   }
   
@@ -2208,21 +2208,21 @@ export default {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.08) !important;
-      color: #ffffff !important;
+      background: var(--app-selected) !important;
+      color: var(--app-text-primary) !important;
       -webkit-appearance: none;
       appearance: none;
     }
 
     .v-btn.advanced-settings-close-btn .advanced-settings-close-icon,
     .v-btn.advanced-settings-close-btn .advanced-settings-close-icon line {
-      stroke: #ffffff !important;
+      stroke: var(--app-text-primary) !important;
     }
     
     .v-btn .v-btn__content,
     .v-btn::before,
     .v-btn .v-ripple__container {
-      color: #ffffff !important;
+      color: var(--app-text-primary) !important;
     }
   }
 
@@ -2232,8 +2232,8 @@ export default {
     z-index: 20;
     padding: 16px;
     gap: 12px;
-    background-color: #252525 !important;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    background-color: var(--app-surface-opaque) !important;
+    border-top: 1px solid var(--app-border);
 
     .v-btn {
       min-width: 96px;
@@ -2244,8 +2244,8 @@ export default {
     }
 
     .v-btn:not(.primary-dark) {
-      color: #ffffff !important;
-      background: rgba(255,255,255,0.08) !important;
+      color: var(--app-text-primary) !important;
+      background: var(--app-selected) !important;
     }
 
     .advanced-settings-save-wrapper {
@@ -2253,19 +2253,19 @@ export default {
     }
 
     .advanced-settings-save-btn.v-btn--disabled {
-      background: rgba(255,255,255,0.06) !important;
-      color: rgba(255,255,255,0.42) !important;
-      border: 1px dashed rgba(255,255,255,0.24);
+      background: var(--app-hover) !important;
+      color: var(--app-text-subtle) !important;
+      border: 1px dashed var(--app-border-strong);
       box-shadow: none;
     }
 
     .advanced-settings-save-btn.v-btn--disabled .v-btn__content {
-      color: rgba(255,255,255,0.42) !important;
+      color: var(--app-text-subtle) !important;
     }
 
     .advanced-settings-save-btn:not(.v-btn--disabled) {
-      color: #ffffff !important;
-      background: rgba(255,255,255,0.08) !important;
+      color: var(--app-action-text) !important;
+      background: var(--app-action-bg) !important;
     }
   }
 
@@ -2344,7 +2344,7 @@ export default {
 }
 
 .lidar-lock-reason {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--app-text-muted);
   font-size: 0.78rem;
   max-width: 360px;
   text-align: center;

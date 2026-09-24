@@ -26,7 +26,6 @@
               label="Verification code" 
               v-model="otp_token_model"
               @keydown="onOtpKeydown"
-              dark
               outlined
               dense
               placeholder="000000"
@@ -148,39 +147,33 @@ export default {
 .verify-main {
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
 
 .verify-wrapper {
-  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
-  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
-  overflow-y: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  // Same as login: no nested scrollport — iOS keyboard scroll sticks otherwise.
+  max-height: none;
+  overflow: visible;
 }
 
 .verify-card {
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   padding: 32px 28px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 }
 
 .verify-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
   margin: 0 0 16px 0;
 }
@@ -188,7 +181,7 @@ export default {
 .verify-instructions {
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--app-text-muted);
   margin: 0 0 24px 0;
   text-align: center;
 }
@@ -221,7 +214,7 @@ export default {
   gap: 6px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-border);
   font-size: 0.9375rem;
 
   .back-arrow {
@@ -237,7 +230,6 @@ export default {
   }
 
   .verify-wrapper {
-    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
     padding-left: 4px !important;
     padding-right: 4px !important;
   }

@@ -125,7 +125,6 @@
                             label="Username"
                             v-model="username"
                             class="ma-0"
-                            dark
                             v-bind:readonly="true"
                             v-bind:disabled="true"
                             :error="errors.length > 0"
@@ -146,7 +145,6 @@
                             label="First name"
                             v-model="first_name"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -163,7 +161,6 @@
                             label="Last name"
                             v-model="last_name"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -183,7 +180,6 @@
                             label="Email (will be used for two-factor authentication)"
                             v-model="email"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -202,7 +198,6 @@
                             label="Confirm new email"
                             v-model="confirm_email"
                             class="ma-0"
-                            dark
                             @paste.prevent
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
@@ -237,7 +232,6 @@
                             label="Institution"
                             v-model="institution"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -254,7 +248,6 @@
                             label="Profession"
                             v-model="profession"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -269,7 +262,6 @@
                           label="Reason for use"
                           v-model="reason_of_use"
                           class="ma-0"
-                          dark
                           :error="errors.length > 0"
                           :error-messages="errors[0]"/>
                       </ValidationProvider>
@@ -283,7 +275,6 @@
                           label="Website"
                           v-model="website"
                           class="ma-0"
-                          dark
                           :error="errors.length > 0"
                           :error-messages="errors[0]"/>
                       </ValidationProvider>
@@ -738,8 +729,8 @@ export default {
 
 /* Profile cards */
 .profile-card {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface) !important;
+  border: 1px solid var(--app-border);
   border-radius: 12px;
 }
 
@@ -763,7 +754,7 @@ export default {
   width: 120px !important;
   height: 120px !important;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.12);
+  border: 3px solid var(--app-border-strong);
 }
 
 .profile-avatar-edit {
@@ -792,7 +783,7 @@ export default {
 }
 
 .profile-institution {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--app-text-muted);
   font-size: 0.9rem;
   margin: 0 0 12px 0;
 }
@@ -801,7 +792,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--app-text-primary);
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -812,7 +803,7 @@ export default {
 
 .profile-actions {
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-border);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -833,7 +824,7 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .profile-details-content {
@@ -845,7 +836,7 @@ export default {
   flex-wrap: wrap;
   align-items: baseline;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--app-border);
   gap: 12px;
 }
 
@@ -855,7 +846,7 @@ export default {
 
 .profile-info-label {
   flex: 0 0 140px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
   font-size: 0.875rem;
   display: flex;
   align-items: center;
@@ -869,7 +860,7 @@ export default {
 .profile-info-value {
   flex: 1;
   min-width: 0;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
 }
 
 .profile-info-link {
@@ -898,7 +889,7 @@ export default {
 .profile-settings-title {
   font-size: 1.25rem;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .profile-edit-actions {
@@ -910,13 +901,13 @@ export default {
 }
 
 .profile-edit-discard {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
   text-decoration: none;
   font-size: 0.9rem;
 }
 
 .profile-edit-discard:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--app-text-primary);
 }
 
 /* Settings */
@@ -933,7 +924,7 @@ export default {
 }
 
 .profile-settings-warning {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--app-text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
   margin: 0;
@@ -943,13 +934,13 @@ export default {
   display: inline-flex;
   align-items: center;
   margin-top: 24px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--app-text-muted);
   text-decoration: none;
   font-size: 0.9rem;
 }
 
 .profile-settings-back:hover {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
 }
 
 /* Popups */
@@ -965,8 +956,8 @@ export default {
 }
 
 .profile-popup-content {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--app-surface-opaque);
+  border: 1px solid var(--app-border-strong);
   border-radius: 12px;
   padding: 24px;
   max-width: 420px;
@@ -993,7 +984,7 @@ export default {
 }
 
 .profile-popup-text {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--app-text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
   margin: 0 0 12px 0;
@@ -1007,13 +998,13 @@ export default {
 }
 
 .profile-popup-cancel {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
   cursor: pointer;
   font-size: 0.9rem;
 }
 
 .profile-popup-cancel:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--app-text-primary);
 }
 
 .profile-image-upload-area {
@@ -1022,7 +1013,7 @@ export default {
   margin: 0 auto 16px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border: 2px dashed var(--app-border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1045,7 +1036,7 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--app-text-subtle);
   font-size: 0.85rem;
 }
 

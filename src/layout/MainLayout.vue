@@ -26,8 +26,7 @@
       <div class="slot">
         <v-btn
           v-if="rightButton"
-          color="grey darken-4"
-          dark
+          class="primary-action"
           :disabled="rightDisabled || rightSpinner"
           @click="$emit('right')">
 
@@ -158,6 +157,11 @@ export default {
           height: 48px;
           min-width: 120px;
         }
+      }
+
+      .primary-action {
+        background: var(--app-action-bg) !important;
+        color: var(--app-action-text) !important;
       }
     }
   }

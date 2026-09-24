@@ -19,13 +19,15 @@
 
     <v-app-bar
       ref="appBar"
-      app
-      dark>
+      app>
 
       <router-link
         :to="{ path: '/sessions' }"
         class="logo-link">
-        <img class="logo" src="/images/opencap-logo-dark.png" alt="OpenCap"/>
+        <img
+          class="logo"
+          :src="isDarkTheme ? '/images/opencap-logo-dark.png' : '/images/opencap-logo.png'"
+          alt="OpenCap"/>
       </router-link>
       
       <v-spacer class="navbar-spacer"></v-spacer>
@@ -51,6 +53,14 @@
           :show-lidar="showLidarNavbarControls"
           @local-save-change="onLocalDataSaveChange"
           @lidar-change="onLidarChange" />
+        <v-btn
+          icon
+          class="theme-toggle"
+          :aria-label="themeToggleLabel"
+          :title="themeToggleLabel"
+          @click="toggleTheme">
+          <v-icon>{{ isDarkTheme ? 'mdi-white-balance-sunny' : 'mdi-weather-night' }}</v-icon>
+        </v-btn>
         <QRCodeDialog class="navbar-qr"/>
         <profile-dropdown v-if="showProfileInNavbar" class="navbar-profile"></profile-dropdown>
       </div>
@@ -66,8 +76,12 @@
 <script>
 import { mapActions, mapMutations, mapState } from 'vuex'
 import { notificationState, hideNotification, clearNotifications } from '@/util/notificationStore.js'
-import { resetPageScrollDeferred } from '@/util/scrollUtils.js'
+import {
+  installMobileKeyboardScrollFix,
+  resetPageScrollAfterKeyboard
+} from '@/util/scrollUtils.js'
 import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
+import { applyTheme, DARK_THEME, LIGHT_THEME } from '@/util/theme.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import NavbarSettings from './components/ui/NavbarSettings.vue'
 import LocalDataSaveToggle from './components/ui/LocalDataSaveToggle.vue'
@@ -85,7 +99,8 @@ export default {
   data () {
     return {
       logoutTimer: null,
-      userGroups: []
+      userGroups: [],
+      uninstallKeyboardScrollFix: null
     }
   },
   created () {
@@ -93,12 +108,17 @@ export default {
   },
   mounted () {
     window.addEventListener('pageshow', this.onPageShow)
+    this.uninstallKeyboardScrollFix = installMobileKeyboardScrollFix()
     this.resetMainScroll()
     this.loadBetaAccessGroups()
   },
   beforeDestroy () {
     this.cancelTimer()
     window.removeEventListener('pageshow', this.onPageShow)
+    if (this.uninstallKeyboardScrollFix) {
+      this.uninstallKeyboardScrollFix()
+      this.uninstallKeyboardScrollFix = null
+    }
   },
   methods: {
     ...mapActions('auth', ['logout']),
@@ -108,6 +128,9 @@ export default {
     },
     onLidarChange ({ useLidar }) {
       this.setSessionUseLidar(useLidar)
+    },
+    toggleTheme () {
+      applyTheme(this.$vuetify, this.isDarkTheme ? LIGHT_THEME : DARK_THEME)
     },
     async loadBetaAccessGroups () {
       if (!this.verified) {
@@ -134,9 +157,9 @@ export default {
       this.logout()
     },
     resetMainScroll () {
-      // Mobile Safari can apply scroll restoration after the route render.
-      // Repeat reset on next frames so the new page always starts below navbar.
-      resetPageScrollDeferred(this)
+      // Mobile Safari can apply scroll restoration after the route render, and
+      // may still be finishing a keyboard dismiss animation during navigation.
+      resetPageScrollAfterKeyboard(this)
     },
     onPageShow () {
       this.resetMainScroll()
@@ -168,9 +191,19 @@ export default {
     showNavbarSettings () {
       return this.showSessionNavbarControls || this.showLidarNavbarControls
     },
+    isDarkTheme () {
+      return this.$vuetify.theme.dark
+    },
+    themeToggleLabel () {
+      return `Switch to ${this.isDarkTheme ? 'light' : 'dark'} mode`
+    },
     appStyle () {
+      const theme = this.isDarkTheme
+        ? this.$vuetify.theme.themes.dark
+        : this.$vuetify.theme.themes.light
+
       return {
-        background: this.$vuetify.theme.themes.dark.background
+        background: theme.background
       }
     },
     notificationState () {
@@ -275,6 +308,7 @@ export default {
 .navbar-settings,
 .navbar-local-save,
 .navbar-lidar,
+.theme-toggle,
 .navbar-qr,
 .navbar-profile {
   flex-shrink: 0;
@@ -283,6 +317,17 @@ export default {
 .navbar-qr {
   @media (max-width: 599px) {
     min-width: auto;
+  }
+}
+
+.theme-toggle {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+
+  @media (max-width: 599px) {
+    width: 36px;
+    height: 36px;
   }
 }
 
@@ -296,8 +341,10 @@ export default {
 
 ::v-deep .v-app-bar {
   z-index: 1100;
+  --app-bar-text: #ffffff;
+  --app-bar-border: rgba(255, 255, 255, 0.08);
   background: rgba(30, 30, 30, 0.98) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--app-bar-border);
 
   .v-toolbar__content {
     flex-wrap: nowrap;
@@ -324,7 +371,7 @@ export default {
   .v-btn {
     min-width: auto !important;
     padding: 0 8px !important;
-    color: #ffffff !important;
+    color: var(--app-bar-text) !important;
 
     @media (max-width: 599px) {
       padding: 0 4px !important;
@@ -335,13 +382,22 @@ export default {
 
   .v-icon,
   svg {
-    color: #ffffff !important;
-    fill: #ffffff;
+    color: var(--app-bar-text) !important;
+    fill: var(--app-bar-text);
   }
 }
 </style>
 
 <style lang="scss">
+/* Drive the app-bar palette from Vuetify's global theme class. This avoids
+   stale toolbar theme classes when switching modes at runtime. */
+.v-application.theme--light .v-app-bar {
+  --app-bar-text: #17212b;
+  --app-bar-border: rgba(23, 33, 43, 0.14);
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 2px 12px rgba(31, 45, 58, 0.1) !important;
+}
+
 /* Round top corners of mobile bottom-sheet menus (content-class="bottom-sheet-rounded") */
 .bottom-sheet-rounded.v-dialog__content {
   border-radius: 16px 16px 0 0 !important;
@@ -352,8 +408,8 @@ export default {
 .session-menu-sheet,
 .subject-menu-sheet,
 .recycle-menu-sheet {
-  background: rgba(30, 30, 30, 0.98) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface-opaque) !important;
+  border: 1px solid var(--app-border);
   border-bottom: none;
 }
 
@@ -366,13 +422,13 @@ export default {
 .session-menu-sheet .v-list-item,
 .subject-menu-sheet .v-list-item,
 .recycle-menu-sheet .v-list-item {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: var(--app-text-primary) !important;
 }
 
 .session-menu-sheet .v-divider,
 .subject-menu-sheet .v-divider,
 .recycle-menu-sheet .v-divider {
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--app-border) !important;
 }
 
 /* Dialog cards use unified app card style (see main.scss) */

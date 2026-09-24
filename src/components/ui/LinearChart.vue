@@ -123,20 +123,20 @@
               Zoom instructions:</br>
               - <b>Zoom</b>: Click and Drag over a zone.</br>
               - <b>Move</b>: CTRL + Click and move mouse.</br>
-              - <b>Zoom on X</b>: Mouse wheel on X axis.</br>
-              - <b>Zoom on Y</b>: Mouse wheel on Y axis.</br>
+              - <b>Zoom on X</b>: CTRL + mouse wheel on X axis.</br>
+              - <b>Zoom on Y</b>: CTRL + mouse wheel on Y axis.</br>
           "
           iconClass="fas fa-question-circle"
         />
       </div>
 
-    <div class="content-chart" style="width: 100%;background-color: black;position: relative;top: 0px;">
+    <div class="content-chart">
       <LineChartGenerator
         v-if="y_selected.length > 0"
         id="chart"
         :chart-options="chartOptions"
         :chart-data="chartData"
-        style="position: relative; width: 100%; height: 100%; background-color: black;"
+        class="chart-canvas"
         ref="chartRef"
       />
       <div v-else class="chart-empty-state">
@@ -174,13 +174,22 @@ import {
   PointElement} from 'chart.js'
 import IconTooltip from "@/components/ui/IconTooltip.vue";
 
+function getChartTheme () {
+  const isLightTheme = typeof document !== 'undefined' && document.documentElement.dataset.appTheme === 'light'
+  return {
+    background: isLightTheme ? '#ffffff' : '#000000',
+    text: isLightTheme ? '#17212b' : '#ffffff',
+    grid: isLightTheme ? 'rgba(23, 33, 43, 0.16)' : 'rgba(255, 255, 255, 0.45)'
+  }
+}
+
 const canvasBackgroundPlugin = {
   id: 'canvasBackgroundPlugin',
   beforeDraw: (chart) => {
     const { ctx, width, height } = chart
     ctx.save()
     ctx.globalCompositeOperation = 'destination-over'
-    ctx.fillStyle = '#000000'
+    ctx.fillStyle = getChartTheme().background
     ctx.fillRect(0, 0, width, height)
     ctx.restore()
   }
@@ -207,6 +216,8 @@ export default {
     IconTooltip,
   },
   data() {
+    const chartTheme = getChartTheme()
+
     return {
       timeStart: 0,
       timeEnd: 0,
@@ -220,10 +231,12 @@ export default {
         },
         plugins: {
           legend: {
-            position: 'right',
+            position: typeof window !== 'undefined' && window.innerWidth < 1200 ? 'bottom' : 'right',
             align: 'center',
             labels: {
-              color: 'white',
+              color: chartTheme.text,
+              boxWidth: 24,
+              padding: 12,
               font: {
                 size: 15
               },
@@ -243,6 +256,7 @@ export default {
               },
               wheel: {
                 enabled: true,
+                modifierKey: 'ctrl',
               }
             }
           }
@@ -254,21 +268,21 @@ export default {
             title: {
               display: true,
               text: 'Time (s)',
+              color: chartTheme.text,
               font: {
                 size: 20,
-                color: 'white',
               },
             },
             ticks: {
-              color: 'white',
+              color: chartTheme.text,
             },
             border: {
-              color: 'white',
+              color: chartTheme.text,
             },
-            color: 'white',
+            color: chartTheme.text,
             grid: {
-              color: 'grey',
-              tickColor: 'white',
+              color: chartTheme.grid,
+              tickColor: chartTheme.text,
               drawBorder: true,
               drawTicks: true,
             },
@@ -280,21 +294,21 @@ export default {
             title: {
               display: true,
               text: 'Values',
+              color: chartTheme.text,
               font: {
                 size: 20,
-                color: 'white',
               },
             },
             ticks: {
-              color: 'white',
+              color: chartTheme.text,
             },
             border: {
-              color: 'white',
+              color: chartTheme.text,
             },
-            color: 'white',
+            color: chartTheme.text,
             grid: {
-              color: 'grey',
-              tickColor: 'white',
+              color: chartTheme.grid,
+              tickColor: chartTheme.text,
               drawBorder: true,
               drawTicks: true,
             },
@@ -318,6 +332,9 @@ export default {
     }
   },
   computed: {
+    isDarkTheme() {
+      return this.$vuetify.theme.dark
+    },
     filteredYAxisForDialog() {
       const items = this.result?.y_axis || []
       const q = (this.y_dialog_search || '').trim().toLowerCase()
@@ -335,14 +352,46 @@ export default {
     },
   },
   watch: {
+    isDarkTheme() {
+      this.$nextTick(() => this.applyChartTheme())
+    },
     timePosition: function () {
       this.drawChart();
+    },
+    '$vuetify.breakpoint.width'() {
+      this.updateLegendPosition()
     }
   },
   mounted() {
+    this.applyChartTheme()
+    this.updateLegendPosition()
     this.drawChart();
   },
   methods: {
+    updateLegendPosition() {
+      const position = this.$vuetify.breakpoint.width < 1200 ? 'bottom' : 'right'
+      if (this.chartOptions.plugins.legend.position === position) {
+        return
+      }
+      this.chartOptions.plugins.legend.position = position
+      this.chartOptions.plugins.legend.align = 'center'
+      this.$nextTick(() => this.$refs.chartRef?.getCurrentChart?.().update('none'))
+    },
+    applyChartTheme() {
+      const chartTheme = getChartTheme()
+      this.chartOptions.plugins.legend.labels.color = chartTheme.text
+      for (const axis of ['x', 'y']) {
+        const options = this.chartOptions.scales[axis]
+        options.title.color = chartTheme.text
+        options.ticks.color = chartTheme.text
+        options.border.color = chartTheme.text
+        options.color = chartTheme.text
+        options.grid.color = chartTheme.grid
+        options.grid.tickColor = chartTheme.text
+      }
+
+      this.$refs.chartRef?.getCurrentChart?.().update('none')
+    },
     drawChart() {
       // Show spinner and hide chart until finished.
       // document.getElementById("spinner-layer").style.display = "block";
@@ -587,7 +636,7 @@ export default {
   padding-left: 72px;
   margin-bottom: 0;
   z-index: 1;
-  background: black;
+  background: var(--app-surface-opaque);
   position: relative;
 }
 
@@ -623,11 +672,11 @@ export default {
 }
 
 .y-quantities-dialog .v-card {
-  background: #1e1e1e;
+  background: var(--app-surface-opaque);
 }
 
 .y-quantities-dialog .y-quantities-search .v-input__slot {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--app-surface-muted);
 }
 
 .y-quantities-actions {
@@ -641,7 +690,7 @@ export default {
 .y-quantities-count {
   margin-left: auto;
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-muted);
 }
 
 .y-quantities-list {
@@ -659,7 +708,7 @@ export default {
   align-self: stretch;
   min-height: 40px;
   border-width: 0 1px 0 0 !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: var(--app-border-strong) !important;
 }
 
 .y-quantities-column {
@@ -675,7 +724,7 @@ export default {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-muted);
   padding: 4px 8px 8px;
   flex-shrink: 0;
 }
@@ -691,7 +740,7 @@ export default {
 }
 
 .y-quantities-list-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--app-hover);
 }
 
 .y-quantities-list-item .y-quantities-checkbox {
@@ -708,8 +757,19 @@ export default {
   font-size: 0.875rem;
 }
 
-.content-chart {
+.linear-chart .content-chart {
   margin-top: 10px;
+  width: 100%;
+  position: relative;
+  top: 0;
+  background: var(--app-chart-background);
+}
+
+.chart-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--app-chart-background);
 }
 
 .chart-empty-state {
@@ -720,14 +780,14 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  border: 1px solid var(--app-border-strong);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--app-surface-opaque);
 }
 
 .chart-empty-title {
   margin: 0;
-  color: white;
+  color: var(--app-text-primary);
   font-size: 1rem;
   text-align: center;
   max-width: 420px;
@@ -765,6 +825,51 @@ export default {
     width: 100%;
     max-width: 100%;
     order: 10;
+  }
+
+  .y-quantities-list {
+    display: block;
+    max-height: calc(100dvh - 330px);
+    padding: 8px 16px 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .y-quantities-column {
+    width: 100%;
+  }
+
+  .y-quantities-column:not(:first-child) {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--app-border-strong);
+  }
+
+  .y-quantities-column-divider {
+    display: none;
+  }
+
+  .y-quantities-column-header {
+    position: sticky;
+    top: -8px;
+    z-index: 1;
+    padding: 10px 8px;
+    background: var(--app-surface-opaque);
+  }
+
+  .y-quantities-list-item {
+    align-items: flex-start;
+    min-height: 44px;
+  }
+
+  .y-quantities-list-item .y-quantities-label {
+    padding-top: 7px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    line-height: 1.35;
   }
 }
 </style>

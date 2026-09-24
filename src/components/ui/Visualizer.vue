@@ -6,8 +6,9 @@
                 <div v-if="!videoControlsDisabled" class="video-controls-row">
                     <div class="time-input-wrap">
                         <v-text-field label="Time (s)" type="number" :step="0.01" :value="formattedTime"
-                            dark dense hide-details @input="onChangeTime"/>
+                            dense hide-details @input="onChangeTime"/>
                     </div>
+                    <SpeedControl v-model="playSpeed" class="time-speed-control" />
                     <v-slider :value="frame"
                               :min="timeToFrame(timeStart)"
                               :max="timeToFrame(timeEnd)"
@@ -30,8 +31,6 @@
                        @timeupdate="onVideoTimeUpdate(index)"
                        @ended="onVideoEnded(index)" />
             </div>
-
-            <SpeedControl v-model="playSpeed" />
 
             <VideoNavigation :playing="playing" :value="frame" :maxFrame="frames.length - 1"
                 :disabled="videoControlsDisabled" @play="togglePlay(true)" @pause="togglePlay(false)"
@@ -91,12 +90,21 @@ export default {
             const t = Number(this.time)
             return Number.isFinite(t) ? t.toFixed(2) : '0.00'
         },
+        isDarkTheme() {
+            return this.$vuetify.theme.dark
+        },
     },
     watch: {
         playSpeed() {
             this.eachVideo(videoElement => {
                 videoElement.playbackRate = this.playSpeed
             })
+        },
+        isDarkTheme() {
+            if (this.renderer) {
+                this.renderer.setClearColor(this.visualizerBackgroundColor())
+                this.animateOneFrame()
+            }
         },
     },
     async mounted(){
@@ -207,6 +215,7 @@ export default {
 
                                 this.scene = new THREE.Scene()
                                 this.renderer = new THREE.WebGLRenderer({ antialias: true })
+                                this.renderer.setClearColor(this.visualizerBackgroundColor())
                                 this.renderer.shadowMap.enabled = true;
                                 this.renderer.setPixelRatio(window.devicePixelRatio || 1)
                                 this.onResize()
@@ -490,6 +499,9 @@ export default {
 
             this.animateOneFrame()
         },
+        visualizerBackgroundColor() {
+            return this.isDarkTheme ? 0x000000 : 0xf4f6f8
+        },
         onKeydown(event) {
             const activeTag = document.activeElement?.tagName?.toLowerCase()
             const isTypingTarget = ['input', 'textarea', 'select'].includes(activeTag) || document.activeElement?.isContentEditable
@@ -585,7 +597,8 @@ export default {
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    padding: 2px 0 4px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--app-border);
 }
 
 .video-controls-row .time-input-wrap {
@@ -598,6 +611,16 @@ export default {
 .video-controls-row .slider-wrap {
     flex: 1;
     min-width: 120px;
+}
+
+.video-controls-row .time-speed-control {
+    flex: 0 0 auto;
+}
+
+.video-controls-row .speed-control-button {
+    width: 58px;
+    min-width: 58px;
+    padding: 0 4px;
 }
 
 /* Mobile optimizations */

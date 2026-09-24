@@ -2,7 +2,7 @@
   <v-layout class="reset-main" ma-0 pa-3 row justify-center align-start fill-height>
     <v-flex
       xs12 sm6 md4 lg4 xl3 pa-3
-      class="reset-wrapper d-flex flex-column align-stretch scroll-y">
+      class="reset-wrapper d-flex flex-column align-stretch">
 
       <div class="reset-card">
         <h1 class="reset-title">Retrieve username and/or change password</h1>
@@ -24,7 +24,6 @@
             <v-text-field
               label="Email"
               v-model="email"
-              dark
               outlined
               dense
               :error="errors.length > 0"
@@ -96,46 +95,39 @@ export default {
 .reset-main {
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
 
 .reset-wrapper {
-  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
-  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
-  overflow-y: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  max-height: none;
+  overflow: visible;
 }
 
 .reset-card {
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   padding: 32px 28px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 }
 
 .reset-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
   margin: 0 0 16px 0;
 }
 
 .reset-description {
   font-size: 0.9375rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--app-text-muted);
   text-align: center;
   margin: 0 0 24px 0;
   line-height: 1.5;
@@ -181,7 +173,6 @@ export default {
   }
 
   .reset-wrapper {
-    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
     padding-left: 4px !important;
     padding-right: 4px !important;
   }

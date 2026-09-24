@@ -77,7 +77,7 @@
                   <div class="flex-grow-1 min-width-0">
                     <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
                       <v-text-field v-show="show_controls && !showOpenInAppButton" v-model="trialName" label="Trial name" class="flex-grow-0"
-                          :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]"
+                          :disabled="state !== 'ready'" :error="errors.length > 0" :error-messages="errors[0]"
                           autocomplete="off" />
                     </ValidationProvider>
                   </div>
@@ -101,7 +101,6 @@
                   <v-btn
                     icon
                     small
-                    dark
                     aria-label="Trial color legend"
                     aria-haspopup="true"
                     :aria-expanded="String(trialLegendOpen)"
@@ -119,7 +118,6 @@
                       <v-btn
                         icon
                         x-small
-                        dark
                         class="trial-legend__close"
                         aria-label="Close trial status legend"
                         @click.stop="closeTrialLegend">
@@ -158,7 +156,6 @@
                             <template v-if="$vuetify.breakpoint.smAndDown">
                               <v-btn
                                 icon
-                                dark
                                 @click="openTrialMenuSheet(t)">
                                 <v-icon>mdi-menu</v-icon>
                               </v-btn>
@@ -174,7 +171,6 @@
                               <template v-slot:activator="{ on, attrs }">
                                 <v-btn
                                   icon
-                                  dark
                                   v-bind="attrs"
                                   v-on="on">
                                   <v-icon>mdi-menu</v-icon>
@@ -213,7 +209,7 @@
                 content-class="bottom-sheet-rounded"
                 v-model="showTrialMenuSheet"
                 @input="val => !val && (selectedTrialForMenu = null)">
-                <v-sheet class="text-center trial-menu-sheet" color="blue-grey darken-1">
+                <v-sheet class="text-center trial-menu-sheet">
                   <v-list v-if="selectedTrialForMenu">
                     <v-list-item link v-if="selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndRename(selectedTrialForMenu)">
                       <v-list-item-content>
@@ -529,7 +525,7 @@
   
                   <div v-if="trial && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                          :disabled="videoControlsDisabled || state !== 'ready'" dark class="time-input" @input="onChangeTime"
+                          :disabled="videoControlsDisabled || state !== 'ready'" class="time-input" @input="onChangeTime"
                           autocomplete="off" />
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" :disabled="videoControlsDisabled" @input="onNavigate" hide-details
                           class="mb-2 flex-grow-1 timeline-slider" />
@@ -602,7 +598,6 @@
                     :step="0.01"
                     :value="time"
                     :disabled="videoControlsDisabled || state !== 'ready'"
-                    dark
                     class="time-input mr-2"
                     autocomplete="off"
                     @input="onChangeTime" />
@@ -642,6 +637,16 @@
               max-width="420"
               :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
+            <v-btn
+              icon
+              small
+              class="dialog-close-btn"
+              aria-label="Close"
+              title="Close"
+              @click="trial_rename_dialog = false"
+            >
+              <v-icon small>mdi-close</v-icon>
+            </v-btn>
             <v-card-text class="pt-4">
               <v-row class="m-0">
                 <v-col cols="12" sm="2">
@@ -659,10 +664,10 @@
   
                         <v-text-field v-model="trialNewName" label="Trial new name" class="flex-grow-0"
                             :disabled="state !== 'ready' || session.trials[trial_rename_index]?.status === 'processing' || session.trials[trial_rename_index]?.status === 'uploading'"
-                                      dark
                                       :error="errors.length > 0" :error-messages="errors[0]"
                                       autocomplete="off"
-                                      @keydown.enter.prevent="submitRenameTrial" />
+                                      @keydown.enter.prevent="submitRenameTrial"
+                                      @keydown.esc.prevent="trial_rename_dialog = false" />
                     </ValidationProvider>
   
                     <v-spacer></v-spacer>
@@ -685,6 +690,16 @@
           max-width="420"
           :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
+            <v-btn
+              icon
+              small
+              class="dialog-close-btn"
+              aria-label="Close"
+              title="Close"
+              @click="session_rename_dialog = false"
+            >
+              <v-icon small>mdi-close</v-icon>
+            </v-btn>
             <v-card-text class="pt-4">
               <v-row class="m-0">
                 <v-col cols="12" sm="2">
@@ -698,11 +713,11 @@
                 v-model="sessionNewName"
                 label="Session name"
                 class="flex-grow-0"
-                dark
                 :error="errors.length > 0"
                 :error-messages="errors[0]"
                 autocomplete="off"
-                @keydown.enter.prevent="submitRenameSession" />
+                @keydown.enter.prevent="submitRenameSession"
+                @keydown.esc.prevent="session_rename_dialog = false" />
                     </ValidationProvider>
                     <v-btn class="text-right" :disabled="invalid" @click="submitRenameSession">
                       Rename Session
@@ -720,6 +735,16 @@
             max-width="500"
             :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
+          <v-btn
+            icon
+            small
+            class="dialog-close-btn"
+            aria-label="Close"
+            title="Close"
+            @click="trial_modify_tags = false"
+          >
+            <v-icon small>mdi-close</v-icon>
+          </v-btn>
           <v-card-text class="pt-4">
             <v-row class="m-0">
               <v-col cols="12" sm="2">
@@ -850,7 +875,7 @@
                     <div class="text-body-2 grey--text text--darken-2">{{ func.description }}</div>
                   </v-col>
                   <v-col cols="12" sm="3" class="py-2 text-right">
-                    <v-btn small color="grey darken-4" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
+                    <v-btn small :color="analysisActionBtnColor" :dark="$vuetify.theme.dark" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                             Calculating...
@@ -860,8 +885,8 @@
                     <v-btn
                         small
                         elevation="2"
-                        color="grey darken-4"
-                        dark
+                        :color="analysisActionBtnColor"
+                        :dark="$vuetify.theme.dark"
                         v-if="!func.trials.includes(session.trials[trial_analysis_index].id) && !(session.trials[trial_analysis_index].id in func.states)"
                         @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                         >
@@ -871,15 +896,15 @@
                       <v-btn
                         small
                         elevation="2"
-                        color="grey darken-4"
-                        dark
+                        :color="analysisActionBtnColor"
+                        :dark="$vuetify.theme.dark"
                         v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
                         @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
                       >
                           <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:lightgreen'" class="font-weight-bold">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
                           <v-menu offset-y left close-on-content-click content-class="analysis-submenu">
                               <template v-slot:activator="{ on, attrs }">
-                              <v-btn icon dark v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
+                              <v-btn icon :dark="$vuetify.theme.dark" v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
                                   <v-icon>mdi-menu</v-icon>
                               </v-btn>
                               </template>
@@ -1161,6 +1186,9 @@
           }),
         sessionUrl() {
           return location.origin + "/session/" + (this.session?.id || '');
+        },
+        analysisActionBtnColor() {
+          return this.$vuetify.theme.dark ? 'grey darken-4' : 'primary'
         },
         displaySessionName() {
           const s = this.session;
@@ -3300,8 +3328,9 @@
     min-width: 168px;
     padding: 10px 12px;
     font-size: 12px;
-    color: #eceff1;
-    background-color: #37474f;
+    color: var(--app-text-primary);
+    background-color: var(--app-surface-opaque);
+    border: 1px solid var(--app-border-strong);
     border-radius: 6px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 
@@ -3361,7 +3390,7 @@
   /* Trial menu bottom sheet - safe area for notched phones */
   .trial-menu-sheet {
     padding-bottom: env(safe-area-inset-bottom, 0);
-    background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+    background-color: var(--app-surface-opaque) !important;
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
     overflow: hidden;
@@ -3403,7 +3432,7 @@
     flex-direction: row;
     overflow: hidden;
     z-index: 1;
-    background-color: #000;
+    background-color: var(--app-background);
     
 .main-content {
       min-width: 0;
@@ -3419,19 +3448,19 @@
       display: flex;
       align-items: baseline;
       gap: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      border: 1px solid var(--app-border-strong);
       border-radius: 6px;
       padding: 6px 12px;
-      background-color: rgba(20, 20, 20, 0.78);
+      background-color: var(--app-surface-muted);
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
-      color: rgba(255, 255, 255, 0.92);
+      color: var(--app-text-primary);
       max-width: 100%;
       min-width: 0;
       overflow: hidden;
     }
 
     .participant-context__label {
-      color: rgba(255, 255, 255, 0.62);
+      color: var(--app-text-muted);
       font-size: 0.85rem;
       font-weight: 600;
       line-height: 1.25;
@@ -3453,7 +3482,8 @@
       top: calc(var(--app-bar-top-offset, 56px) + 8px);
       left: 8px;
       z-index: 100;
-      background-color: #424242 !important;
+      background-color: var(--app-toolbar-action-bg) !important;
+      color: var(--app-toolbar-action-text) !important;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
       border-radius: 8px !important;
       min-width: 48px !important;
@@ -3517,7 +3547,8 @@
       flex-direction: column;
       width: 250px;
       height: 100%;
-      background-color: #000000;
+      background-color: var(--app-surface-opaque);
+      border-right: 1px solid var(--app-border);
     }
 
     .left-wrapper.mobile-drawer .left {
@@ -3525,7 +3556,7 @@
       height: 100%;
       box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
       padding-top: 48px;
-      background-color: rgb(18, 18, 18);
+      background-color: var(--app-surface-opaque);
     }
 
     .left {
@@ -3615,7 +3646,7 @@
           padding: 2px 6px;
   
           &.selected {
-            background-color: #272727;
+            background-color: var(--app-selected);
             cursor: default;
           }
         }
@@ -3629,7 +3660,8 @@
       right: -16px;
       transform: translateY(-50%);
       z-index: 103;
-      background-color: #424242 !important;
+      background-color: var(--app-toolbar-action-bg) !important;
+      color: var(--app-toolbar-action-text) !important;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
       min-width: 34px !important;
       max-width: 34px !important;
@@ -3672,7 +3704,7 @@
       .mocap-loading-overlay {
         position: absolute;
         inset: 0;
-        background-color: #000;
+        background-color: var(--app-background);
         z-index: 5;
       }
 
@@ -3694,7 +3726,7 @@
       .session-empty-state {
         flex: 1 1 auto;
         min-height: 0;
-        color: rgba(255, 255, 255, 0.86);
+        color: var(--app-text-primary);
 
         h3 {
           font-size: 1.4rem;
@@ -3703,7 +3735,7 @@
 
         p {
           max-width: 420px;
-          color: rgba(255, 255, 255, 0.72);
+          color: var(--app-text-muted);
         }
       }
     }
@@ -3849,8 +3881,8 @@
       .playback-controls {
         flex-shrink: 0;
         padding: 8px;
-        background-color: rgba(0, 0, 0, 0.3);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: var(--app-surface-muted);
+        border-top: 1px solid var(--app-border);
 
         .playback-controls-row {
           display: flex;
@@ -3896,7 +3928,7 @@
           bottom: 0;
           z-index: 50;
           background-color: var(--bottom-toolbar-bg);
-          border-top: 1px solid rgba(255, 255, 255, 0.15);
+          border-top: 1px solid var(--app-border-strong);
           padding: 6px 8px;
           padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
         }
