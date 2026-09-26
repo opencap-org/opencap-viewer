@@ -1752,11 +1752,15 @@
                   const res_status = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {}, { retries: 1, backoffFactor: 0.2, maxJitterMs: 100, timeout: 2000 })
                   this.applyStatusCounts(res_status.data)
 
-                  // If no calibrated cameras...
+                  // If no calibrated cameras, stop/cancel so phones don't keep recording.
                   if (this.n_calibrated_cameras === 0) {
-                    const noCamMsg = "There are no calibrated cameras for this trial."
-                    apiError(noCamMsg)
-                    throw new Error(noCamMsg)
+                    await axiosGetWithRetry(`/sessions/${this.session.id}/stop/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
+                    await axiosGetWithRetry(`/sessions/${this.session.id}/cancel_trial/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
+                    this.cancelPoll()
+                    this.cancelRecordingStatusPoll()
+                    this.state = 'ready'
+                    this.trialInProcess.status = "error"
+                    throw new Error("There are no calibrated cameras for this trial.")
                   }
 
                   // Transition to recording state
