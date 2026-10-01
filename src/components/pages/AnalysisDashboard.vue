@@ -10,8 +10,19 @@
         <div
           v-for="(column, column_name, column_idx) in dashboard.layout"
           :key="column_idx"
-          :class="[column.classes, { 'metrics-column': isMetricsColumn(column) }]">
-          <div v-for="block in column.widgets" :key="block._id" :class="block.classes">
+          :class="[column.classes, 'dashboard-column', { 'metrics-column': isMetricsColumn(column) }]">
+          <div
+            v-for="(block, blockIndex) in column.widgets"
+            :key="block._id || block.id || `${column_name}-${blockIndex}`"
+            :class="[
+              'dashboard-widget',
+              block.classes,
+              {
+                'visualizer-widget': isVisualizerBlock(block),
+                'plot-widget': isLinearChartBlock(block),
+                'metric-widget': isMetricsBlock(block),
+              },
+            ]">
             <component :is="block.component"
                        @changeTimePosition="captureTimePosition"
                        :block="block"
@@ -320,7 +331,7 @@ export default {
             const component = block?.component
             if (typeof component === 'string') {
               const name = component.toLowerCase()
-              return name.includes('scalarvalue') || name.includes('scalar-value')
+              return name.includes('scalar')
             }
 
             if (component && typeof component === 'object') {
@@ -330,6 +341,25 @@ export default {
 
             return false
           })
+        },
+        componentName(block) {
+          const component = block?.component
+          if (typeof component === 'string') {
+            return component.toLowerCase()
+          }
+          return String(component?.name || component?.__name || '').toLowerCase()
+        },
+        isVisualizerBlock(block) {
+          return this.componentName(block).includes('visualizer')
+        },
+        isLinearChartBlock(block) {
+          const name = this.componentName(block)
+          return name.includes('linearchart') || name.includes('linear-chart')
+        },
+        isMetricsBlock(block) {
+          const name = this.componentName(block)
+          const blockClass = String(block?.classes || '').toLowerCase()
+          return name.includes('scalar') || blockClass.includes('scalar')
         },
         getResultUrl(trial_id) {
           for(let i=0; i<this.dashboardData.results.length; i++) {
@@ -418,7 +448,7 @@ export default {
   min-height: 100%;
   max-height: none;
   overflow: visible;
-  background-color: black;
+  background-color: var(--app-background);
   box-sizing: border-box;
 }
 
@@ -441,8 +471,8 @@ export default {
   transition: transform 0.2s;
   overflow-y: hidden;
   z-index: 110;
-  background: #1f2229;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface-opaque);
+  border-right: 1px solid var(--app-border);
 }
 
 .left-sidebar {
@@ -496,7 +526,7 @@ export default {
   flex: initial;
   max-width: none;
   overflow: visible;
-  background: black;
+  background: var(--app-surface-opaque);
   z-index: 10;
   margin-left: 0;
 }
@@ -510,7 +540,7 @@ export default {
   flex: initial;
   max-width: none;
   overflow: visible;
-  background: black;
+  background: var(--app-surface-opaque);
   z-index: 10;
   margin-left: 0;
 }
@@ -574,8 +604,8 @@ export default {
 .dashboard-body > div:last-child .scalar-value-wrapper > div,
 .dashboard-body .metrics-column .scalar-wrapper > div,
 .dashboard-body > div:last-child .scalar-wrapper > div {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border-strong);
   border-radius: 8px;
   padding: 0.6rem 0.4rem;
   margin-bottom: 0.75rem;
@@ -589,7 +619,7 @@ export default {
 .dashboard-body > div:last-child .plot-caption {
   padding-bottom: 0.28rem;
   margin-bottom: 0.38rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  border-bottom: 1px solid var(--app-border-strong);
 }
 
 .dashboard-body .metrics-column .info-text,
@@ -644,8 +674,8 @@ export default {
   align-items: center;
   padding: 12px;
   font-weight: bold;
-  border-bottom: 1px solid #333;
-  color: white;
+  border-bottom: 1px solid var(--app-border);
+  color: var(--app-text-primary);
   flex: 0 0 auto;
 }
 
@@ -709,17 +739,17 @@ export default {
 .empty-state-content {
   text-align: center;
   max-width: 500px;
-  color: rgba(255, 255, 255, 0.87);
+  color: var(--app-text-primary);
 }
 
 .empty-state-content h2 {
   font-size: 1.75rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.87);
+  color: var(--app-text-primary);
 }
 
 .empty-state-content p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-muted);
 }
 
 .dashboard-body {
@@ -782,7 +812,7 @@ export default {
     -webkit-overflow-scrolling: touch;
     border-right: none;
     border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid var(--app-border-strong);
     border-radius: 16px 16px 0 0;
     z-index: 200;
     transform: translateY(0);
@@ -797,7 +827,7 @@ export default {
     width: 40px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--app-text-subtle);
     margin: 8px auto 0;
     flex-shrink: 0;
   }
@@ -994,26 +1024,405 @@ export default {
 }
 </style>
 
-<!-- Route-scoped: zero v-main padding so content uses full width; page scrollable -->
+<!-- Route-scoped layout overrides. The API can split widgets into arbitrary
+     columns, so semantic widget classes define the visual order. -->
 <style lang="scss">
 .analysis-dashboard-wrapper {
+  position: relative;
   width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overflow-x: hidden;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
-  padding-top: var(--app-bar-top-offset, 64px);
+  min-height: calc(100vh - var(--app-bar-top-offset, 64px));
+  min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+  overflow: visible;
   box-sizing: border-box;
 }
 
+.analysis-dashboard-wrapper #body.chart-page {
+  height: auto;
+  min-height: calc(100vh - var(--app-bar-top-offset, 64px));
+  min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+  overflow: visible;
+  background: var(--app-background);
+}
+
+.analysis-dashboard-wrapper .dashboard-body,
+.analysis-dashboard-wrapper .dashboard-body.has-metrics {
+  display: flex !important;
+  flex-flow: column nowrap !important;
+  align-items: stretch !important;
+  width: 100%;
+  min-height: 100%;
+  padding: 12px 20px calc(48px + env(safe-area-inset-bottom, 0px));
+  gap: 20px;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.analysis-dashboard-wrapper .dashboard-column {
+  display: contents;
+}
+
+.analysis-dashboard-wrapper .dashboard-widget {
+  position: relative;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.analysis-dashboard-wrapper .visualizer-widget {
+  order: 1;
+  height: clamp(480px, 62vh, 720px) !important;
+  min-height: 480px !important;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-opaque);
+  box-shadow: var(--app-shadow);
+}
+
+.analysis-dashboard-wrapper .visualizer-widget > .video-player {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.analysis-dashboard-wrapper .visualizer-widget .viewer {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.analysis-dashboard-wrapper .visualizer-widget .right {
+  flex: 0 0 clamp(260px, 20vw, 380px) !important;
+  width: clamp(260px, 20vw, 380px) !important;
+  max-width: 36% !important;
+  height: 100% !important;
+  min-height: 0;
+  margin: 0 !important;
+  overflow: hidden;
+  border-left: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
+}
+
+.analysis-dashboard-wrapper .visualizer-widget .right .videos {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 0;
+  overflow: auto;
+}
+
+.analysis-dashboard-wrapper .visualizer-widget .right video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.analysis-dashboard-wrapper .plot-widget {
+  order: 2;
+  height: clamp(440px, 56vh, 680px) !important;
+  min-height: 420px !important;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface-opaque);
+  box-shadow: var(--app-shadow);
+}
+
+.analysis-dashboard-wrapper .plot-widget > .linear-chart {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.analysis-dashboard-wrapper .linear-chart-toolbar {
+  flex: 0 0 auto;
+  min-height: 56px;
+  padding: 8px 12px;
+  gap: 10px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.analysis-dashboard-wrapper .linear-chart .content-chart {
+  flex: 1 1 auto;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+}
+
+.analysis-dashboard-wrapper .metrics-column {
+  order: 3;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+  align-content: start;
+  grid-auto-rows: auto;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0;
+  height: auto !important;
+  max-height: none !important;
+  padding: 0 !important;
+  gap: 20px;
+  overflow: visible !important;
+  position: static !important;
+  z-index: auto !important;
+  resize: none;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.analysis-dashboard-wrapper .metrics-column .metric-widget {
+  display: block;
+  grid-column: 1 / -1;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.analysis-dashboard-wrapper .metrics-column .scalar-wrapper,
+.analysis-dashboard-wrapper .metrics-column .scalar-value-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+  width: 100%;
+  padding: 0 !important;
+  gap: 20px;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.analysis-dashboard-wrapper .metrics-column .metric-row,
+.analysis-dashboard-wrapper .metrics-column .scalar-value-wrapper > div {
+  width: 100%;
+  min-width: 0;
+  min-height: 160px;
+  height: auto !important;
+  max-height: none !important;
+  align-self: start;
+  margin: 0 !important;
+  padding: 16px !important;
+  overflow: visible;
+  box-sizing: border-box;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 12px;
+  background: var(--app-surface-muted);
+}
+
+.analysis-dashboard-wrapper .metrics-column .scalar-plot-container {
+  width: 100%;
+  min-width: 0;
+  margin: 40px 0 28px !important;
+}
+
+.analysis-dashboard-wrapper .metrics-column .scalar-plot-bar {
+  min-width: 0;
+}
+
+.analysis-dashboard-wrapper .metrics-column .info-text,
+.analysis-dashboard-wrapper .metrics-column .scalar-text {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+.analysis-dashboard-wrapper .sidebar .v-card__text {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 961px) {
+  .analysis-dashboard-wrapper .sidebar {
+    top: calc(var(--app-bar-top-offset, 64px) + 12px);
+    bottom: 12px;
+    border-radius: 0 12px 12px 0;
+  }
+}
+
+.analysis-dashboard-wrapper .fixed-button {
+  position: absolute !important;
+  top: 24px !important;
+  left: 32px !important;
+  right: auto !important;
+  z-index: 30;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.analysis-dashboard-wrapper .fixed-button .v-btn {
+  min-width: 72px;
+  background: var(--app-surface-opaque) !important;
+  box-shadow: var(--app-shadow);
+}
+
+.metric-tooltip.v-tooltip__content {
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px)) !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 1200px) and (min-width: 961px) {
+  .analysis-dashboard-wrapper .dashboard-body,
+  .analysis-dashboard-wrapper .dashboard-body.has-metrics,
+  .analysis-dashboard-wrapper .metrics-column {
+    gap: 16px;
+  }
+
+  .analysis-dashboard-wrapper .dashboard-body,
+  .analysis-dashboard-wrapper .dashboard-body.has-metrics {
+    padding: 12px 16px calc(44px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .analysis-dashboard-wrapper .metrics-column .scalar-wrapper,
+  .analysis-dashboard-wrapper .metrics-column .scalar-value-wrapper {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 960px) {
+  .analysis-dashboard-wrapper {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  }
+
+  .analysis-dashboard-wrapper #body.chart-page {
+    height: auto;
+    min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+    overflow: visible;
+  }
+
+  .analysis-dashboard-wrapper .dashboard-body,
+  .analysis-dashboard-wrapper .dashboard-body.has-metrics {
+    padding: 8px 12px calc(40px + env(safe-area-inset-bottom, 0px));
+    gap: 12px;
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+
+  .analysis-dashboard-wrapper .visualizer-widget {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .analysis-dashboard-wrapper .visualizer-widget > .video-player {
+    flex-direction: column !important;
+    min-height: 0;
+  }
+
+  .analysis-dashboard-wrapper .visualizer-widget .viewer {
+    flex: 0 0 auto;
+    width: 100%;
+    height: clamp(320px, 52vh, 480px);
+    min-height: 320px;
+  }
+
+  .analysis-dashboard-wrapper .visualizer-widget .right {
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0;
+    border-top: 1px solid var(--app-border);
+    border-left: 0;
+  }
+
+  .analysis-dashboard-wrapper .visualizer-widget .right .videos {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .analysis-dashboard-wrapper .visualizer-widget .right video {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    max-height: min(60vh, 520px) !important;
+    object-fit: contain;
+    margin: 0 auto;
+  }
+
+  .analysis-dashboard-wrapper .plot-widget {
+    height: 440px !important;
+    min-height: 440px !important;
+  }
+
+  .analysis-dashboard-wrapper .metrics-column {
+    display: block !important;
+    gap: 12px;
+  }
+
+  .analysis-dashboard-wrapper .metrics-column .metric-widget + .metric-widget {
+    margin-top: 12px !important;
+  }
+
+  .analysis-dashboard-wrapper .metrics-column .scalar-wrapper,
+  .analysis-dashboard-wrapper .metrics-column .scalar-value-wrapper {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .analysis-dashboard-wrapper .fixed-button {
+    position: absolute !important;
+    top: 16px !important;
+    left: 20px !important;
+    bottom: auto !important;
+  }
+}
+
+@media (max-width: 599px) {
+  .analysis-dashboard-wrapper .visualizer-widget .viewer {
+    height: clamp(280px, 46vh, 400px);
+    min-height: 280px;
+  }
+
+  .analysis-dashboard-wrapper .metrics-column .scalar-wrapper,
+  .analysis-dashboard-wrapper .metrics-column .scalar-value-wrapper {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .v-main:has(.analysis-dashboard-wrapper) {
-  padding-top: 0 !important;
-  padding-left: 0 !important;
+  padding-top: var(--app-bar-top-offset, 64px) !important;
   padding-right: 0 !important;
   padding-bottom: 0 !important;
+  padding-left: 0 !important;
   height: 100vh;
   height: 100dvh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.v-main:has(.analysis-dashboard-wrapper) > .v-main__wrap {
+  height: auto !important;
+  min-height: 100%;
+  overflow: visible;
 }
 </style>

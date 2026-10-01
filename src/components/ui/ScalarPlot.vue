@@ -20,7 +20,7 @@
         <div class="scalar-plot-bar scalar-plot-bar-middle" :style="buildBarStyles(row, 'middle')">
           <div :style="buildValueStyles(row.value, row.min_limit, row.max_limit)">
             <div style="width:100px;text-align: center;margin-left: -50px;">{{row.value}}</div>
-            <div style="border: 1px solid #ffffff;width:4px;height: 30px;background: #ffffff;"></div>
+            <div style="border: 1px solid var(--app-text-primary);width:4px;height:30px;background:var(--app-text-primary);"></div>
           </div>
         </div>
         <div class="scalar-plot-bar scalar-plot-bar-right" :style="buildBarStyles(row, 'right')">
@@ -44,7 +44,7 @@ export default {
   methods: {
     buildBarStyles(row, bar_name) {
       let bar_color = 'grey';
-      let text_color = 'white';
+      let text_color = 'var(--app-text-primary)';
 
       let leftBound = Math.min(
           row.min_limit-Math.abs(row.min_limit*0.05),
@@ -106,8 +106,8 @@ export default {
 .scalar-plot {
   width: 300px;
   height: 100vh;
-  background: black;
-  color: white;
+  background: var(--app-surface-opaque);
+  color: var(--app-text-primary);
   margin-bottom: 1rem;
   overflow-y: auto;
 }

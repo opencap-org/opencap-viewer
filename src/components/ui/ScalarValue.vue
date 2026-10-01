@@ -65,8 +65,8 @@ export default {
 .scalar-value {
   width: 250px;
   height: 100vh;
-  background: black;
-  color: white;
+  background: var(--app-surface-opaque);
+  color: var(--app-text-primary);
   margin-bottom: 1rem;
   overflow-y: auto;
 }

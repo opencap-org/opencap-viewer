@@ -1003,7 +1003,7 @@ export default {
 
   // Style mobile table rows
   ::v-deep .v-data-table__mobile-table-row {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid var(--app-border-strong);
 
     .v-data-table__mobile-row {
       padding: 12px 16px;
@@ -1015,7 +1015,7 @@ export default {
 
       &:not(:first-child) {
         padding-top: 4px;
-        color: rgba(255, 255, 255, 0.87);
+        color: var(--app-text-primary);
       }
     }
   }
@@ -1145,16 +1145,22 @@ export default {
 }
 
 .subject-action-btn {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--app-selected) !important;
   border-radius: 4px;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2) !important;
+    background-color: var(--app-hover) !important;
   }
 
   .v-icon {
-    color: rgba(255, 255, 255, 0.9) !important;
+    color: var(--app-text-primary) !important;
   }
+}
+
+.subjects-toolbar__btn:not(.v-btn--text),
+.subjects-submit-btn {
+  background: var(--app-action-bg) !important;
+  color: var(--app-action-text) !important;
 }
 
 .session-name-text {
@@ -1183,11 +1189,11 @@ export default {
 
 .copy-session-id-btn,
 .action-btn {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--app-selected) !important;
   border-radius: 4px;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2) !important;
+    background-color: var(--app-hover) !important;
   }
 }
 

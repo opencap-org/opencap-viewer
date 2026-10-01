@@ -717,7 +717,7 @@ export default {
   padding: 16px 8px;
   box-sizing: border-box;
   z-index: 1;
-  background-color: #000;
+  background-color: var(--app-background);
 
   @media (max-width: 599px) {
     padding: 8px 4px;
@@ -756,6 +756,11 @@ export default {
   }
 }
 
+.recycle-toolbar-button:not(.v-btn--text) {
+  background: var(--app-action-bg) !important;
+  color: var(--app-action-text) !important;
+}
+
 .recycle-content {
   position: relative;
   z-index: 1;
@@ -790,7 +795,7 @@ export default {
   }
 
   .copy-session-id-btn {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: var(--app-selected) !important;
     border-radius: 4px;
     margin: 0 0 0 6px;
     width: 32px !important;
@@ -811,11 +816,11 @@ export default {
     }
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.2) !important;
+      background-color: var(--app-hover) !important;
     }
 
     .v-icon {
-      color: rgba(255, 255, 255, 0.9) !important;
+      color: var(--app-text-primary) !important;
     }
   }
 
@@ -840,15 +845,15 @@ export default {
 
   .menu-button {
     flex-shrink: 0;
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: var(--app-selected) !important;
     border-radius: 4px;
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.2) !important;
+      background-color: var(--app-hover) !important;
     }
 
     .v-icon {
-      color: rgba(255, 255, 255, 0.9) !important;
+      color: var(--app-text-primary) !important;
     }
   }
 
@@ -920,7 +925,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--app-text-muted);
 }
 
 .recycle-trials-loading {

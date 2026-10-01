@@ -3,17 +3,15 @@
     <h1 class="page-title sessions-toolbar-layer">Sessions</h1>
     <div class="d-flex flex-wrap align-center toolbar-container sessions-toolbar-layer">
       <v-btn
-        color="grey darken-4"
-        dark
         @click.prevent="$router.push({ name: 'RecordingMode' })"
-        class="toolbar-button">
+        class="toolbar-button toolbar-action-button">
         <v-icon left>mdi-plus</v-icon>
         New session
       </v-btn>
 
       <v-menu offset-y>
         <template v-slot:activator="{ on, attrs }">
-          <v-btn color="grey darken-4" dark v-bind="attrs" v-on="on" class="toolbar-button">
+          <v-btn v-bind="attrs" v-on="on" class="toolbar-button toolbar-action-button">
             <span class="dashboards-text d-none d-sm-inline mr-2">Dashboards</span>
             <span class="dashboards-text-mobile d-sm-none">Dashboards</span>
             <v-icon>mdi-menu</v-icon>
@@ -40,18 +38,14 @@
       </v-menu>
 
       <v-btn
-        color="grey darken-4"
-        dark
-        class="toolbar-button"
+        class="toolbar-button toolbar-action-button"
         @click.prevent="$router.push({ name: 'Subjects' })">
         <v-icon left>mdi-account-group-outline</v-icon>
         Subjects
       </v-btn>
 
       <v-btn
-        color="grey darken-4"
-        dark
-        class="toolbar-button"
+        class="toolbar-button toolbar-action-button"
         @click.prevent="$router.push({ name: 'RecycleBin' })">
         <v-icon left>mdi-delete-outline</v-icon>
         Recycle Bin
@@ -74,9 +68,7 @@
 
         <div v-if="searchText">
           <v-btn
-            color="grey darken-4"
-            dark
-            class="submit-btn"
+            class="submit-btn toolbar-action-button"
             @click.prevent="onClearSearch()">
             Clear
           </v-btn>
@@ -289,6 +281,16 @@
       max-width="420"
       :fullscreen="$vuetify.breakpoint.smAndDown">
       <v-card v-if="selectedSessionForRename">
+        <v-btn
+          icon
+          small
+          class="dialog-close-btn"
+          aria-label="Close"
+          title="Close"
+          @click="rename_dialog = false"
+        >
+          <v-icon small>mdi-close</v-icon>
+        </v-btn>
         <v-card-text class="pt-4">
           <v-row class="m-0">
             <v-col cols="12" sm="2">
@@ -301,7 +303,7 @@
               <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
                 <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Session name">
                   <v-text-field v-model="sessionNewName" label="Session new name" class="flex-grow-0"
-                    dark :error="errors.length > 0" :error-messages="errors[0]">
+                    :error="errors.length > 0" :error-messages="errors[0]">
                   </v-text-field>
                 </ValidationProvider>
                 <v-spacer></v-spacer>
@@ -860,6 +862,20 @@ export default {
   }
 }
 
+.toolbar-action-button {
+  background-color: var(--app-toolbar-action-bg) !important;
+  border: 1px solid var(--app-toolbar-action-border) !important;
+  color: var(--app-toolbar-action-text) !important;
+
+  &:hover {
+    background-color: var(--app-toolbar-action-hover) !important;
+  }
+
+  .v-icon {
+    color: var(--app-toolbar-action-text) !important;
+  }
+}
+
 .select-session {
   position: fixed;
   top: var(--app-bar-top-offset, 64px);
@@ -872,7 +888,7 @@ export default {
   padding: 16px 8px;
   box-sizing: border-box;
   z-index: 1;
-  background-color: #000;
+  background-color: var(--app-background);
 
   @media (max-width: 599px) {
     padding: 8px 4px;
@@ -937,7 +953,7 @@ export default {
           position: sticky;
           top: 0;
           z-index: 2;
-          background-color: rgb(39, 39, 39);
+          background-color: var(--app-table-header);
           white-space: nowrap;
           padding-left: 6px !important;
           padding-right: 6px !important;
@@ -963,7 +979,7 @@ export default {
       }
 
       .copy-session-id-btn {
-        background-color: rgba(255, 255, 255, 0.1) !important;
+        background-color: var(--app-selected) !important;
         border-radius: 4px;
         margin: 0 0 0 6px;
         width: 32px !important;
@@ -984,11 +1000,11 @@ export default {
         }
 
         &:hover {
-          background-color: rgba(255, 255, 255, 0.2) !important;
+          background-color: var(--app-hover) !important;
         }
 
         .v-icon {
-          color: rgba(255, 255, 255, 0.9) !important;
+          color: var(--app-text-primary) !important;
         }
       }
 
@@ -1014,15 +1030,15 @@ export default {
 
       .menu-button {
         flex-shrink: 0;
-        background-color: rgba(255, 255, 255, 0.1) !important;
+        background-color: var(--app-selected) !important;
         border-radius: 4px;
 
         &:hover {
-          background-color: rgba(255, 255, 255, 0.2) !important;
+          background-color: var(--app-hover) !important;
         }
 
         .v-icon {
-          color: rgba(255, 255, 255, 0.9) !important;
+          color: var(--app-text-primary) !important;
         }
       }
 
@@ -1033,17 +1049,17 @@ export default {
         white-space: nowrap;
 
         .action-btn {
-          background-color: rgba(255, 255, 255, 0.1) !important;
+          background-color: var(--app-selected) !important;
           border-radius: 4px;
           margin: 0 2px;
           flex-shrink: 0;
 
           &:hover {
-            background-color: rgba(255, 255, 255, 0.2) !important;
+            background-color: var(--app-hover) !important;
           }
 
           .v-icon {
-            color: rgba(255, 255, 255, 0.9) !important;
+            color: var(--app-text-primary) !important;
           }
         }
       }

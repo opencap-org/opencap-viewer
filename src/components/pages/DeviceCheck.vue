@@ -25,8 +25,6 @@
             I'll record using this phone. Set up the session here and open in the app.
           </p>
           <v-btn
-            color="grey darken-4"
-            dark
             class="mt-4 select-button"
             large
             :loading="loading"
@@ -46,8 +44,6 @@
             I'll use a different phone to record. Show me a QR code to connect it.
           </p>
           <v-btn
-            color="grey darken-4"
-            dark
             class="mt-4 select-button"
             large
             :loading="loading"
@@ -68,8 +64,6 @@
           Monocular recording is supported on iPhone and iPad using the OpenCap app. You can open this page on a compatible iOS device, or set up the session here and scan the QR code with your phone to connect. Alternatively, use the multi-camera workflowi.
         </v-alert>
         <v-btn
-          color="grey darken-4"
-          dark
           class="mt-2"
           @click="onDifferentDevice">
           Set up session and show QR code
@@ -173,11 +167,11 @@ export default {
 
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
@@ -185,7 +179,7 @@ export default {
 .device-check-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
   margin: 0 0 32px 0;
 }
@@ -196,7 +190,7 @@ export default {
 }
 
 .app-store-link {
-  color: #ffcc80 !important;
+  color: var(--app-warning-link) !important;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -220,10 +214,10 @@ export default {
   flex-direction: column;
   justify-content: space-between;
 
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 
   &:hover {
     transform: translateY(-4px);
@@ -233,7 +227,7 @@ export default {
 
 .option-description {
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--app-text-muted);
   max-width: 320px;
   width: 100%;
 }
@@ -248,17 +242,19 @@ export default {
 
 .option-card,
 .option-card .option-title {
-  color: #ffffff;
+  color: var(--app-text-primary);
   font-size: 1.25rem;
   text-align: center;
 }
 
 .option-icon {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: var(--app-text-primary) !important;
 }
 
 .select-button {
   min-width: 120px;
+  background: var(--app-action-bg) !important;
+  color: var(--app-action-text) !important;
   text-transform: none;
   font-weight: 600;
 }

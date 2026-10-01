@@ -246,39 +246,33 @@ export default {
 .verify-main {
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
 
 .verify-wrapper {
-  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
-  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
-  overflow-y: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  // Same as login: no nested scrollport — iOS keyboard scroll sticks otherwise.
+  max-height: none;
+  overflow: visible;
 }
 
 .verify-card {
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   padding: 32px 28px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 }
 
 .verify-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
   margin: 0 0 16px 0;
 }
@@ -286,7 +280,7 @@ export default {
 .verify-instructions {
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--app-text-muted);
   margin: 0 0 24px 0;
   text-align: center;
 }
@@ -315,22 +309,22 @@ export default {
   font-size: 1.375rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--app-text-primary);
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border-strong);
   border-radius: 10px;
   outline: none;
-  caret-color: rgba(255, 255, 255, 0.9);
+  caret-color: var(--app-text-primary);
   transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.32);
+    border-color: var(--app-text-subtle);
   }
 
   &:focus {
-    border-color: rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+    border-color: var(--app-text-muted);
+    background: var(--app-hover);
+    box-shadow: 0 0 0 2px var(--app-selected);
   }
 
   &.otp-box--error {
@@ -365,7 +359,7 @@ export default {
   gap: 6px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-border);
   font-size: 0.9375rem;
 
   .back-arrow {
@@ -381,7 +375,6 @@ export default {
   }
 
   .verify-wrapper {
-    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
     padding-left: 4px !important;
     padding-right: 4px !important;
   }

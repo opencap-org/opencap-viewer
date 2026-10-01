@@ -281,9 +281,9 @@ export default {
 
 .lidar-toggle {
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--app-bar-border, rgba(255, 255, 255, 0.16));
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--app-bar-text, rgba(255, 255, 255, 0.86));
   display: inline-flex;
   gap: 6px;
   height: 32px;
@@ -313,7 +313,7 @@ export default {
 }
 
 .lidar-toggle--on {
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--app-bar-text, rgba(255, 255, 255, 0.86));
 }
 
 .lidar-toggle--on::v-deep .v-input--switch__track {
@@ -383,7 +383,7 @@ export default {
 }
 
 .lidar-dialog__recommendation {
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--app-text-muted);
   font-weight: 600;
 }
 </style>

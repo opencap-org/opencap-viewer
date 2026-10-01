@@ -179,7 +179,7 @@ export default {
 .profile-username {
   font-size: 0.9375rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--app-bar-text, rgba(255, 255, 255, 0.9));
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -196,9 +196,9 @@ export default {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: rgb(30, 30, 30);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: var(--app-surface-opaque);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow);
   border-radius: 12px;
   padding: 8px 0;
   z-index: 9998;
@@ -215,8 +215,8 @@ export default {
 .dropdown-header {
   padding: 10px 16px 12px;
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.6);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--app-text-subtle);
+  border-bottom: 1px solid var(--app-border);
   margin-bottom: 4px;
   cursor: default;
 }
@@ -241,7 +241,7 @@ a {
 }
 
 li:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--app-hover);
 }
 
 .dropdown-element a {
@@ -258,18 +258,18 @@ li:hover {
 }
 
 .profile-image:hover {
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--app-border-strong);
 }
 
 .dropdown-divider {
   border: none;
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--app-border);
   margin: 4px 0;
 }
 
 .dropdown-logout {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-border);
   margin-top: 4px;
   padding-top: 12px;
 }
