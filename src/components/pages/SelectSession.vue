@@ -27,6 +27,13 @@
                 :key="dashboard.id"
                 @click="openAnalysisDashboardFromMenu(dashboard)">
               {{ dashboard.title }}</v-list-item>
+            <v-list-item v-if="analysis_dashboards.length === 0" disabled class="dashboards-empty-hint">
+              <v-list-item-content>
+                <v-list-item-subtitle class="text-wrap">
+                  No analysis dashboards yet. Open a trial’s menu from a session page → Analysis, run one, and it will appear here when finished.
+                </v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
         </v-list>
       </v-menu>
 
@@ -827,6 +834,16 @@ export default {
       width: 100%;
       margin-top: 4px;
     }
+  }
+}
+
+.dashboards-empty-hint {
+  max-width: 280px;
+  opacity: 1 !important;
+
+  .v-list-item__subtitle {
+    white-space: normal;
+    line-height: 1.35;
   }
 }
 
