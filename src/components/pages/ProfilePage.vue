@@ -522,30 +522,18 @@ export default {
       this.changingImage = false;
       this.email = this.original_email;
       this.confirm_email = '';
-      document.body.removeEventListener('click', this.closePopupOnClickOutside);
     },
     handleDiscardDeleteAccount() {
       this.deletingAccount = false;
-      document.body.removeEventListener('click', this.closePopupOnClickOutside);
     },
     handleChangeImage() {
       this.changingImage = true;
-      if (this.changingImage) {
-        document.body.addEventListener('click', this.closePopupOnClickOutside);
-      } else {
-        document.body.removeEventListener('click', this.closePopupOnClickOutside);
-      }
     },
     triggerFileInput() {
       this.$refs.fileInput && this.$refs.fileInput.click();
     },
     async handleOpenDeleteAccount() {
       this.deletingAccount = true;
-      if(this.deletingAccount) {
-        document.body.addEventListener('click', this.closePopupOnClickOutside);
-      } else {
-        document.body.removeEventListener('click', this.closePopupOnClickOutside);
-      }
     },
     async handleDeleteAccount() {
       console.log(this.confirm_username)
@@ -563,6 +551,22 @@ export default {
       if (!this.$el.contains(event.target)) {
         this.changingImage = false;
         this.deletingAccount = false;
+      }
+    },
+    onPopupKeydown(event) {
+      if (event.key !== 'Escape') return;
+      if (this.changingImage) {
+        this.handleDiscard();
+      } else if (this.deletingAccount) {
+        this.handleDiscardDeleteAccount();
+      }
+    },
+    setPopupListeners(active) {
+      document.removeEventListener('click', this.closePopupOnClickOutside);
+      document.removeEventListener('keydown', this.onPopupKeydown);
+      if (active) {
+        document.addEventListener('click', this.closePopupOnClickOutside);
+        document.addEventListener('keydown', this.onPopupKeydown);
       }
     },
     handleImageUploaded(event) {
@@ -704,8 +708,17 @@ export default {
             this.fetchData(username)
         },
         immediate: true,
-    }
-}
+    },
+    changingImage(active) {
+      this.setPopupListeners(active || this.deletingAccount);
+    },
+    deletingAccount(active) {
+      this.setPopupListeners(active || this.changingImage);
+    },
+  },
+  beforeDestroy() {
+    this.setPopupListeners(false);
+  },
 };
 </script>
 

@@ -23,22 +23,40 @@
           name="left"/>
       </div>
 
-      <div class="slot">
-        <v-btn
-          v-if="rightButton"
-          class="primary-action"
-          :disabled="rightDisabled || rightSpinner"
-          @click="$emit('right')">
+      <div class="slot slot-right">
+        <p
+          v-if="showRightDisabledHint"
+          class="right-disabled-hint">
+          {{ rightDisabledHint }}
+        </p>
 
-          <v-progress-circular
-            v-if="rightSpinner"
-            indeterminate
-            class="mr-2" 
-            color="grey" 
-            size="14" 
-            width="2"/>
-          {{ rightButton }}
-        </v-btn>
+        <v-tooltip
+          v-if="rightButton"
+          bottom
+          :disabled="!showRightDisabledHint">
+          <template v-slot:activator="{ on, attrs }">
+            <div
+              class="right-button-wrap"
+              v-bind="attrs"
+              v-on="on">
+              <v-btn
+                class="primary-action"
+                :disabled="rightDisabled || rightSpinner"
+                @click="$emit('right')">
+
+                <v-progress-circular
+                  v-if="rightSpinner"
+                  indeterminate
+                  class="mr-2"
+                  color="grey"
+                  size="14"
+                  width="2"/>
+                {{ rightButton }}
+              </v-btn>
+            </div>
+          </template>
+          <span>{{ rightDisabledHint }}</span>
+        </v-tooltip>
 
         <slot
           v-else
@@ -78,6 +96,10 @@ export default {
       type: Boolean,
       default: false
     },
+    rightDisabledHint: {
+      type: String,
+      default: ''
+    },
     column: {
       type: Boolean,
       default: false
@@ -93,6 +115,13 @@ export default {
     }
   },
   computed: {
+    showRightDisabledHint () {
+      return Boolean(
+        this.rightDisabledHint &&
+        this.rightDisabled &&
+        !this.rightSpinner
+      )
+    },
     page: {
       get () {
         return this.step
@@ -148,6 +177,39 @@ export default {
         flex: none;
       }
 
+      &.slot-right {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+
+        @media (min-width: 600px) {
+          align-items: flex-end;
+        }
+      }
+
+      .right-disabled-hint {
+        margin: 0 0 6px;
+        font-size: 0.75rem;
+        line-height: 1.3;
+        color: var(--app-text-subtle);
+        text-align: center;
+        max-width: 220px;
+
+        @media (min-width: 600px) {
+          text-align: right;
+          align-self: flex-end;
+        }
+      }
+
+      .right-button-wrap {
+        width: 100%;
+        display: inline-block;
+
+        @media (min-width: 600px) {
+          width: auto;
+        }
+      }
+
       button {
         width: 100%;
         height: 48px;
@@ -159,9 +221,15 @@ export default {
         }
       }
 
-      .primary-action {
+      .primary-action:not(.v-btn--disabled) {
         background: var(--app-action-bg) !important;
         color: var(--app-action-text) !important;
+      }
+
+      .primary-action.v-btn--disabled {
+        background: var(--app-hover) !important;
+        color: var(--app-text-subtle) !important;
+        opacity: 1;
       }
     }
   }
