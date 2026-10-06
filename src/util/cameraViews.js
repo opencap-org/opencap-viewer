@@ -101,6 +101,7 @@ export function placeCameraForView(camera, controls, view, pose, {
         .addScaledVector(anterior, -distance)
         .addScaledVector(superior, heightBoost)
       break
+    case 'top':
     case 'transverse':
       // Tiny anterior offset avoids OrbitControls gimbal lock looking straight down.
       camera.position.copy(lookAt)

@@ -65,7 +65,7 @@ export default {
         { name: 'Frontal', value: 'frontal', icon: 'mdi-arrow-up' },
         { name: 'Sagittal', value: 'sagittal', icon: 'mdi-arrow-right' },
         { name: 'Posterior', value: 'posterior', icon: 'mdi-arrow-down' },
-        { name: 'Transverse', value: 'transverse', icon: 'mdi-arrow-collapse-down' }
+        { name: 'Top', value: 'top', icon: 'mdi-arrow-collapse-down' }
       ]
     }
   },
