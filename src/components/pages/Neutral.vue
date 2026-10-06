@@ -5,6 +5,7 @@
     column
     :rightButton="rightButtonCaption"
     :rightDisabled="rightButtonDisabled"
+    :rightDisabledHint="recordDisabledHint"
     :rightSpinner="busy && !imgs"
     @right="isMonocularMode ? skipProcessingToMonocular() : onNext()">
     <template v-slot:left>
@@ -645,6 +646,26 @@ export default {
     }),
     rightButtonDisabled() {
       return this.busy || this.disabledNextButton || (!this.imgs && this.lidarCooldownActive);
+    },
+    recordDisabledHint() {
+      if (this.imgs || this.busy || this.lidarCooldownActive || !this.disabledNextButton) {
+        return '';
+      }
+      const action = this.isMonocularMode ? 'Next' : 'Record';
+      if (!this.subject || this.subject.id === 'new') {
+        return `Select a subject to enable ${action}`;
+      }
+      if (!this.data_sharing_0) {
+        return `Confirm the data sharing agreement to enable ${action}`;
+      }
+      if (!this.data_sharing) {
+        return `Select a data sharing preference to enable ${action}`;
+      }
+      const sessionName = (this.sessionName || '').trim();
+      if (sessionName && !/^[a-zA-Z0-9-_]+$/.test(sessionName)) {
+        return `Fix the session name to enable ${action}`;
+      }
+      return `Complete the form to enable ${action}`;
     },
     showStandardAdvancedSettings() {
       return !this.isMonocularMode;

@@ -190,6 +190,10 @@ export default {
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  object-fit: cover;
+  background: #b0b0b0;
+  display: block;
+  flex-shrink: 0;
 }
 
 .dropdown-content {
