@@ -531,6 +531,15 @@
                           class="mb-2 flex-grow-1 timeline-slider" />
 
                       <div class="playback-controls-inline d-flex align-center">
+                        <CameraViewControls
+                            v-if="has3DData"
+                            :value="cameraView"
+                            :follow="followSubject"
+                            :disabled="!sceneReady"
+                            class="mr-2"
+                            @change-view="setCameraView"
+                            @update:follow="setFollowSubject" />
+
                         <VideoNavigation
                             :playing="playing"
                             :value="frame"
@@ -598,6 +607,8 @@
                     :step="0.01"
                     :value="time"
                     :disabled="videoControlsDisabled || state !== 'ready'"
+                    dense
+                    hide-details
                     class="time-input mr-2"
                     autocomplete="off"
                     @input="onChangeTime" />
@@ -606,18 +617,28 @@
                     :min="0"
                     :max="frames.length - 1"
                     :disabled="videoControlsDisabled"
-                    @input="onNavigate"
+                    dense
                     hide-details
+                    @input="onNavigate"
                     class="flex-grow-1 timeline-slider" />
               </div>
 
               <div class="playback-controls-row">
+                <CameraViewControls
+                    v-if="has3DData"
+                    :value="cameraView"
+                    :follow="followSubject"
+                    :disabled="!sceneReady"
+                    @change-view="setCameraView"
+                    @update:follow="setFollowSubject" />
+
                 <VideoNavigation
                     :playing="playing"
                     :value="frame"
                     :maxFrame="frames.length - 1"
                     :loop="loopPlayback"
                     :show-loop-toggle="true"
+                    :show-skip-buttons="false"
                     :disabled="videoControlsDisabled"
                     @play="togglePlay(true)"
                     @pause="togglePlay(false)"
@@ -625,7 +646,7 @@
                     @input="onNavigate"
                     class="playback-navigation" />
 
-                <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed ml-2" />
+                <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed" />
               </div>
             </div>
           </div>
@@ -987,9 +1008,11 @@
   import * as THREE from 'three'
   import * as THREE_OC from '@/orbitControls'
   import VideoNavigation from '@/components/ui/VideoNavigation'
+  import CameraViewControls from '@/components/ui/CameraViewControls'
   import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
   import SpeedControl from '@/components/ui/SpeedControl'
   import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+  import { getPelvisPose, placeCameraForView, followSubjectHorizontally, snapFollowToSubject } from '@/util/cameraViews'
   import { debounce } from 'lodash'
   import { isTester, loadUserGroups } from '@/util/staffAccess.js'
 
@@ -1025,6 +1048,7 @@
       components: {
           Status,
           VideoNavigation,
+          CameraViewControls,
           SpeedControl,
           ConfirmDialog
       },
@@ -1092,6 +1116,9 @@
               loopPlayback: true,
               playSpeed: 1,
               mobileVideoSizeIndex: 0,
+              cameraView: 'default',
+              followSubject: false,
+              followSmoothedLookAt: null,
   
               show_controls: 1,
   
@@ -2544,6 +2571,9 @@
         }
         this.sessionNotification = { show: false, text: '', type: 'error' }
         this.time = 0
+        this.cameraView = 'default'
+        this.followSubject = false
+        this.followSmoothedLookAt = null
 
         if (!this.trialLoading) {
           this.frame = 0
@@ -2680,11 +2710,13 @@
                   this.onResize()
                   container.appendChild(this.renderer.domElement)
                   this.controls = new THREE_OC.OrbitControls(this.camera, this.renderer.domElement)
-  
+                  this.controls.target.set(0, 1, 0)
+                  this.controls.update()
+
                   // show3d
                   // add the plane - with cached texture
                   {
-                    const planeSize = 8;
+                    const planeSize = 12;
   
                     const loader = new THREE.TextureLoader();
                     // Use cached texture if available
@@ -2933,6 +2965,10 @@
             }
           }
 
+          if (this.followSubject) {
+            this.updateFollowCamera(cframe)
+          }
+
           if (hasValidDuration) {
             this.syncVideos()
           }
@@ -2948,6 +2984,73 @@
         if (this.trial?.name === 'neutral') {
             this.togglePlay(false)
         }
+      },
+      getSubjectCenter(frameIndex) {
+        const pose = this.getPelvisPose(frameIndex)
+        return pose ? pose.position.clone() : null
+      },
+      getPelvisPose(frameIndex) {
+        return getPelvisPose(this.animation_json, frameIndex ?? this.frame, this.frames?.length || 0)
+      },
+      setCameraView(view) {
+        if (!this.camera || !this.controls) {
+          return
+        }
+
+        this.cameraView = view
+        const pose = this.getPelvisPose(this.frame) || {
+          position: new THREE.Vector3(0, 1, 0),
+          anterior: new THREE.Vector3(1, 0, 0),
+          superior: new THREE.Vector3(0, 1, 0),
+          right: new THREE.Vector3(0, 0, 1),
+          quaternion: new THREE.Quaternion()
+        }
+
+        placeCameraForView(this.camera, this.controls, view, pose)
+        if (this.followSubject) {
+          this.lockFollowTransform()
+        }
+
+        if (this.renderer && this.scene) {
+          this.renderer.render(this.scene, this.camera)
+        }
+      },
+      setFollowSubject(enabled) {
+        this.followSubject = !!enabled
+        if (this.followSubject) {
+          this.lockFollowTransform()
+          this.updateFollowCamera(this.frame)
+          if (this.renderer && this.scene && this.camera) {
+            this.renderer.render(this.scene, this.camera)
+          }
+        } else {
+          this.followSmoothedLookAt = null
+        }
+      },
+      lockFollowTransform() {
+        const pose = this.getPelvisPose(this.frame)
+        this.followSmoothedLookAt = snapFollowToSubject(this.camera, this.controls, pose)
+      },
+      updateFollowCamera(frameIndex) {
+        if (!this.camera || !this.controls) {
+          return
+        }
+
+        const pose = this.getPelvisPose(frameIndex)
+        if (!pose) {
+          return
+        }
+
+        if (!this.followSmoothedLookAt) {
+          this.lockFollowTransform()
+        }
+
+        this.followSmoothedLookAt = followSubjectHorizontally(
+          this.camera,
+          this.controls,
+          pose,
+          this.followSmoothedLookAt
+        )
       },
       syncVideos() {
         if (this.synced || this.trial == null || this.videos.length == 0)
@@ -3898,39 +4001,102 @@
       
       .playback-controls {
         flex-shrink: 0;
-        padding: 8px;
+        padding: 6px 8px;
         background-color: var(--app-surface-muted);
         border-top: 1px solid var(--app-border);
 
         .playback-controls-row {
           display: flex;
           align-items: center;
+          flex-wrap: nowrap;
+          gap: 2px;
+          min-height: 40px;
+        }
+
+        .camera-view-controls {
+          flex: 0 0 auto;
+
+          .v-btn {
+            width: 32px;
+            height: 32px;
+          }
+
+          .v-icon {
+            font-size: 18px !important;
+          }
         }
 
         .playback-navigation {
           flex: 1 1 auto;
           min-width: 0;
+          justify-content: space-evenly !important;
+
+          .v-btn {
+            width: 32px;
+            height: 32px;
+          }
+
+          .v-icon {
+            font-size: 18px !important;
+          }
         }
 
-      .playback-speed {
-        flex: 0 0 auto;
-      }
+        .playback-speed {
+          flex: 0 0 auto;
 
-      .playback-timeline-mobile {
-        margin-top: 4px;
-
-        .time-input {
-          flex: 0 0 70px !important;
-          width: 70px !important;
-          max-width: 70px !important;
-          min-width: 70px !important;
+          .speed-control-button {
+            min-width: 44px;
+            height: 32px;
+            padding: 0 6px;
+            font-size: 0.75rem;
+          }
         }
 
-        .timeline-slider {
-          flex: 1 1 auto;
-          min-width: 0;
+        .playback-timeline-mobile {
+          margin: 0;
+          min-height: 0;
+          height: 36px;
+
+          .time-input {
+            flex: 0 0 64px !important;
+            width: 64px !important;
+            max-width: 64px !important;
+            min-width: 64px !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            padding-top: 0 !important;
+
+            .v-input__control {
+              min-height: 32px !important;
+            }
+
+            .v-input__slot {
+              margin-bottom: 0 !important;
+              min-height: 32px !important;
+            }
+
+            .v-label {
+              font-size: 11px;
+            }
+
+            input {
+              font-size: 13px;
+              padding: 0 !important;
+            }
+          }
+
+          .timeline-slider {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin: 0 !important;
+
+            .v-input__control,
+            .v-input__slot {
+              min-height: 32px !important;
+              margin: 0 !important;
+            }
+          }
         }
-      }
 
         .playback-video-size {
           flex: 0 0 auto;
@@ -3947,7 +4113,7 @@
           z-index: 50;
           background-color: var(--bottom-toolbar-bg);
           border-top: 1px solid var(--app-border-strong);
-          padding: 6px 8px;
+          padding: 6px 6px 4px;
           padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
         }
       }

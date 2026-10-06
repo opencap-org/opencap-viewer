@@ -9,6 +9,12 @@
                             dense hide-details @input="onChangeTime"/>
                     </div>
                     <SpeedControl v-model="playSpeed" class="time-speed-control" />
+                    <CameraViewControls
+                        :value="cameraView"
+                        :follow="followSubject"
+                        class="camera-controls-wrap"
+                        @change-view="setCameraView"
+                        @update:follow="setFollowSubject" />
                     <v-slider :value="frame"
                               :min="timeToFrame(timeStart)"
                               :max="timeToFrame(timeEnd)"
@@ -46,6 +52,8 @@ import { apiError } from '@/util/ErrorMessage.js'
 import VideoNavigation from '@/components/ui/VideoNavigation'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import SpeedControl from '@/components/ui/SpeedControl'
+import CameraViewControls from '@/components/ui/CameraViewControls'
+import { getPelvisPose, placeCameraForView, followSubjectHorizontally, snapFollowToSubject } from '@/util/cameraViews'
 import { mapState } from 'vuex'
 
 
@@ -56,7 +64,8 @@ export default {
     name: 'Visualizer',
     components: {
         VideoNavigation,
-        SpeedControl
+        SpeedControl,
+        CameraViewControls
     },
     props: ['trialID', 'result'],
     data(){
@@ -80,6 +89,9 @@ export default {
             timeStart: 0,
             timeEnd: 0,
             resizeObserver: null,
+            cameraView: 'default',
+            followSubject: false,
+            followSmoothedLookAt: null,
         }
     },
     computed: {
@@ -146,6 +158,9 @@ export default {
         async loadTrial(trialID) {
             console.log('loadTrial')
             this.time = this.timeStart
+            this.cameraView = 'default'
+            this.followSubject = false
+            this.followSmoothedLookAt = null
 
             if (!this.trialLoading) {
                 this.frame = 0
@@ -221,11 +236,13 @@ export default {
                                 this.onResize()
                                 container.appendChild(this.renderer.domElement)
                                 this.controls = new THREE_OC.OrbitControls(this.camera, this.renderer.domElement)
+                                this.controls.target.set(0, 1, 0)
+                                this.controls.update()
 
                                 // show3d
                                 // add the plane
                                 {
-                                    const planeSize = 5;
+                                    const planeSize = 8;
 
                                     const loader = new THREE.TextureLoader();
                                     const texture = loader.load('https://threejsfundamentals.org/threejs/resources/images/checker.png');
@@ -401,9 +418,80 @@ export default {
                     }
                 }
 
+                if (this.followSubject) {
+                    this.updateFollowCamera(cframe)
+                }
+
                 this.renderer.render(this.scene, this.camera)
                 this.syncVideos()
             }
+        },
+        getSubjectCenter(frameIndex) {
+            const pose = this.getPelvisPose(frameIndex)
+            return pose ? pose.position.clone() : null
+        },
+        getPelvisPose(frameIndex) {
+            return getPelvisPose(this.animation_json, frameIndex ?? this.frame, this.frames?.length || 0)
+        },
+        setCameraView(view) {
+            if (!this.camera || !this.controls) {
+                return
+            }
+
+            this.cameraView = view
+            const pose = this.getPelvisPose(this.frame) || {
+                position: new THREE.Vector3(0, 1, 0),
+                anterior: new THREE.Vector3(1, 0, 0),
+                superior: new THREE.Vector3(0, 1, 0),
+                right: new THREE.Vector3(0, 0, 1),
+                quaternion: new THREE.Quaternion()
+            }
+
+            placeCameraForView(this.camera, this.controls, view, pose)
+            if (this.followSubject) {
+                this.lockFollowTransform()
+            }
+
+            if (this.renderer && this.scene) {
+                this.renderer.render(this.scene, this.camera)
+            }
+        },
+        setFollowSubject(enabled) {
+            this.followSubject = !!enabled
+            if (this.followSubject) {
+                this.lockFollowTransform()
+                this.updateFollowCamera(this.frame)
+                if (this.renderer && this.scene && this.camera) {
+                    this.renderer.render(this.scene, this.camera)
+                }
+            } else {
+                this.followSmoothedLookAt = null
+            }
+        },
+        lockFollowTransform() {
+            const pose = this.getPelvisPose(this.frame)
+            this.followSmoothedLookAt = snapFollowToSubject(this.camera, this.controls, pose)
+        },
+        updateFollowCamera(frameIndex) {
+            if (!this.camera || !this.controls) {
+                return
+            }
+
+            const pose = this.getPelvisPose(frameIndex)
+            if (!pose) {
+                return
+            }
+
+            if (!this.followSmoothedLookAt) {
+                this.lockFollowTransform()
+            }
+
+            this.followSmoothedLookAt = followSubjectHorizontally(
+                this.camera,
+                this.controls,
+                pose,
+                this.followSmoothedLookAt
+            )
         },
         syncVideos() {
             if (this.synced || this.trial == null || this.videos.length == 0)
@@ -614,6 +702,10 @@ export default {
 }
 
 .video-controls-row .time-speed-control {
+    flex: 0 0 auto;
+}
+
+.video-controls-row .camera-controls-wrap {
     flex: 0 0 auto;
 }
 
