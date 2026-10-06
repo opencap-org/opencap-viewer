@@ -37,7 +37,23 @@
           </v-card-text>
         </v-card>
 
-        <div v-else class="neutral-layout">
+        <template v-else>
+          <UploadStatusBanner
+            v-if="!isMonocularMode"
+            ref="uploadStatusBanner"
+            class="mb-4"
+            :busy="busy"
+            :uploaded="n_videos_uploaded"
+            :expected="n_calibrated_cameras"
+            action-name="Record"
+            idle-value="Ready to record the neutral pose"
+            idle-hint="After you press Record, this banner shows how many calibrated phone videos have uploaded."
+            busy-label="Uploading neutral videos"
+            complete-hint="Upload finished. Processing neutral pose…"
+            waiting-hint="Waiting for calibrated phones to join. Confirm each phone scanned the QR code."
+          />
+
+          <div class="neutral-layout">
           <div class="left-column" :class="{ 'full-width': isMonocularMode }">
             <div class="cards-row d-flex flex-column">
               <v-card class="mb-4 session-info-card">
@@ -406,12 +422,6 @@
           </div>
 
           <div v-if="!isMonocularMode" class="right-column d-flex flex-column ml-4">
-            <v-card class="mb-4">
-              <v-card-text style="padding-top: 5px; padding-bottom: 5px; font-size: 16px;">
-                <p class="mb-0">{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
-              </v-card-text>
-            </v-card>
-
             <v-card class="step-4-2 d-flex images-box">
             <v-card-title class="justify-center">
               Record neutral pose
@@ -452,6 +462,7 @@
             </v-card>
           </div>
         </div>
+        </template>
       </div>
     </div>
   
@@ -490,7 +501,9 @@ import MainLayout from "@/layout/MainLayout";
 import ExampleImage from "@/components/ui/ExampleImage";
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import UploadStatusBanner from '@/components/ui/UploadStatusBanner.vue'
 import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
+import { resetPageScroll } from '@/util/scrollUtils.js'
 
 const LIDAR_ENABLE_COOLDOWN_MS = 2000
 const LIDAR_DISABLE_COOLDOWN_MS = 2000
@@ -501,7 +514,8 @@ export default {
     MainLayout,
     ExampleImage,
     DialogComponent,
-    ConfirmDialog
+    ConfirmDialog,
+    UploadStatusBanner
   },
   data() {
     return {
@@ -1264,7 +1278,9 @@ export default {
             const pollID = ++this.pollID
             apiInfo("Recording...")
             this.lastPolledStatus = "";
+            this.n_videos_uploaded = 0
             this.busy = true;
+            this.scrollUploadStatusIntoView()
             this.setNeutral({
                 subject: this.subject,
               data_sharing: this.data_sharing,
@@ -1402,6 +1418,17 @@ export default {
     cancelPoll() {
       if (this.timeoutID) window.clearTimeout(this.timeoutID)
       this.timeoutID = null
+    },
+    scrollUploadStatusIntoView() {
+      if (this.isMonocularMode) return
+      this.$nextTick(() => {
+        resetPageScroll()
+        const banner = this.$refs.uploadStatusBanner
+        const el = banner && (banner.$el || banner)
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
     },
     openAdvancedSettings() {
       this.advancedSettingsDialog = true;
@@ -1541,10 +1568,20 @@ export default {
   align-items: stretch;
 }
 
+// Single scroll container for Neutral so the page can always reach the
+// record-pose footer above the Back/Record row.
+.neutral-main-layout .content-wrapper {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 .neutral-content {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   overflow: visible;
-  padding-bottom: 0;
+  padding-bottom: 8px;
   padding-left: 0;
   padding-right: 0;
   box-sizing: border-box;
@@ -1681,7 +1718,7 @@ export default {
 .step-4-2 {
   flex-grow: 1;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   
   @media (max-width: 960px) {
     margin-left: 0 !important;
@@ -1752,7 +1789,7 @@ export default {
   height: fit-content;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
 
   ul {
@@ -1765,7 +1802,7 @@ export default {
   .v-card {
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
   
   .record-pose-content {
@@ -1792,29 +1829,15 @@ export default {
   margin-top: 0;
 }
 
-@media (max-width: 599px) {
+@media (max-width: 960px) {
   .neutral-main-layout {
-    // Keep the navigation in the visual viewport on iOS Safari. Percentage
-    // heights can otherwise resolve against the document and place this row
-    // below the browser's visible area.
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .neutral-main-layout .content-wrapper {
-    overflow-y: hidden;
+    // Nav is fixed below; keep only safe-area padding on the shell.
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .neutral-wrapper {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .neutral-content,
-  .neutral-layout,
-  .left-column.full-width {
-    min-height: 0;
+    // Clear the fixed Back/Record row when scrolled to the end.
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   }
 
   .left-column.full-width {
@@ -1822,6 +1845,20 @@ export default {
     align-self: stretch;
   }
 
+  .neutral-main-layout .page-navigation {
+    position: fixed;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    left: 8px;
+    z-index: 20;
+    width: auto !important;
+    flex-shrink: 0;
+    margin: 0 !important;
+    background: var(--app-background);
+  }
+}
+
+@media (max-width: 599px) {
   .left-column .cards-row {
     gap: 8px;
   }
@@ -1920,18 +1957,6 @@ export default {
     min-height: 40px !important;
     margin: 8px 0 0 !important;
     padding: 0 16px !important;
-  }
-
-  .neutral-main-layout .page-navigation {
-    position: fixed;
-    right: 8px;
-    bottom: max(8px, env(safe-area-inset-bottom, 0px));
-    left: 8px;
-    z-index: 20;
-    width: auto !important;
-    flex-shrink: 0;
-    margin: 0 !important;
-    background: var(--app-background);
   }
 }
 

@@ -13,48 +13,18 @@
       </v-btn>
     </template>
 
-    <div
+    <UploadStatusBanner
       ref="uploadStatusBanner"
-      class="upload-status-banner"
-      :class="uploadStatusBannerClass"
-      role="status"
-      aria-live="polite">
-      <div class="upload-status-banner__main">
-        <v-icon class="upload-status-banner__icon" :color="uploadStatusIconColor">
-          {{ uploadStatusIcon }}
-        </v-icon>
-        <div class="upload-status-banner__copy">
-          <div class="upload-status-banner__label">{{ uploadStatusLabel }}</div>
-          <div class="upload-status-banner__value">
-            <template v-if="busy">
-              <strong>{{ n_videos_uploaded }}</strong>
-              of
-              <strong>{{ displayCameraCount }}</strong>
-              videos uploaded
-            </template>
-            <template v-else>
-              Ready when phones have scanned the QR code
-            </template>
-          </div>
-          <div v-if="uploadStatusHint" class="upload-status-banner__hint">
-            {{ uploadStatusHint }}
-          </div>
-        </div>
-        <div v-if="busy" class="upload-status-banner__count" aria-hidden="true">
-          {{ n_videos_uploaded }}/{{ displayCameraCount }}
-        </div>
-      </div>
-      <v-progress-linear
-        v-if="busy"
-        class="upload-status-banner__progress"
-        :value="uploadProgressPercent"
-        :indeterminate="displayCameraCount === 0"
-        height="8"
-        rounded
-        :color="uploadStatusIconColor"
-        background-color="rgba(0, 0, 0, 0.08)"
-      />
-    </div>
+      :busy="busy"
+      :uploaded="n_videos_uploaded"
+      :expected="n_cameras_connected"
+      action-name="Calibrate"
+      idle-value="Ready when phones have scanned the QR code"
+      idle-hint="After you press Calibrate, this banner shows how many phone videos have uploaded. Calibration needs at least 2 phones."
+      busy-label="Uploading calibration videos"
+      complete-hint="Upload finished. Processing calibration…"
+      waiting-hint="No phones have joined this calibration yet. Confirm each phone scanned the QR code, then wait a moment."
+    />
 
     <v-card class="step-2-2 mt-4 flex-grow-1">
       <v-card-title class="justify-center">
@@ -157,6 +127,7 @@ import axios from 'axios'
 import {mapActions, mapMutations, mapState} from 'vuex'
 import { apiError, apiSuccess, apiErrorRes, apiInfo, clearToastMessages } from '@/util/ErrorMessage.js'
 import MainLayout from '@/layout/MainLayout'
+import UploadStatusBanner from '@/components/ui/UploadStatusBanner.vue'
 import { playCalibrationFinishedSound } from "@/util/SoundMessage.js";
 import { axiosGetWithRetry } from "@/util/network.js";
 import { resetPageScroll } from '@/util/scrollUtils.js'
@@ -164,7 +135,8 @@ import { resetPageScroll } from '@/util/scrollUtils.js'
 export default {
   name: 'Calibration',
   components: {
-    MainLayout
+    MainLayout,
+    UploadStatusBanner
   },
   data () {
     return {
@@ -197,64 +169,6 @@ export default {
     },
     rightButtonLabel() {
       return this.busy ? 'Processing' : 'Calibrate'
-    },
-    displayCameraCount() {
-      // During calibration, phones register as Video rows on the active trial.
-      // Until at least one phone joins, keep the denominator at 0 (indeterminate).
-      return Math.max(this.n_cameras_connected, 0)
-    },
-    uploadProgressPercent() {
-      if (this.displayCameraCount <= 0) return 0
-      return Math.min(100, Math.round((this.n_videos_uploaded / this.displayCameraCount) * 100))
-    },
-    uploadComplete() {
-      // Only during an active calibration, with phones actually on this trial,
-      // and at least one video uploaded.
-      return this.busy &&
-        this.n_cameras_connected > 0 &&
-        this.n_videos_uploaded > 0 &&
-        this.n_videos_uploaded >= this.n_cameras_connected
-    },
-    waitingForPhonesWhileBusy() {
-      return this.busy && this.n_cameras_connected === 0
-    },
-    uploadStatusLabel() {
-      if (this.uploadComplete) return 'All videos uploaded'
-      if (this.waitingForPhonesWhileBusy) return 'Waiting for phones'
-      if (this.busy) return 'Uploading calibration videos'
-      return 'Upload status'
-    },
-    uploadStatusHint() {
-      if (this.waitingForPhonesWhileBusy) {
-        return 'No phones have joined this calibration yet. Confirm each phone scanned the QR code, then wait a moment.'
-      }
-      if (this.busy && !this.uploadComplete) {
-        return 'Keep this page open — do not refresh while videos upload.'
-      }
-      if (this.uploadComplete) {
-        return 'Upload finished. Processing calibration…'
-      }
-      return 'After you press Calibrate, this banner shows how many phone videos have uploaded. Calibration needs at least 2 phones.'
-    },
-    uploadStatusIcon() {
-      if (this.uploadComplete) return 'mdi-check-circle'
-      if (this.waitingForPhonesWhileBusy) return 'mdi-cellphone-wireless'
-      if (this.busy) return 'mdi-cloud-upload'
-      return 'mdi-cloud-outline'
-    },
-    uploadStatusIconColor() {
-      if (this.uploadComplete) return 'success'
-      if (this.waitingForPhonesWhileBusy) return 'warning'
-      if (this.busy) return 'info'
-      return 'grey'
-    },
-    uploadStatusBannerClass() {
-      return {
-        'upload-status-banner--busy': this.busy && !this.uploadComplete && !this.waitingForPhonesWhileBusy,
-        'upload-status-banner--complete': this.uploadComplete,
-        'upload-status-banner--warning': this.waitingForPhonesWhileBusy,
-        'upload-status-banner--idle': !this.busy,
-      }
     }
   },
   async mounted () {
@@ -398,8 +312,9 @@ export default {
       this.$nextTick(() => {
         resetPageScroll()
         const banner = this.$refs.uploadStatusBanner
-        if (banner && banner.scrollIntoView) {
-          banner.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        const el = banner && (banner.$el || banner)
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }
       })
     },
@@ -408,103 +323,6 @@ export default {
 </script>
 
 <style lang="scss">
-.upload-status-banner {
-  flex-shrink: 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--app-border);
-  background: var(--app-surface);
-  box-shadow: var(--app-shadow);
-
-  &--busy {
-    border-color: rgba(33, 150, 243, 0.35);
-    background: rgba(33, 150, 243, 0.08);
-  }
-
-  &--complete {
-    border-color: rgba(76, 175, 80, 0.35);
-    background: rgba(76, 175, 80, 0.08);
-  }
-
-  &--warning {
-    border-color: rgba(255, 152, 0, 0.4);
-    background: rgba(255, 152, 0, 0.1);
-  }
-
-  &--idle {
-    background: var(--app-surface);
-  }
-
-  &__main {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  &__icon {
-    flex-shrink: 0;
-  }
-
-  &__copy {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  &__label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--app-text-muted);
-    margin-bottom: 2px;
-  }
-
-  &__value {
-    font-size: 1.0625rem;
-    line-height: 1.35;
-    color: var(--app-text-primary);
-
-    strong {
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-  }
-
-  &__hint {
-    margin-top: 4px;
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    color: var(--app-text-muted);
-  }
-
-  &__count {
-    flex-shrink: 0;
-    min-width: 56px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    color: var(--app-text-primary);
-    background: var(--app-selected);
-  }
-
-  &__progress {
-    margin-top: 12px;
-  }
-
-  @media (max-width: 599px) {
-    padding: 12px;
-
-    &__count {
-      min-width: 48px;
-      padding: 4px 8px;
-      font-size: 0.875rem;
-    }
-  }
-}
-
 .step-2-2 {
   .calibration-card-content {
     @media (max-width: 599px) {
