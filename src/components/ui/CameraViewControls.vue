@@ -9,7 +9,7 @@
           :disabled="disabled"
           class="camera-view-button"
           :title="`Camera view: ${selectedViewLabel}`">
-          <v-icon>mdi-camera-outline</v-icon>
+          <v-icon>mdi-rotate-3d-variant</v-icon>
         </v-btn>
       </template>
 
