@@ -14,6 +14,7 @@
     </template>
 
     <div
+      ref="uploadStatusBanner"
       class="upload-status-banner"
       :class="uploadStatusBannerClass"
       role="status"
@@ -158,6 +159,7 @@ import { apiError, apiSuccess, apiErrorRes, apiInfo, clearToastMessages } from '
 import MainLayout from '@/layout/MainLayout'
 import { playCalibrationFinishedSound } from "@/util/SoundMessage.js";
 import { axiosGetWithRetry } from "@/util/network.js";
+import { resetPageScroll } from '@/util/scrollUtils.js'
 
 export default {
   name: 'Calibration',
@@ -277,6 +279,7 @@ export default {
         this.n_videos_uploaded = 0
         this.n_cameras_connected = 0
         this.busy = true
+        this.scrollUploadStatusIntoView()
         this.setCalibration({
           rows: this.rows,
           cols: this.cols,
@@ -391,6 +394,15 @@ export default {
       if (this.timeoutID) window.clearTimeout(this.timeoutID)
       this.timeoutID = null
     },
+    scrollUploadStatusIntoView() {
+      this.$nextTick(() => {
+        resetPageScroll()
+        const banner = this.$refs.uploadStatusBanner
+        if (banner && banner.scrollIntoView) {
+          banner.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    },
   }
 }
 </script>
@@ -403,9 +415,6 @@ export default {
   border: 1px solid var(--app-border);
   background: var(--app-surface);
   box-shadow: var(--app-shadow);
-  position: sticky;
-  top: 0;
-  z-index: 5;
 
   &--busy {
     border-color: rgba(33, 150, 243, 0.35);
