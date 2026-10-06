@@ -13,11 +13,18 @@
       </v-btn>
     </template>
 
-    <v-card class="step-2-1">
-      <v-card-text class="d-flex align-center">
-        <p style="margin-bottom: 0">{{ n_videos_uploaded }} of {{ n_cameras_connected }} videos uploaded.</p>
-      </v-card-text>
-    </v-card>
+    <UploadStatusBanner
+      ref="uploadStatusBanner"
+      :busy="busy"
+      :uploaded="n_videos_uploaded"
+      :expected="n_cameras_connected"
+      action-name="Calibrate"
+      idle-value="Ready when phones have scanned the QR code"
+      idle-hint="After you press Calibrate, this banner shows how many phone videos have uploaded. Calibration needs at least 2 phones."
+      busy-label="Uploading calibration videos"
+      complete-hint="Upload finished. Processing calibration…"
+      waiting-hint="No phones have joined this calibration yet. Confirm each phone scanned the QR code, then wait a moment."
+    />
 
     <v-card class="step-2-2 mt-4 flex-grow-1">
       <v-card-title class="justify-center">
@@ -120,13 +127,16 @@ import axios from 'axios'
 import {mapActions, mapMutations, mapState} from 'vuex'
 import { apiError, apiSuccess, apiErrorRes, apiInfo, clearToastMessages } from '@/util/ErrorMessage.js'
 import MainLayout from '@/layout/MainLayout'
+import UploadStatusBanner from '@/components/ui/UploadStatusBanner.vue'
 import { playCalibrationFinishedSound } from "@/util/SoundMessage.js";
 import { axiosGetWithRetry } from "@/util/network.js";
+import { resetPageScroll } from '@/util/scrollUtils.js'
 
 export default {
   name: 'Calibration',
   components: {
-    MainLayout
+    MainLayout,
+    UploadStatusBanner
   },
   data () {
     return {
@@ -161,8 +171,8 @@ export default {
       return this.busy ? 'Processing' : 'Calibrate'
     }
   },
-  mounted () {
-      this.loadSession(this.$route.params.id)
+  async mounted () {
+    await this.loadSession(this.$route.params.id)
   },
   beforeDestroy() {
     this.pollID++
@@ -179,8 +189,11 @@ export default {
         this.cancelPoll()
         const pollID = ++this.pollID
         this.lastPolledStatus = "";
-        // Record press
+        // Reset so leftover Video counts from older trials don't look "complete"
+        this.n_videos_uploaded = 0
+        this.n_cameras_connected = 0
         this.busy = true
+        this.scrollUploadStatusIntoView()
         this.setCalibration({
           rows: this.rows,
           cols: this.cols,
@@ -295,21 +308,21 @@ export default {
       if (this.timeoutID) window.clearTimeout(this.timeoutID)
       this.timeoutID = null
     },
+    scrollUploadStatusIntoView() {
+      this.$nextTick(() => {
+        resetPageScroll()
+        const banner = this.$refs.uploadStatusBanner
+        const el = banner && (banner.$el || banner)
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    },
   }
 }
 </script>
 
 <style lang="scss">
-.step-2-1 {
-  li {
-    font-size: 24px;
-
-    &:not(:last-child) {
-      margin-bottom: 24px;
-    }
-  }
-}
-
 .step-2-2 {
   .calibration-card-content {
     @media (max-width: 599px) {

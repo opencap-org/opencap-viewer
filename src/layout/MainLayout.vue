@@ -24,12 +24,6 @@
       </div>
 
       <div class="slot slot-right">
-        <p
-          v-if="showRightDisabledHint"
-          class="right-disabled-hint">
-          {{ rightDisabledHint }}
-        </p>
-
         <v-tooltip
           v-if="rightButton"
           bottom
@@ -179,25 +173,10 @@ export default {
 
       &.slot-right {
         display: flex;
-        flex-direction: column;
         align-items: stretch;
 
         @media (min-width: 600px) {
           align-items: flex-end;
-        }
-      }
-
-      .right-disabled-hint {
-        margin: 0 0 6px;
-        font-size: 0.75rem;
-        line-height: 1.3;
-        color: var(--app-text-subtle);
-        text-align: center;
-        max-width: 220px;
-
-        @media (min-width: 600px) {
-          text-align: right;
-          align-self: flex-end;
         }
       }
 
