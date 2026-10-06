@@ -1,9 +1,5 @@
 <template>
-  <MainLayout
-    :fixedHeight="false">
-
-    <template v-slot:left><div class="d-none"></div></template>
-    <template v-slot:right><div class="d-none"></div></template>
+  <MainLayout :showNavigation="false">
 
     <div class="device-check-wrapper d-flex flex-column align-center justify-center">
       <h1 class="device-check-title">Are you on the device you'll use to record?</h1>
@@ -12,7 +8,7 @@
         outlined
         dense
         class="mb-6 requirement-alert">
-        Monocular recording using a single device requires the OpenCap App Store app version 2.0 or newer. <a class="app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.
+        Single device recording requires the OpenCap App Store app version 2.0 or newer. <a class="app-store-link" href="https://apps.apple.com/us/app/opencap/id1630513242" target="_blank" rel="noopener noreferrer">Get it on the App Store</a>.
       </v-alert>
 
       <div
@@ -22,13 +18,13 @@
           class="option-card pa-6 d-flex flex-column align-center"
           @click="onThisDevice">
           <v-icon size="64" class="mb-4 option-icon">mdi-check-circle-outline</v-icon>
-          <h2 class="mb-2 option-title">Yes, this device</h2>
+          <div class="title-row mb-2">
+            <h2 class="mb-0 option-title">Yes, this device</h2>
+          </div>
           <p class="text-center option-description">
             I'll record using this phone. Set up the session here and open in the app.
           </p>
           <v-btn
-            color="grey darken-4"
-            dark
             class="mt-4 select-button"
             large
             :loading="loading"
@@ -41,13 +37,13 @@
           class="option-card pa-6 d-flex flex-column align-center"
           @click="onDifferentDevice">
           <v-icon size="64" class="mb-4 option-icon">mdi-qrcode-scan</v-icon>
-          <h2 class="mb-2 option-title">No, different device</h2>
+          <div class="title-row mb-2">
+            <h2 class="mb-0 option-title">No, different device</h2>
+          </div>
           <p class="text-center option-description">
             I'll use a different phone to record. Show me a QR code to connect it.
           </p>
           <v-btn
-            color="grey darken-4"
-            dark
             class="mt-4 select-button"
             large
             :loading="loading"
@@ -68,15 +64,13 @@
           Monocular recording is supported on iPhone and iPad using the OpenCap app. You can open this page on a compatible iOS device, or set up the session here and scan the QR code with your phone to connect. Alternatively, use the multi-camera workflowi.
         </v-alert>
         <v-btn
-          color="grey darken-4"
-          dark
           class="mt-2"
           @click="onDifferentDevice">
           Set up session and show QR code
         </v-btn>
       </div>
 
-      <v-btn text class="mt-6" @click="$router.push({ name: 'RecordingMode' })">
+      <v-btn text class="device-check-back" @click="$router.push({ name: 'RecordingMode' })">
         <v-icon left>mdi-arrow-left</v-icon>
         {{ backLabel }}
       </v-btn>
@@ -173,11 +167,11 @@ export default {
 
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
@@ -185,9 +179,9 @@ export default {
 .device-check-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
-  margin: 0 0 24px 0;
+  margin: 0 0 32px 0;
 }
 
 .requirement-alert {
@@ -196,7 +190,7 @@ export default {
 }
 
 .app-store-link {
-  color: #ffcc80 !important;
+  color: var(--app-warning-link) !important;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -220,10 +214,10 @@ export default {
   flex-direction: column;
   justify-content: space-between;
 
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 
   &:hover {
     transform: translateY(-4px);
@@ -233,24 +227,34 @@ export default {
 
 .option-description {
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--app-text-muted);
   max-width: 320px;
+  width: 100%;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
   width: 100%;
 }
 
 .option-card,
 .option-card .option-title {
-  color: #ffffff;
+  color: var(--app-text-primary);
   font-size: 1.25rem;
   text-align: center;
 }
 
 .option-icon {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: var(--app-text-primary) !important;
 }
 
 .select-button {
   min-width: 120px;
+  background: var(--app-action-bg) !important;
+  color: var(--app-action-text) !important;
   text-transform: none;
   font-weight: 600;
 }
@@ -262,7 +266,7 @@ export default {
 
   .device-check-title {
     font-size: 1.25rem;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
   }
 
   .options-container {
@@ -283,6 +287,124 @@ export default {
 
   .option-description {
     font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 599px) {
+  .device-check-wrapper {
+    height: 100%;
+    min-height: 0;
+    padding: 4px 4px 8px;
+    justify-content: flex-start !important;
+  }
+
+  .device-check-title {
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+
+  .requirement-alert {
+    flex: 0 0 auto;
+    margin-bottom: 10px !important;
+    padding: 8px 10px !important;
+    font-size: 0.875rem;
+    line-height: 1.35;
+
+    ::v-deep .v-alert__icon {
+      margin-right: 8px;
+    }
+  }
+
+  .options-container {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  .option-card {
+    height: auto;
+    min-height: 260px;
+    padding: 10px 8px !important;
+  }
+
+  .option-icon {
+    font-size: 48px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .option-card .option-title {
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+
+  .title-row {
+    min-height: 48px;
+    margin-bottom: 6px !important;
+  }
+
+  .option-description {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin-bottom: 0;
+  }
+
+  .select-button {
+    min-width: 84px;
+    height: 40px !important;
+    min-height: 40px !important;
+    margin-top: 8px !important;
+    padding: 0 12px !important;
+  }
+
+  .device-check-back {
+    flex: 0 0 auto;
+    height: 40px !important;
+    min-height: 40px !important;
+    margin-top: 8px !important;
+  }
+}
+
+@media (max-width: 599px) and (max-height: 700px) {
+  .device-check-title {
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+  }
+
+  .requirement-alert {
+    margin-bottom: 8px !important;
+    padding: 6px 8px !important;
+    font-size: 0.8rem;
+  }
+
+  .option-card {
+    min-height: 220px;
+    padding: 8px 6px !important;
+  }
+
+  .option-icon {
+    font-size: 40px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .option-card .option-title {
+    font-size: 0.875rem;
+  }
+
+  .title-row {
+    min-height: 42px;
+    margin-bottom: 4px !important;
+  }
+
+  .option-description {
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .select-button,
+  .device-check-back {
+    height: 36px !important;
+    min-height: 36px !important;
   }
 }
 </style>

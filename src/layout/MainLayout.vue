@@ -23,23 +23,34 @@
           name="left"/>
       </div>
 
-      <div class="slot">
-        <v-btn
+      <div class="slot slot-right">
+        <v-tooltip
           v-if="rightButton"
-          color="grey darken-4"
-          dark
-          :disabled="rightDisabled || rightSpinner"
-          @click="$emit('right')">
+          bottom
+          :disabled="!showRightDisabledHint">
+          <template v-slot:activator="{ on, attrs }">
+            <div
+              class="right-button-wrap"
+              v-bind="attrs"
+              v-on="on">
+              <v-btn
+                class="primary-action"
+                :disabled="rightDisabled || rightSpinner"
+                @click="$emit('right')">
 
-          <v-progress-circular
-            v-if="rightSpinner"
-            indeterminate
-            class="mr-2" 
-            color="grey" 
-            size="14" 
-            width="2"/>
-          {{ rightButton }}
-        </v-btn>
+                <v-progress-circular
+                  v-if="rightSpinner"
+                  indeterminate
+                  class="mr-2"
+                  color="grey"
+                  size="14"
+                  width="2"/>
+                {{ rightButton }}
+              </v-btn>
+            </div>
+          </template>
+          <span>{{ rightDisabledHint }}</span>
+        </v-tooltip>
 
         <slot
           v-else
@@ -79,6 +90,10 @@ export default {
       type: Boolean,
       default: false
     },
+    rightDisabledHint: {
+      type: String,
+      default: ''
+    },
     column: {
       type: Boolean,
       default: false
@@ -94,6 +109,13 @@ export default {
     }
   },
   computed: {
+    showRightDisabledHint () {
+      return Boolean(
+        this.rightDisabledHint &&
+        this.rightDisabled &&
+        !this.rightSpinner
+      )
+    },
     page: {
       get () {
         return this.step
@@ -115,14 +137,20 @@ export default {
 
 <style lang="scss" scoped>
 .main-layout {
-  min-height: calc(100vh - var(--app-bar-top-offset, 64px));
-  min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+  // v-main already reserves the app-bar offset, so fill its content box rather
+  // than subtracting the header a second time. The previous calculation left
+  // the navigation row one app-bar height above the mobile viewport bottom.
+  min-height: 100%;
+  box-sizing: border-box;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
 
   &.fixed-height {
-    height: calc(100vh - var(--app-bar-top-offset, 64px));
-    height: calc(100dvh - var(--app-bar-top-offset, 64px));
-    max-height: calc(100vh - var(--app-bar-top-offset, 64px));
-    max-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+    height: 100%;
+    max-height: 100%;
+  }
+
+  @media (min-width: 600px) {
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .content-wrapper {
@@ -143,6 +171,24 @@ export default {
         flex: none;
       }
 
+      &.slot-right {
+        display: flex;
+        align-items: stretch;
+
+        @media (min-width: 600px) {
+          align-items: flex-end;
+        }
+      }
+
+      .right-button-wrap {
+        width: 100%;
+        display: inline-block;
+
+        @media (min-width: 600px) {
+          width: auto;
+        }
+      }
+
       button {
         width: 100%;
         height: 48px;
@@ -152,6 +198,17 @@ export default {
           height: 48px;
           min-width: 120px;
         }
+      }
+
+      .primary-action:not(.v-btn--disabled) {
+        background: var(--app-action-bg) !important;
+        color: var(--app-action-text) !important;
+      }
+
+      .primary-action.v-btn--disabled {
+        background: var(--app-hover) !important;
+        color: var(--app-text-subtle) !important;
+        opacity: 1;
       }
     }
   }

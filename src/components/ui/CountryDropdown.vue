@@ -6,12 +6,11 @@
     item-text="name"
     item-value="iso2"
     label="Country"
-    dark
     outlined
     dense
     hide-details
     auto-select-first
-    :menu-props="{ dark: true, offsetY: true }"
+    :menu-props="{ dark: $vuetify.theme.dark, offsetY: true }"
     @change="onChange">
     <template #selection="{ item }">
       <span class="country-selection">
@@ -136,10 +135,10 @@ export default {
   width: 1.33em;
   height: 1em;
   border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1px var(--app-border-strong);
 }
 .country-name {
-  color: hsla(0, 0%, 100%, 0.85);
+  color: var(--app-text-primary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -147,7 +146,7 @@ export default {
 }
 .country-dial {
   margin-left: 8px;
-  color: hsla(0, 0%, 100%, 0.55);
+  color: var(--app-text-subtle);
   flex-shrink: 0;
 }
 

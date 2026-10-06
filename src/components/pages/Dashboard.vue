@@ -308,6 +308,20 @@ ChartJS.register(
   zoomPlugin
 )
 
+function emptyTrialSelection () {
+  const uuid = typeof window !== 'undefined' && window.crypto && typeof window.crypto.randomUUID === 'function'
+    ? window.crypto.randomUUID()
+    : `trial-${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+  return {
+    uuid,
+    subject_selected: null,
+    session_selected: null,
+    trial_selected: null,
+    offset: 0
+  }
+}
+
 export default {
   name: 'ChartPage',
   components: {
@@ -316,12 +330,18 @@ export default {
   },
 
   data () {
+    const isLightTheme = typeof document !== 'undefined' && document.documentElement.dataset.appTheme === 'light'
+    const chartTextColor = isLightTheme ? '#17212b' : '#ffffff'
+    const chartGridColor = isLightTheme ? 'rgba(23, 33, 43, 0.16)' : 'rgba(255, 255, 255, 0.15)'
+
     return {
       loading: false,
       leftMenuClosed: false,
       rightMenuClosed: true, // closed by default until there is data
 
-      selected_trials: [],
+      // Always render one selector. Previously this started empty and relied on
+      // mounted(), so an interrupted/reused route could show only the X/Y fields.
+      selected_trials: [emptyTrialSelection()],
       public_session_id: null,
       current_session_id: null,
       x_quantities: [],
@@ -366,13 +386,13 @@ export default {
           title: {
             display: true,
             text: 'Chart',
-            color: '#ffffff',
+            color: chartTextColor,
             font: { size: 28 }
           },
           subtitle: {
             display: true,
             text: '',
-            color: '#ffffff',
+            color: chartTextColor,
             font: { size: 14 },
             padding: {
               bottom: 20
@@ -382,51 +402,54 @@ export default {
             position: 'bottom',
             align: 'center',
             labels: {
-              color: '#ffffff'
+              color: chartTextColor
             }
           },
           zoom: {
             pan: { enabled: true, mode: 'xy', modifierKey: 'ctrl' },
-            zoom: { wheel: { enabled: true }, drag: { enabled: true } }
+            zoom: {
+              wheel: { enabled: true, modifierKey: 'ctrl' },
+              drag: { enabled: true }
+            }
           }
         },
         scales: {
           x: {
             type: 'linear',
             border: {
-              color: '#ffffff'
+              color: chartTextColor
             },
             ticks: {
-              color: '#ffffff'
+              color: chartTextColor
             },
             title: {
               display: true,
-              color: '#ffffff',
+              color: chartTextColor,
               font: {
                 size: 18
               }
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.15)'
+              color: chartGridColor
             }
           },
           y: {
             type: 'linear',
             border: {
-              color: '#ffffff'
+              color: chartTextColor
             },
             ticks: {
-              color: '#ffffff'
+              color: chartTextColor
             },
             title: {
               display: true,
-              color: '#ffffff',
+              color: chartTextColor,
               font: {
                 size: 18
               }
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.15)'
+              color: chartGridColor
             }
           }
         }
@@ -443,6 +466,10 @@ export default {
 
     isMobile () {
       return window.innerWidth < 600
+    },
+
+    isDarkTheme () {
+      return this.$vuetify.theme.dark
     },
 
     chartContainerStyle () {
@@ -462,6 +489,10 @@ export default {
   },
 
   watch: {
+    isDarkTheme () {
+      this.$nextTick(() => this.applyChartTheme())
+    },
+
     isMobile (val) {
       this.chartOptions.plugins.legend.display = !val
       this.chartOptions.plugins.title.font.size = val ? 18 : 28
@@ -484,6 +515,7 @@ export default {
     ...mapActions('data', ['loadSession', 'loadSubjects']),
 
     toggleLeftMenu () {
+      this.ensureTrialSelection()
       this.leftMenuClosed = !this.leftMenuClosed
       if (!this.leftMenuClosed && this.$vuetify.breakpoint.smAndDown) {
         this.rightMenuClosed = true
@@ -500,6 +532,26 @@ export default {
     closeMenusOnMobile () {
       this.leftMenuClosed = true
       this.rightMenuClosed = true
+    },
+
+    applyChartTheme () {
+      const textColor = this.isDarkTheme ? '#ffffff' : '#17212b'
+      const gridColor = this.isDarkTheme
+        ? 'rgba(255, 255, 255, 0.15)'
+        : 'rgba(23, 33, 43, 0.16)'
+      const { plugins, scales } = this.chartOptions
+
+      plugins.title.color = textColor
+      plugins.subtitle.color = textColor
+      plugins.legend.labels.color = textColor
+      for (const axis of ['x', 'y']) {
+        scales[axis].border.color = textColor
+        scales[axis].ticks.color = textColor
+        scales[axis].title.color = textColor
+        scales[axis].grid.color = gridColor
+      }
+
+      this.$refs.chartRef?.getCurrentChart?.().update('none')
     },
 
     onXQuantitySelected () {
@@ -942,12 +994,12 @@ export default {
     },
 
     createEmptyTrialSelection () {
-      return {
-        uuid: this.generateUUID(),
-        subject_selected: null,
-        session_selected: null,
-        trial_selected: null,
-        offset: 0
+      return emptyTrialSelection()
+    },
+
+    ensureTrialSelection () {
+      if (!this.selected_trials.length) {
+        this.selected_trials.push(this.createEmptyTrialSelection())
       }
     },
 
@@ -1015,13 +1067,12 @@ export default {
   },
 
   async mounted () {
+    this.applyChartTheme()
     if (this.$vuetify.breakpoint.smAndDown) {
       this.leftMenuClosed = true
       this.rightMenuClosed = true
     }
-    if (!this.selected_trials.length) {
-      this.selected_trials.push(this.createEmptyTrialSelection())
-    }
+    this.ensureTrialSelection()
     const sessionId = this.$route.params.id
     this.current_session_id = sessionId || null
     if (sessionId) {
@@ -1070,7 +1121,7 @@ export default {
   min-height: 100%;
   width: 100%;
   overflow: visible;
-  background-color: black;
+  background-color: var(--app-background);
   transition: padding 0.3s ease;
 }
 
@@ -1102,8 +1153,8 @@ export default {
   position: relative;
   resize: both;
   overflow: hidden;
-  background-color: #000;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: var(--app-chart-background);
+  border: 1px solid var(--app-border-strong);
 }
 
 .chart-resizable--no-data {
@@ -1127,14 +1178,14 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 30;
-  color: #ffffff;
+  color: var(--app-text-primary);
   text-align: center;
   font-size: 18px;
   line-height: 1.4;
   max-width: min(80%, 640px);
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: var(--app-surface-opaque);
+  border: 1px solid var(--app-border-strong);
   border-radius: 8px;
   padding: 12px 16px;
 }
@@ -1147,7 +1198,7 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: black;
+  background: var(--app-chart-background);
   z-index: 50;
 }
 
@@ -1170,7 +1221,8 @@ export default {
   bottom: 0;
   width: 300px;
   max-width: 85vw;
-  background: #111;
+  background: var(--app-surface-opaque);
+  border-right: 1px solid var(--app-border);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -1229,7 +1281,7 @@ export default {
     border-radius: 16px 16px 0 0;
     border-right: none;
     border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    border-top: 1px solid var(--app-border-strong);
     z-index: 200;
     transform: translateY(0);
     visibility: visible !important;
@@ -1241,7 +1293,7 @@ export default {
     width: 40px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--app-text-subtle);
     margin: 8px auto 0;
     flex-shrink: 0;
   }
@@ -1276,7 +1328,8 @@ export default {
 
   .fixed-button .v-btn {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-    background: #333 !important;
+    background: var(--app-toolbar-action-bg) !important;
+    color: var(--app-toolbar-action-text) !important;
   }
 
   .fixed-button-to-left {
@@ -1325,8 +1378,8 @@ export default {
   align-items: center;
   padding: 12px;
   font-weight: bold;
-  border-bottom: 1px solid #333;
-  color: white;
+  border-bottom: 1px solid var(--app-border);
+  color: var(--app-text-primary);
   flex: 0 0 auto;
 }
 
@@ -1357,13 +1410,11 @@ export default {
 <style lang="scss">
 .chart-page-wrapper {
   width: 100%;
-  min-height: calc(100vh - var(--app-bar-height, 64px));
-  min-height: calc(100dvh - var(--app-bar-height, 64px));
-  max-height: none;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   padding-top: var(--app-bar-top-offset, 64px);
+  box-sizing: border-box;
 }
 
 /* Override Vuetify layout padding that reserves left/right space (v-main is parent of this page) */
@@ -1373,6 +1424,110 @@ export default {
   padding-right: 0 !important;
   padding-bottom: 0 !important;
   overflow-x: hidden !important;
-  overflow-y: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* AnalysisDashboard also has legacy global chart selectors. Keep this route's
+   light/dark surfaces isolated from those selectors regardless of CSS load order. */
+.chart-page-wrapper #body.chart-page {
+  height: calc(100vh - var(--app-bar-top-offset, 64px));
+  height: calc(100dvh - var(--app-bar-top-offset, 64px));
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+  background-color: var(--app-background);
+}
+
+.chart-page-wrapper .content-chart {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 24px;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.chart-page-wrapper .chart-resizable {
+  flex: 0 0 auto;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: var(--app-shadow);
+}
+
+.chart-page-wrapper .chart-reset-zoom-btn {
+  margin: 0;
+  align-self: center;
+}
+
+.chart-page-wrapper .sidebar {
+  top: calc(var(--app-bar-top-offset, 64px) + 24px);
+  bottom: 24px;
+  background: var(--app-surface-opaque);
+  border-right: 1px solid var(--app-border);
+  border-radius: 0 12px 12px 0;
+}
+
+.chart-page-wrapper .right-sidebar {
+  border-right: 0;
+  border-left: 1px solid var(--app-border);
+  border-radius: 12px 0 0 12px;
+}
+
+.chart-page-wrapper .sidebar .v-card__text {
+  padding: 16px;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.chart-page-wrapper .menu-header {
+  border-bottom-color: var(--app-border);
+  color: var(--app-text-primary);
+}
+
+.chart-page-wrapper .fixed-button .v-btn {
+  background: var(--app-toolbar-action-bg) !important;
+  color: var(--app-toolbar-action-text) !important;
+}
+
+@media (max-width: 960px) {
+  .chart-page-wrapper {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  }
+
+  .chart-page-wrapper #body.chart-page {
+    height: auto;
+    min-height: calc(100dvh - var(--app-bar-top-offset, 64px));
+    overflow: visible;
+  }
+
+  .chart-page-wrapper .content-chart {
+    height: auto;
+    overflow: visible;
+    scrollbar-gutter: auto;
+    padding: 12px;
+  }
+
+  .chart-page-wrapper .sidebar {
+    top: auto;
+    bottom: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .chart-page-wrapper .right-sidebar {
+    border-left: 0;
+  }
+
+  .chart-page-wrapper .chart-resizable {
+    border-radius: 8px;
+  }
 }
 </style>

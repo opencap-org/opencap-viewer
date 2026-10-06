@@ -1,12 +1,13 @@
 <template>
-  <div>
-    <v-tooltip bottom>
+  <div :class="{ 'toggle-menu-root': menu }">
+    <v-tooltip bottom :disabled="menu">
       <template v-slot:activator="{ on, attrs }">
         <div
           class="local-data-save-toggle"
           :class="{
             'local-data-save-toggle--disabled': !hasSession || loadingPreference,
-            'local-data-save-toggle--on': saveDataLocally
+            'local-data-save-toggle--on': saveDataLocally,
+            'local-data-save-toggle--menu': menu
           }"
           role="switch"
           tabindex="0"
@@ -37,6 +38,7 @@
     <v-dialog
       v-model="confirmDialog"
       content-class="app-dialog local-save-dialog"
+      attach=".v-application"
       max-width="520"
       :retain-focus="false"
       @input="onConfirmDialogInput"
@@ -88,6 +90,12 @@ import { apiError } from '@/util/ErrorMessage.js'
 
 export default {
   name: 'LocalDataSaveToggle',
+  props: {
+    menu: {
+      type: Boolean,
+      default: false
+    }
+  },
   data () {
     return {
       saveDataLocally: false,
@@ -241,11 +249,20 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.toggle-menu-root {
+  width: 100%;
+}
+
+.toggle-menu-root ::v-deep > span {
+  display: block;
+  width: 100%;
+}
+
 .local-data-save-toggle {
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--app-bar-border, rgba(255, 255, 255, 0.16));
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--app-bar-text, rgba(255, 255, 255, 0.86));
   display: inline-flex;
   gap: 6px;
   height: 32px;
@@ -254,8 +271,28 @@ export default {
   white-space: nowrap;
 }
 
+.local-data-save-toggle--menu {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: none;
+  justify-content: flex-start;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.local-data-save-toggle--menu .local-data-save-toggle__label {
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.local-data-save-toggle--menu .local-data-save-toggle__switch {
+  margin-left: auto;
+}
+
 .local-data-save-toggle--on {
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--app-bar-text, rgba(255, 255, 255, 0.86));
 }
 
 .local-data-save-toggle--on::v-deep .v-input--switch__track {
@@ -308,14 +345,14 @@ export default {
 }
 
 @media (max-width: 599px) {
-  .local-data-save-toggle {
+  .local-data-save-toggle:not(.local-data-save-toggle--menu) {
     gap: 4px;
     height: 30px;
     min-width: 138px;
     padding: 0 4px;
   }
 
-  .local-data-save-toggle__label {
+  .local-data-save-toggle:not(.local-data-save-toggle--menu) .local-data-save-toggle__label {
     font-size: 0.72rem;
   }
 }
@@ -325,7 +362,7 @@ export default {
 }
 
 .local-save-dialog__recommendation {
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--app-text-muted);
   font-weight: 600;
 }
 </style>

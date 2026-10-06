@@ -69,15 +69,15 @@
             <ValidationObserver tag="div" class="d-flex flex-column" ref="observer" v-slot="{ invalid }">
   
                 <div v-if="participantName" class="participant-context mb-3">
-                  <div class="participant-context__label">Participant</div>
-                  <div class="participant-context__name">{{ participantName }}</div>
+                  <span class="participant-context__label">Participant:</span>
+                  <span class="participant-context__name" :title="participantName">{{ participantName }}</span>
                 </div>
 
                 <div class="d-flex align-center flex-wrap mb-2 trial-name-row">
                   <div class="flex-grow-1 min-width-0">
                     <ValidationProvider rules="required|alpha_dash_custom" v-slot="{ errors }" name="Trial name">
                       <v-text-field v-show="show_controls && !showOpenInAppButton" v-model="trialName" label="Trial name" class="flex-grow-0"
-                          :disabled="state !== 'ready'" dark :error="errors.length > 0" :error-messages="errors[0]"
+                          :disabled="state !== 'ready'" :error="errors.length > 0" :error-messages="errors[0]"
                           autocomplete="off" />
                     </ValidationProvider>
                   </div>
@@ -97,19 +97,33 @@
               <div class="show-removed-trials-sidebar mb-2 d-flex align-center">
                 <v-checkbox v-model="show_trashed" label="Show removed trials" hide-details dense class="toolbar-checkbox"></v-checkbox>
                 <v-spacer></v-spacer>
-                <v-menu
-                  open-on-hover
-                  offset-y
-                  left
-                  :close-on-content-click="false"
-                  content-class="trial-legend-menu">
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn icon small dark v-bind="attrs" v-on="on" aria-label="Trial color legend">
-                      <v-icon small>mdi-palette-outline</v-icon>
-                    </v-btn>
-                  </template>
-                  <div class="trial-legend">
-                    <div class="trial-legend__title">Trial status</div>
+                <div class="trial-legend-wrap">
+                  <v-btn
+                    icon
+                    small
+                    aria-label="Trial color legend"
+                    aria-haspopup="true"
+                    :aria-expanded="String(trialLegendOpen)"
+                    @click.stop="toggleTrialLegend">
+                    <v-icon small>mdi-palette-outline</v-icon>
+                  </v-btn>
+                  <div
+                    v-show="trialLegendOpen"
+                    class="trial-legend"
+                    role="dialog"
+                    aria-label="Trial status"
+                    @click.stop>
+                    <div class="trial-legend__header">
+                      <div class="trial-legend__title">Trial status</div>
+                      <v-btn
+                        icon
+                        x-small
+                        class="trial-legend__close"
+                        aria-label="Close trial status legend"
+                        @click.stop="closeTrialLegend">
+                        <v-icon x-small>mdi-close</v-icon>
+                      </v-btn>
+                    </div>
                     <span class="trial-legend__item">
                       <span class="trial-legend__dot trial-legend__dot--done"></span>Done
                     </span>
@@ -123,7 +137,7 @@
                       <span class="trial-legend__dot trial-legend__dot--local"></span>Saved on phone
                     </span>
                   </div>
-                </v-menu>
+                </div>
               </div>
 
               <div class="trials-wrapper flex-grow-1">
@@ -142,7 +156,6 @@
                             <template v-if="$vuetify.breakpoint.smAndDown">
                               <v-btn
                                 icon
-                                dark
                                 @click="openTrialMenuSheet(t)">
                                 <v-icon>mdi-menu</v-icon>
                               </v-btn>
@@ -158,7 +171,6 @@
                               <template v-slot:activator="{ on, attrs }">
                                 <v-btn
                                   icon
-                                  dark
                                   v-bind="attrs"
                                   v-on="on">
                                   <v-icon>mdi-menu</v-icon>
@@ -197,7 +209,7 @@
                 content-class="bottom-sheet-rounded"
                 v-model="showTrialMenuSheet"
                 @input="val => !val && (selectedTrialForMenu = null)">
-                <v-sheet class="text-center trial-menu-sheet" color="blue-grey darken-1">
+                <v-sheet class="text-center trial-menu-sheet">
                   <v-list v-if="selectedTrialForMenu">
                     <v-list-item link v-if="selectedTrialForMenu.name !== 'neutral'" @click="closeSheetAndRename(selectedTrialForMenu)">
                       <v-list-item-content>
@@ -513,12 +525,21 @@
   
                   <div v-if="trial && !isMobileOrTablet" class="video-controls ui-no-zoom d-flex flex-wrap align-center pa-2">
                       <v-text-field label="Time (s)" type="number" :step="0.01" :value="time"
-                          :disabled="videoControlsDisabled || state !== 'ready'" dark class="time-input" @input="onChangeTime"
+                          :disabled="videoControlsDisabled || state !== 'ready'" class="time-input" @input="onChangeTime"
                           autocomplete="off" />
                       <v-slider :value="frame" :min="0" :max="frames.length - 1" :disabled="videoControlsDisabled" @input="onNavigate" hide-details
                           class="mb-2 flex-grow-1 timeline-slider" />
 
                       <div class="playback-controls-inline d-flex align-center">
+                        <CameraViewControls
+                            v-if="has3DData"
+                            :value="cameraView"
+                            :follow="followSubject"
+                            :disabled="!sceneReady"
+                            class="mr-2"
+                            @change-view="setCameraView"
+                            @update:follow="setFollowSubject" />
+
                         <VideoNavigation
                             :playing="playing"
                             :value="frame"
@@ -586,7 +607,8 @@
                     :step="0.01"
                     :value="time"
                     :disabled="videoControlsDisabled || state !== 'ready'"
-                    dark
+                    dense
+                    hide-details
                     class="time-input mr-2"
                     autocomplete="off"
                     @input="onChangeTime" />
@@ -595,18 +617,28 @@
                     :min="0"
                     :max="frames.length - 1"
                     :disabled="videoControlsDisabled"
-                    @input="onNavigate"
+                    dense
                     hide-details
+                    @input="onNavigate"
                     class="flex-grow-1 timeline-slider" />
               </div>
 
               <div class="playback-controls-row">
+                <CameraViewControls
+                    v-if="has3DData"
+                    :value="cameraView"
+                    :follow="followSubject"
+                    :disabled="!sceneReady"
+                    @change-view="setCameraView"
+                    @update:follow="setFollowSubject" />
+
                 <VideoNavigation
                     :playing="playing"
                     :value="frame"
                     :maxFrame="frames.length - 1"
                     :loop="loopPlayback"
                     :show-loop-toggle="true"
+                    :show-skip-buttons="false"
                     :disabled="videoControlsDisabled"
                     @play="togglePlay(true)"
                     @pause="togglePlay(false)"
@@ -614,7 +646,7 @@
                     @input="onNavigate"
                     class="playback-navigation" />
 
-                <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed ml-2" />
+                <SpeedControl v-model="playSpeed" :disabled="videoControlsDisabled" class="playback-speed" />
               </div>
             </div>
           </div>
@@ -626,6 +658,16 @@
               max-width="420"
               :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
+            <v-btn
+              icon
+              small
+              class="dialog-close-btn"
+              aria-label="Close"
+              title="Close"
+              @click="trial_rename_dialog = false"
+            >
+              <v-icon small>mdi-close</v-icon>
+            </v-btn>
             <v-card-text class="pt-4">
               <v-row class="m-0">
                 <v-col cols="12" sm="2">
@@ -643,10 +685,10 @@
   
                         <v-text-field v-model="trialNewName" label="Trial new name" class="flex-grow-0"
                             :disabled="state !== 'ready' || session.trials[trial_rename_index]?.status === 'processing' || session.trials[trial_rename_index]?.status === 'uploading'"
-                                      dark
                                       :error="errors.length > 0" :error-messages="errors[0]"
                                       autocomplete="off"
-                                      @keydown.enter.prevent="submitRenameTrial" />
+                                      @keydown.enter.prevent="submitRenameTrial"
+                                      @keydown.esc.prevent="trial_rename_dialog = false" />
                     </ValidationProvider>
   
                     <v-spacer></v-spacer>
@@ -669,6 +711,16 @@
           max-width="420"
           :fullscreen="$vuetify.breakpoint.smAndDown">
           <v-card>
+            <v-btn
+              icon
+              small
+              class="dialog-close-btn"
+              aria-label="Close"
+              title="Close"
+              @click="session_rename_dialog = false"
+            >
+              <v-icon small>mdi-close</v-icon>
+            </v-btn>
             <v-card-text class="pt-4">
               <v-row class="m-0">
                 <v-col cols="12" sm="2">
@@ -682,11 +734,11 @@
                 v-model="sessionNewName"
                 label="Session name"
                 class="flex-grow-0"
-                dark
                 :error="errors.length > 0"
                 :error-messages="errors[0]"
                 autocomplete="off"
-                @keydown.enter.prevent="submitRenameSession" />
+                @keydown.enter.prevent="submitRenameSession"
+                @keydown.esc.prevent="session_rename_dialog = false" />
                     </ValidationProvider>
                     <v-btn class="text-right" :disabled="invalid" @click="submitRenameSession">
                       Rename Session
@@ -704,6 +756,16 @@
             max-width="500"
             :fullscreen="$vuetify.breakpoint.smAndDown">
         <v-card>
+          <v-btn
+            icon
+            small
+            class="dialog-close-btn"
+            aria-label="Close"
+            title="Close"
+            @click="trial_modify_tags = false"
+          >
+            <v-icon small>mdi-close</v-icon>
+          </v-btn>
           <v-card-text class="pt-4">
             <v-row class="m-0">
               <v-col cols="12" sm="2">
@@ -834,7 +896,7 @@
                     <div class="text-body-2 grey--text text--darken-2">{{ func.description }}</div>
                   </v-col>
                   <v-col cols="12" sm="3" class="py-2 text-right">
-                    <v-btn small color="grey darken-4" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
+                    <v-btn small :color="analysisActionBtnColor" :dark="$vuetify.theme.dark" elevation="2" v-if="func.trials.includes(session.trials[trial_analysis_index].id)" :disabled="session.trials[trial_analysis_index].id in func.trials">
                         <span >
                             <v-progress-circular  indeterminate class="mr-2" color="grey" size="14" width="2" />
                             Calculating...
@@ -844,8 +906,8 @@
                     <v-btn
                         small
                         elevation="2"
-                        color="grey darken-4"
-                        dark
+                        :color="analysisActionBtnColor"
+                        :dark="$vuetify.theme.dark"
                         v-if="!func.trials.includes(session.trials[trial_analysis_index].id) && !(session.trials[trial_analysis_index].id in func.states)"
                         @click="invokeAnalysisFunction(func.id, session.trials[trial_analysis_index].id, session.trials[trial_analysis_index]?.name)"
                         >
@@ -855,15 +917,15 @@
                       <v-btn
                         small
                         elevation="2"
-                        color="grey darken-4"
-                        dark
+                        :color="analysisActionBtnColor"
+                        :dark="$vuetify.theme.dark"
                         v-if="(session.trials[trial_analysis_index].id in func.states) && !func.trials.includes(session.trials[trial_analysis_index].id)"
                         @click="func.states[session.trials[trial_analysis_index].id].state === 'successfull' && func.states[session.trials[trial_analysis_index].id].dashboard_id != null && goToAnalysisDashboard(func.states[session.trials[trial_analysis_index].id].dashboard_id, session.trials[trial_analysis_index].id)"
                       >
                           <span :style="func.states[session.trials[trial_analysis_index].id].state == 'failed'? 'color:red' : 'color:lightgreen'" class="font-weight-bold">{{ func.states[session.trials[trial_analysis_index].id].state }}</span>
                           <v-menu offset-y left close-on-content-click content-class="analysis-submenu">
                               <template v-slot:activator="{ on, attrs }">
-                              <v-btn icon dark v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
+                              <v-btn icon :dark="$vuetify.theme.dark" v-bind="attrs" v-on="on" class="analysis-menu-btn" @click.stop>
                                   <v-icon>mdi-menu</v-icon>
                               </v-btn>
                               </template>
@@ -946,9 +1008,11 @@
   import * as THREE from 'three'
   import * as THREE_OC from '@/orbitControls'
   import VideoNavigation from '@/components/ui/VideoNavigation'
+  import CameraViewControls from '@/components/ui/CameraViewControls'
   import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
   import SpeedControl from '@/components/ui/SpeedControl'
   import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+  import { getPelvisPose, placeCameraForView, followSubjectHorizontally, snapFollowToSubject } from '@/util/cameraViews'
   import { debounce } from 'lodash'
   import { isTester, loadUserGroups } from '@/util/staffAccess.js'
 
@@ -984,6 +1048,7 @@
       components: {
           Status,
           VideoNavigation,
+          CameraViewControls,
           SpeedControl,
           ConfirmDialog
       },
@@ -1051,6 +1116,9 @@
               loopPlayback: true,
               playSpeed: 1,
               mobileVideoSizeIndex: 0,
+              cameraView: 'default',
+              followSubject: false,
+              followSmoothedLookAt: null,
   
               show_controls: 1,
   
@@ -1070,6 +1138,7 @@
               trialsPollActive: false,
               showSessionMenuButtons: false,
               leftMenuOpen: false,
+              trialLegendOpen: false,
   
               n_calibrated_cameras: 0,
               n_cameras_connected: 0,
@@ -1144,6 +1213,12 @@
           }),
         sessionUrl() {
           return location.origin + "/session/" + (this.session?.id || '');
+        },
+        analysisActionBtnColor() {
+          return this.$vuetify.theme.dark ? 'grey darken-4' : 'primary'
+        },
+        isDarkTheme() {
+          return this.$vuetify.theme.dark
         },
         displaySessionName() {
           const s = this.session;
@@ -1453,6 +1528,7 @@
       window.removeEventListener('keydown', this.handleKeyboard)
       window.removeEventListener('resize', this.onResize)
       this.unbindControlGestureGuards()
+      this.setTrialLegendOutsideClickListener(false)
 
       // Clear caches
       this.materialCache.clear();
@@ -1489,6 +1565,12 @@
         this.eachVideo(videoElement => {
           videoElement.playbackRate = this.playSpeed
         })
+      },
+      isDarkTheme() {
+        if (this.renderer) {
+          this.renderer.setClearColor(this.sceneBackgroundColor())
+          this.animateOneFrame()
+        }
       },
       showArchiveDialog(newShowArchiveDialog, oldShowArchiveDialog) {
         if (!newShowArchiveDialog) {
@@ -1551,6 +1633,29 @@
           this.userGroups = await loadUserGroups()
         } catch {
           this.userGroups = []
+        }
+      },
+      toggleTrialLegend() {
+        this.trialLegendOpen = !this.trialLegendOpen
+        this.setTrialLegendOutsideClickListener(this.trialLegendOpen)
+      },
+      closeTrialLegend() {
+        if (!this.trialLegendOpen) return
+        this.trialLegendOpen = false
+        this.setTrialLegendOutsideClickListener(false)
+      },
+      onTrialLegendClickOutside(event) {
+        const wrap = this.$el && this.$el.querySelector('.trial-legend-wrap')
+        if (wrap && wrap.contains(event.target)) return
+        this.closeTrialLegend()
+      },
+      setTrialLegendOutsideClickListener(active) {
+        if (active) {
+          document.addEventListener('click', this.onTrialLegendClickOutside, true)
+          document.addEventListener('touchend', this.onTrialLegendClickOutside, true)
+        } else {
+          document.removeEventListener('click', this.onTrialLegendClickOutside, true)
+          document.removeEventListener('touchend', this.onTrialLegendClickOutside, true)
         }
       },
       parseTruthy(raw) {
@@ -1711,11 +1816,15 @@
                   const res_status = await axiosGetWithRetry(`/sessions/${this.session.id}/status/`, {}, { retries: 1, backoffFactor: 0.2, maxJitterMs: 100, timeout: 2000 })
                   this.applyStatusCounts(res_status.data)
 
-                  // If no calibrated cameras...
+                  // If no calibrated cameras, stop/cancel so phones don't keep recording.
                   if (this.n_calibrated_cameras === 0) {
-                    const noCamMsg = "There are no calibrated cameras for this trial."
-                    apiError(noCamMsg)
-                    throw new Error(noCamMsg)
+                    await axiosGetWithRetry(`/sessions/${this.session.id}/stop/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
+                    await axiosGetWithRetry(`/sessions/${this.session.id}/cancel_trial/`, {}, { retries: 2, backoffFactor: 0.25, maxJitterMs: 100, timeout: 5000 })
+                    this.cancelPoll()
+                    this.cancelRecordingStatusPoll()
+                    this.state = 'ready'
+                    this.trialInProcess.status = "error"
+                    throw new Error("There are no calibrated cameras for this trial.")
                   }
 
                   // Transition to recording state
@@ -2057,6 +2166,7 @@
           { storedKey: 'openSimModel', paramKey: 'settings_openSimModel' },
           { storedKey: 'augmentermodel', paramKey: 'settings_augmenter_model' },
           { storedKey: 'filterfrequency', paramKey: 'settings_filter_frequency' },
+          { storedKey: 'sync_ver', paramKey: 'settings_synchronization_version' },
         ]
 
         settingKeys.forEach(({ storedKey, paramKey }) => {
@@ -2461,6 +2571,9 @@
         }
         this.sessionNotification = { show: false, text: '', type: 'error' }
         this.time = 0
+        this.cameraView = 'default'
+        this.followSubject = false
+        this.followSmoothedLookAt = null
 
         if (!this.trialLoading) {
           this.frame = 0
@@ -2580,6 +2693,7 @@
                     antialias: true,
                     powerPreference: "high-performance"
                   })
+                  this.renderer.setClearColor(this.sceneBackgroundColor())
                   this.renderer.shadowMap.enabled = true;
 
                   // Adaptive render quality
@@ -2596,11 +2710,13 @@
                   this.onResize()
                   container.appendChild(this.renderer.domElement)
                   this.controls = new THREE_OC.OrbitControls(this.camera, this.renderer.domElement)
-  
+                  this.controls.target.set(0, 1, 0)
+                  this.controls.update()
+
                   // show3d
                   // add the plane - with cached texture
                   {
-                    const planeSize = 8;
+                    const planeSize = 12;
   
                     const loader = new THREE.TextureLoader();
                     // Use cached texture if available
@@ -2759,6 +2875,9 @@
           }
         }
       },
+      sceneBackgroundColor() {
+        return this.isDarkTheme ? 0x000000 : 0x808080
+      },
       startRenderLoop() {
         if (this.renderLoopActive) return
         this.renderLoopActive = true
@@ -2846,6 +2965,10 @@
             }
           }
 
+          if (this.followSubject) {
+            this.updateFollowCamera(cframe)
+          }
+
           if (hasValidDuration) {
             this.syncVideos()
           }
@@ -2861,6 +2984,73 @@
         if (this.trial?.name === 'neutral') {
             this.togglePlay(false)
         }
+      },
+      getSubjectCenter(frameIndex) {
+        const pose = this.getPelvisPose(frameIndex)
+        return pose ? pose.position.clone() : null
+      },
+      getPelvisPose(frameIndex) {
+        return getPelvisPose(this.animation_json, frameIndex ?? this.frame, this.frames?.length || 0)
+      },
+      setCameraView(view) {
+        if (!this.camera || !this.controls) {
+          return
+        }
+
+        this.cameraView = view
+        const pose = this.getPelvisPose(this.frame) || {
+          position: new THREE.Vector3(0, 1, 0),
+          anterior: new THREE.Vector3(1, 0, 0),
+          superior: new THREE.Vector3(0, 1, 0),
+          right: new THREE.Vector3(0, 0, 1),
+          quaternion: new THREE.Quaternion()
+        }
+
+        placeCameraForView(this.camera, this.controls, view, pose)
+        if (this.followSubject) {
+          this.lockFollowTransform()
+        }
+
+        if (this.renderer && this.scene) {
+          this.renderer.render(this.scene, this.camera)
+        }
+      },
+      setFollowSubject(enabled) {
+        this.followSubject = !!enabled
+        if (this.followSubject) {
+          this.lockFollowTransform()
+          this.updateFollowCamera(this.frame)
+          if (this.renderer && this.scene && this.camera) {
+            this.renderer.render(this.scene, this.camera)
+          }
+        } else {
+          this.followSmoothedLookAt = null
+        }
+      },
+      lockFollowTransform() {
+        const pose = this.getPelvisPose(this.frame)
+        this.followSmoothedLookAt = snapFollowToSubject(this.camera, this.controls, pose)
+      },
+      updateFollowCamera(frameIndex) {
+        if (!this.camera || !this.controls) {
+          return
+        }
+
+        const pose = this.getPelvisPose(frameIndex)
+        if (!pose) {
+          return
+        }
+
+        if (!this.followSmoothedLookAt) {
+          this.lockFollowTransform()
+        }
+
+        this.followSmoothedLookAt = followSubjectHorizontally(
+          this.camera,
+          this.controls,
+          pose,
+          this.followSmoothedLookAt
+        )
       },
       syncVideos() {
         if (this.synced || this.trial == null || this.videos.length == 0)
@@ -3243,18 +3433,35 @@
   }
 
   /* Trial color legend popover */
-  .trial-legend-menu {
-    background-color: #37474f;
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  .trial-legend-wrap {
+    position: relative;
+    z-index: 6;
+    flex-shrink: 0;
   }
   .trial-legend {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 20;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 168px;
     padding: 10px 12px;
     font-size: 12px;
-    color: #eceff1;
+    color: var(--app-text-primary);
+    background-color: var(--app-surface-opaque);
+    border: 1px solid var(--app-border-strong);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
 
     &__title {
       font-weight: 600;
@@ -3262,7 +3469,10 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
       opacity: 0.7;
-      margin-bottom: 2px;
+    }
+
+    &__close {
+      margin: 0 -6px 0 0 !important;
     }
 
     &__item {
@@ -3301,7 +3511,7 @@
   /* Trial menu bottom sheet - safe area for notched phones */
   .trial-menu-sheet {
     padding-bottom: env(safe-area-inset-bottom, 0);
-    background-color: #546E7A !important; /* blue-grey 700 - muted, modern */
+    background-color: var(--app-surface-opaque) !important;
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
     overflow: hidden;
@@ -3343,7 +3553,7 @@
     flex-direction: row;
     overflow: hidden;
     z-index: 1;
-    background-color: #000;
+    background-color: var(--app-background);
     
 .main-content {
       min-width: 0;
@@ -3356,29 +3566,36 @@
     }
 
     .participant-context {
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      border: 1px solid var(--app-border-strong);
       border-radius: 6px;
-      padding: 10px 14px;
-      background-color: rgba(20, 20, 20, 0.78);
+      padding: 6px 12px;
+      background-color: var(--app-surface-muted);
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
-      color: rgba(255, 255, 255, 0.92);
+      color: var(--app-text-primary);
       max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .participant-context__label {
-      color: rgba(255, 255, 255, 0.62);
-      font-size: 0.72rem;
+      color: var(--app-text-muted);
+      font-size: 0.85rem;
       font-weight: 600;
-      line-height: 1.2;
-      text-transform: uppercase;
+      line-height: 1.25;
+      flex-shrink: 0;
     }
 
     .participant-context__name {
-      margin-top: 4px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       line-height: 1.25;
-      overflow-wrap: anywhere;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   
     .mobile-menu-toggle {
@@ -3386,7 +3603,8 @@
       top: calc(var(--app-bar-top-offset, 56px) + 8px);
       left: 8px;
       z-index: 100;
-      background-color: #424242 !important;
+      background-color: var(--app-toolbar-action-bg) !important;
+      color: var(--app-toolbar-action-text) !important;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
       border-radius: 8px !important;
       min-width: 48px !important;
@@ -3450,7 +3668,8 @@
       flex-direction: column;
       width: 250px;
       height: 100%;
-      background-color: #000000;
+      background-color: var(--app-surface-opaque);
+      border-right: 1px solid var(--app-border);
     }
 
     .left-wrapper.mobile-drawer .left {
@@ -3458,7 +3677,7 @@
       height: 100%;
       box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
       padding-top: 48px;
-      background-color: rgb(18, 18, 18);
+      background-color: var(--app-surface-opaque);
     }
 
     .left {
@@ -3503,6 +3722,9 @@
 
       .show-removed-trials-sidebar {
         flex-shrink: 0;
+        position: relative;
+        z-index: 6;
+        overflow: visible;
       }
 
       .show-removed-trials-sidebar .toolbar-checkbox {
@@ -3545,7 +3767,7 @@
           padding: 2px 6px;
   
           &.selected {
-            background-color: #272727;
+            background-color: var(--app-selected);
             cursor: default;
           }
         }
@@ -3559,7 +3781,8 @@
       right: -16px;
       transform: translateY(-50%);
       z-index: 103;
-      background-color: #424242 !important;
+      background-color: var(--app-toolbar-action-bg) !important;
+      color: var(--app-toolbar-action-text) !important;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
       min-width: 34px !important;
       max-width: 34px !important;
@@ -3602,7 +3825,7 @@
       .mocap-loading-overlay {
         position: absolute;
         inset: 0;
-        background-color: #000;
+        background-color: var(--app-background);
         z-index: 5;
       }
 
@@ -3624,7 +3847,7 @@
       .session-empty-state {
         flex: 1 1 auto;
         min-height: 0;
-        color: rgba(255, 255, 255, 0.86);
+        color: var(--app-text-primary);
 
         h3 {
           font-size: 1.4rem;
@@ -3633,7 +3856,7 @@
 
         p {
           max-width: 420px;
-          color: rgba(255, 255, 255, 0.72);
+          color: var(--app-text-muted);
         }
       }
     }
@@ -3778,39 +4001,102 @@
       
       .playback-controls {
         flex-shrink: 0;
-        padding: 8px;
-        background-color: rgba(0, 0, 0, 0.3);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 8px;
+        background-color: var(--app-surface-muted);
+        border-top: 1px solid var(--app-border);
 
         .playback-controls-row {
           display: flex;
           align-items: center;
+          flex-wrap: nowrap;
+          gap: 2px;
+          min-height: 40px;
+        }
+
+        .camera-view-controls {
+          flex: 0 0 auto;
+
+          .v-btn {
+            width: 32px;
+            height: 32px;
+          }
+
+          .v-icon {
+            font-size: 18px !important;
+          }
         }
 
         .playback-navigation {
           flex: 1 1 auto;
           min-width: 0;
+          justify-content: space-evenly !important;
+
+          .v-btn {
+            width: 32px;
+            height: 32px;
+          }
+
+          .v-icon {
+            font-size: 18px !important;
+          }
         }
 
-      .playback-speed {
-        flex: 0 0 auto;
-      }
+        .playback-speed {
+          flex: 0 0 auto;
 
-      .playback-timeline-mobile {
-        margin-top: 4px;
-
-        .time-input {
-          flex: 0 0 70px !important;
-          width: 70px !important;
-          max-width: 70px !important;
-          min-width: 70px !important;
+          .speed-control-button {
+            min-width: 44px;
+            height: 32px;
+            padding: 0 6px;
+            font-size: 0.75rem;
+          }
         }
 
-        .timeline-slider {
-          flex: 1 1 auto;
-          min-width: 0;
+        .playback-timeline-mobile {
+          margin: 0;
+          min-height: 0;
+          height: 36px;
+
+          .time-input {
+            flex: 0 0 64px !important;
+            width: 64px !important;
+            max-width: 64px !important;
+            min-width: 64px !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            padding-top: 0 !important;
+
+            .v-input__control {
+              min-height: 32px !important;
+            }
+
+            .v-input__slot {
+              margin-bottom: 0 !important;
+              min-height: 32px !important;
+            }
+
+            .v-label {
+              font-size: 11px;
+            }
+
+            input {
+              font-size: 13px;
+              padding: 0 !important;
+            }
+          }
+
+          .timeline-slider {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin: 0 !important;
+
+            .v-input__control,
+            .v-input__slot {
+              min-height: 32px !important;
+              margin: 0 !important;
+            }
+          }
         }
-      }
 
         .playback-video-size {
           flex: 0 0 auto;
@@ -3826,8 +4112,8 @@
           bottom: 0;
           z-index: 50;
           background-color: var(--bottom-toolbar-bg);
-          border-top: 1px solid rgba(255, 255, 255, 0.15);
-          padding: 6px 8px;
+          border-top: 1px solid var(--app-border-strong);
+          padding: 6px 6px 4px;
           padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
         }
       }

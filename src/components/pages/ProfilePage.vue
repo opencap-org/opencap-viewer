@@ -125,7 +125,6 @@
                             label="Username"
                             v-model="username"
                             class="ma-0"
-                            dark
                             v-bind:readonly="true"
                             v-bind:disabled="true"
                             :error="errors.length > 0"
@@ -146,7 +145,6 @@
                             label="First name"
                             v-model="first_name"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -163,7 +161,6 @@
                             label="Last name"
                             v-model="last_name"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -183,7 +180,6 @@
                             label="Email (will be used for two-factor authentication)"
                             v-model="email"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -202,7 +198,6 @@
                             label="Confirm new email"
                             v-model="confirm_email"
                             class="ma-0"
-                            dark
                             @paste.prevent
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
@@ -237,7 +232,6 @@
                             label="Institution"
                             v-model="institution"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -254,7 +248,6 @@
                             label="Profession"
                             v-model="profession"
                             class="ma-0"
-                            dark
                             :error="errors.length > 0"
                             :error-messages="errors[0]"/>
                         </ValidationProvider>
@@ -269,7 +262,6 @@
                           label="Reason for use"
                           v-model="reason_of_use"
                           class="ma-0"
-                          dark
                           :error="errors.length > 0"
                           :error-messages="errors[0]"/>
                       </ValidationProvider>
@@ -283,7 +275,6 @@
                           label="Website"
                           v-model="website"
                           class="ma-0"
-                          dark
                           :error="errors.length > 0"
                           :error-messages="errors[0]"/>
                       </ValidationProvider>
@@ -300,6 +291,12 @@
                   </div>
 
                   <div class="profile-edit-actions">
+                    <router-link
+                      class="profile-edit-discard"
+                      @click.native="handleDiscard"
+                      :to="{ name: 'ProfilePage', params: { username: username_param } }">
+                      Discard
+                    </router-link>
                     <v-btn
                       type="submit"
                       outlined
@@ -308,12 +305,6 @@
                       @click="onChangeProfile()">
                       Save Changes
                     </v-btn>
-                    <router-link
-                      class="profile-edit-discard"
-                      @click.native="handleDiscard"
-                      :to="{ name: 'ProfilePage', params: { username: username_param } }">
-                      Discard
-                    </router-link>
                   </div>
                 </ValidationObserver>
             </v-card-text>
@@ -399,7 +390,17 @@
 
           <div v-if="changingImage" class="profile-popup" @click="handleDiscard">
             <div class="profile-popup-content" @click.stop>
-              <h2 class="profile-popup-title">Change Profile Photo</h2>
+              <div class="profile-popup-header">
+                <h2 class="profile-popup-title">Change Profile Photo</h2>
+                <v-btn
+                  icon
+                  small
+                  class="profile-popup-close"
+                  aria-label="Close"
+                  @click="handleDiscard">
+                  <v-icon>mdi-close</v-icon>
+                </v-btn>
+              </div>
               <div class="profile-image-upload-area">
                 <v-img
                   v-if="selectedImage"
@@ -419,15 +420,15 @@
                 @change="handleImageUploaded"
                 accept="image/*"
               />
-              <v-btn outlined class="mb-2" @click="triggerFileInput">
+              <v-btn outlined class="mb-2 profile-choose-image-btn" @click="triggerFileInput">
                 <v-icon left small>mdi-upload</v-icon>
                 Choose Image
               </v-btn>
               <div class="profile-popup-actions">
+                <span class="profile-popup-cancel" @click="handleDiscard">Cancel</span>
                 <v-btn outlined :loading="loading" :disabled="!selectedImage" @click="handleSaveImage">
                   Save
                 </v-btn>
-                <span class="profile-popup-cancel" @click="handleDiscard">Cancel</span>
               </div>
             </div>
           </div>
@@ -531,30 +532,18 @@ export default {
       this.changingImage = false;
       this.email = this.original_email;
       this.confirm_email = '';
-      document.body.removeEventListener('click', this.closePopupOnClickOutside);
     },
     handleDiscardDeleteAccount() {
       this.deletingAccount = false;
-      document.body.removeEventListener('click', this.closePopupOnClickOutside);
     },
     handleChangeImage() {
       this.changingImage = true;
-      if (this.changingImage) {
-        document.body.addEventListener('click', this.closePopupOnClickOutside);
-      } else {
-        document.body.removeEventListener('click', this.closePopupOnClickOutside);
-      }
     },
     triggerFileInput() {
       this.$refs.fileInput && this.$refs.fileInput.click();
     },
     async handleOpenDeleteAccount() {
       this.deletingAccount = true;
-      if(this.deletingAccount) {
-        document.body.addEventListener('click', this.closePopupOnClickOutside);
-      } else {
-        document.body.removeEventListener('click', this.closePopupOnClickOutside);
-      }
     },
     async handleDeleteAccount() {
       console.log(this.confirm_username)
@@ -572,6 +561,22 @@ export default {
       if (!this.$el.contains(event.target)) {
         this.changingImage = false;
         this.deletingAccount = false;
+      }
+    },
+    onPopupKeydown(event) {
+      if (event.key !== 'Escape') return;
+      if (this.changingImage) {
+        this.handleDiscard();
+      } else if (this.deletingAccount) {
+        this.handleDiscardDeleteAccount();
+      }
+    },
+    setPopupListeners(active) {
+      document.removeEventListener('click', this.closePopupOnClickOutside);
+      document.removeEventListener('keydown', this.onPopupKeydown);
+      if (active) {
+        document.addEventListener('click', this.closePopupOnClickOutside);
+        document.addEventListener('keydown', this.onPopupKeydown);
       }
     },
     handleImageUploaded(event) {
@@ -713,8 +718,17 @@ export default {
             this.fetchData(username)
         },
         immediate: true,
-    }
-}
+    },
+    changingImage(active) {
+      this.setPopupListeners(active || this.deletingAccount);
+    },
+    deletingAccount(active) {
+      this.setPopupListeners(active || this.changingImage);
+    },
+  },
+  beforeDestroy() {
+    this.setPopupListeners(false);
+  },
 };
 </script>
 
@@ -738,8 +752,8 @@ export default {
 
 /* Profile cards */
 .profile-card {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface) !important;
+  border: 1px solid var(--app-border);
   border-radius: 12px;
 }
 
@@ -749,13 +763,16 @@ export default {
 }
 
 .profile-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   padding-bottom: 16px;
 }
 
 .profile-avatar-wrapper {
   position: relative;
-  display: inline-block;
+  display: block;
   margin-bottom: 16px;
 }
 
@@ -763,14 +780,25 @@ export default {
   width: 120px !important;
   height: 120px !important;
   border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.12);
+  border: 3px solid var(--app-border-strong);
 }
 
 .profile-avatar-edit {
   position: absolute !important;
   bottom: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.6) !important;
+  background: var(--app-surface-opaque) !important;
+  border: 1.5px solid var(--app-border-strong) !important;
+  color: var(--app-text-primary) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+
+.profile-avatar-edit:hover {
+  background: var(--app-surface-muted) !important;
+}
+
+.profile-avatar-edit ::v-deep .v-icon {
+  color: var(--app-text-primary) !important;
 }
 
 .profile-username {
@@ -792,7 +820,7 @@ export default {
 }
 
 .profile-institution {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--app-text-muted);
   font-size: 0.9rem;
   margin: 0 0 12px 0;
 }
@@ -801,7 +829,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--app-text-primary);
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -812,7 +840,7 @@ export default {
 
 .profile-actions {
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-border);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -833,7 +861,7 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .profile-details-content {
@@ -845,7 +873,7 @@ export default {
   flex-wrap: wrap;
   align-items: baseline;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--app-border);
   gap: 12px;
 }
 
@@ -855,7 +883,7 @@ export default {
 
 .profile-info-label {
   flex: 0 0 140px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
   font-size: 0.875rem;
   display: flex;
   align-items: center;
@@ -869,7 +897,7 @@ export default {
 .profile-info-value {
   flex: 1;
   min-width: 0;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
 }
 
 .profile-info-link {
@@ -898,25 +926,26 @@ export default {
 .profile-settings-title {
   font-size: 1.25rem;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .profile-edit-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 16px;
   margin-top: 24px;
   padding-top: 16px;
 }
 
 .profile-edit-discard {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
   text-decoration: none;
   font-size: 0.9rem;
 }
 
 .profile-edit-discard:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--app-text-primary);
 }
 
 /* Settings */
@@ -933,7 +962,7 @@ export default {
 }
 
 .profile-settings-warning {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--app-text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
   margin: 0;
@@ -943,13 +972,13 @@ export default {
   display: inline-flex;
   align-items: center;
   margin-top: 24px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--app-text-muted);
   text-decoration: none;
   font-size: 0.9rem;
 }
 
 .profile-settings-back:hover {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
 }
 
 /* Popups */
@@ -965,8 +994,8 @@ export default {
 }
 
 .profile-popup-content {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--app-surface-opaque);
+  border: 1px solid var(--app-border-strong);
   border-radius: 12px;
   padding: 24px;
   max-width: 420px;
@@ -992,8 +1021,17 @@ export default {
   margin: 0;
 }
 
+.profile-popup-close {
+  margin-left: auto;
+  color: var(--app-text-subtle) !important;
+}
+
+.profile-popup-close:hover {
+  color: var(--app-text-primary) !important;
+}
+
 .profile-popup-text {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--app-text-muted);
   font-size: 0.9rem;
   line-height: 1.5;
   margin: 0 0 12px 0;
@@ -1002,18 +1040,25 @@ export default {
 .profile-popup-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 16px;
   margin-top: 20px;
 }
 
+.profile-choose-image-btn {
+  display: flex !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .profile-popup-cancel {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
   cursor: pointer;
   font-size: 0.9rem;
 }
 
 .profile-popup-cancel:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--app-text-primary);
 }
 
 .profile-image-upload-area {
@@ -1022,22 +1067,22 @@ export default {
   margin: 0 auto 16px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border: 2px dashed var(--app-border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--app-surface-muted);
 }
 
 .profile-image-preview {
   width: 100% !important;
   height: 100% !important;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3) !important;
+  background: var(--app-surface-muted) !important;
 }
 
 .profile-image-upload-area ::v-deep .v-image {
-  background: rgba(0, 0, 0, 0.3) !important;
+  background: var(--app-surface-muted) !important;
 }
 
 .profile-image-placeholder {
@@ -1045,7 +1090,7 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--app-text-subtle);
   font-size: 0.85rem;
 }
 

@@ -1,9 +1,11 @@
 \<template>
   <MainLayout
+    class="neutral-main-layout"
     :step="4"
     column
     :rightButton="rightButtonCaption"
     :rightDisabled="rightButtonDisabled"
+    :rightDisabledHint="recordDisabledHint"
     :rightSpinner="busy && !imgs"
     @right="isMonocularMode ? skipProcessingToMonocular() : onNext()">
     <template v-slot:left>
@@ -35,7 +37,23 @@
           </v-card-text>
         </v-card>
 
-        <div v-else class="neutral-layout">
+        <template v-else>
+          <UploadStatusBanner
+            v-if="!isMonocularMode"
+            ref="uploadStatusBanner"
+            class="mb-4"
+            :busy="busy"
+            :uploaded="n_videos_uploaded"
+            :expected="n_calibrated_cameras"
+            action-name="Record"
+            idle-value="Ready to record the neutral pose"
+            idle-hint="After you press Record, this banner shows how many calibrated phone videos have uploaded."
+            busy-label="Uploading neutral videos"
+            complete-hint="Upload finished. Processing neutral pose…"
+            waiting-hint="Waiting for calibrated phones to join. Confirm each phone scanned the QR code."
+          />
+
+          <div class="neutral-layout">
           <div class="left-column" :class="{ 'full-width': isMonocularMode }">
             <div class="cards-row d-flex flex-column">
               <v-card class="mb-4 session-info-card">
@@ -288,6 +306,34 @@
                               item-value="value"
                             />
                         </v-card-text>
+                      
+                        <v-card-title class="justify-center data-title">
+                            <span class="mr-2">Synchronization Algorithm Version</span>
+                            <v-tooltip bottom="" max-width="500px">
+                                <template v-slot:activator="{ on }">
+                                    <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                                </template>
+                                OpenCap uses a synchronization algorithm to synchronize the videos recorded using multiple cameras.
+                                <br><br>
+                                The latest version (v1.1, default) is more accurate and more robust when the user punches one hand
+                                in the air above their shoulders (it will automatically use the best detected punch from either hand)
+                                and brings it back down at some point during the trial. We recommend using it for studies involving
+                                treadmill gait or fairly static movements. With no hand punch, it behaves the same as v1.0.
+                                <br><br>
+                                The original version (v1.0) may have lower accuracy when synchronizing movements with hand punch.
+                                Otherwise, it behaves the same as v1.1 in any other instance.
+                            </v-tooltip>
+                        </v-card-title>
+
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                            <v-select
+                                v-model="synchronization_version"
+                                label="Select synchronization algorithm version"
+                                :items="synchronization_versions"
+                                item-text="text"
+                                item-value="value"
+                            />
+                        </v-card-text>
 
                         <v-card-title class="justify-center data-title">
                           <span class="mr-2">Filter frequency</span>
@@ -404,12 +450,6 @@
           </div>
 
           <div v-if="!isMonocularMode" class="right-column d-flex flex-column ml-4">
-            <v-card class="mb-4">
-              <v-card-text style="padding-top: 5px; padding-bottom: 5px; font-size: 16px;">
-                <p class="mb-0">{{ n_videos_uploaded }} of {{ n_calibrated_cameras }} videos uploaded</p>
-              </v-card-text>
-            </v-card>
-
             <v-card class="step-4-2 d-flex images-box">
             <v-card-title class="justify-center">
               Record neutral pose
@@ -450,6 +490,7 @@
             </v-card>
           </div>
         </div>
+        </template>
       </div>
     </div>
   
@@ -488,7 +529,9 @@ import MainLayout from "@/layout/MainLayout";
 import ExampleImage from "@/components/ui/ExampleImage";
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import UploadStatusBanner from '@/components/ui/UploadStatusBanner.vue'
 import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
+import { resetPageScroll } from '@/util/scrollUtils.js'
 
 const LIDAR_ENABLE_COOLDOWN_MS = 2000
 const LIDAR_DISABLE_COOLDOWN_MS = 2000
@@ -499,7 +542,8 @@ export default {
     MainLayout,
     ExampleImage,
     DialogComponent,
-    ConfirmDialog
+    ConfirmDialog,
+    UploadStatusBanner
   },
   data() {
     return {
@@ -561,6 +605,11 @@ export default {
         {"text": "v0.3 (default)", "value": "v0.3"},
         {"text": "v0.2 (old model, default until 07-30-2023)", "value": "v0.2"},
       ],
+      synchronization_version: '1.1',
+      synchronization_versions: [
+        {"text": "v1.1 (default)", "value": "1.1"},
+        {"text": "v1.0 (old model, default until 05-07-2026)", "value": "1.0"},
+      ],
       filter_frequency: 'default',
       filter_frequencies: [        
         {"text": "12Hz for gait, half the framerate otherwise (default)", "value": "default"},
@@ -611,6 +660,26 @@ export default {
     }),
     rightButtonDisabled() {
       return this.busy || this.disabledNextButton || (!this.imgs && this.lidarCooldownActive);
+    },
+    recordDisabledHint() {
+      if (this.imgs || this.busy || this.lidarCooldownActive || !this.disabledNextButton) {
+        return '';
+      }
+      const action = this.isMonocularMode ? 'Next' : 'Record';
+      if (!this.subject || this.subject.id === 'new') {
+        return `Select a subject to enable ${action}`;
+      }
+      if (!this.data_sharing_0) {
+        return `Confirm the data sharing agreement to enable ${action}`;
+      }
+      if (!this.data_sharing) {
+        return `Select a data sharing preference to enable ${action}`;
+      }
+      const sessionName = (this.sessionName || '').trim();
+      if (sessionName && !/^[a-zA-Z0-9-_]+$/.test(sessionName)) {
+        return `Fix the session name to enable ${action}`;
+      }
+      return `Complete the form to enable ${action}`;
     },
     showStandardAdvancedSettings() {
       return !this.isMonocularMode;
@@ -700,6 +769,7 @@ export default {
         openSimModel: this.openSimModel,
         augmenter_model: this.augmenter_model,
         filter_frequency: this.filter_frequency,
+        synchronization_version: this.synchronization_version,
       }
     },
     hasSavedAdvancedSettingsMetadata() {
@@ -713,6 +783,7 @@ export default {
         'openSimModel',
         'augmentermodel',
         'filterfrequency',
+        'synchronization_version'
       ].every(key => settings[key] !== undefined && settings[key] !== null && settings[key] !== '')
     },
     hasUnsavedAdvancedSettings() {
@@ -1027,6 +1098,7 @@ export default {
         this.tempFilterFrequency = this.filter_frequency
         this.componentKey += 1
       })
+      assignIfPresent('synchronization_version', value => { this.synchronization_version = value })
     },
     updateSavedAdvancedSettingsSnapshot() {
       this.savedAdvancedSettingsSnapshot = {...this.currentAdvancedSettings}
@@ -1039,6 +1111,7 @@ export default {
         settings_openSimModel: this.openSimModel,
         settings_augmenter_model: this.augmenter_model,
         settings_filter_frequency: this.filter_frequency,
+        settings_synchronization_version: this.synchronization_version
       }
     },
     setAdvancedSettingsDialog(value) {
@@ -1242,7 +1315,9 @@ export default {
             const pollID = ++this.pollID
             apiInfo("Recording...")
             this.lastPolledStatus = "";
+            this.n_videos_uploaded = 0
             this.busy = true;
+            this.scrollUploadStatusIntoView()
             this.setNeutral({
                 subject: this.subject,
               data_sharing: this.data_sharing,
@@ -1259,7 +1334,14 @@ export default {
                 {
                   params: {
                     settings_data_sharing: this.data_sharing,
+                    settings_scaling_setup: this.scaling_setup,
+                    settings_pose_model: this.pose_model,
+                    settings_framerate: this.framerate,
                     settings_session_name: this.getResolvedSessionNameForSubmit(),
+                    settings_openSimModel: this.openSimModel,
+                    settings_augmenter_model: this.augmenter_model,
+                    settings_filter_frequency: this.filter_frequency,
+                    settings_synchronization_version: this.synchronization_version,
                   },
                 }
               );
@@ -1381,6 +1463,17 @@ export default {
       if (this.timeoutID) window.clearTimeout(this.timeoutID)
       this.timeoutID = null
     },
+    scrollUploadStatusIntoView() {
+      if (this.isMonocularMode) return
+      this.$nextTick(() => {
+        resetPageScroll()
+        const banner = this.$refs.uploadStatusBanner
+        const el = banner && (banner.$el || banner)
+        if (el && el.scrollIntoView) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      })
+    },
     openAdvancedSettings() {
       this.advancedSettingsDialog = true;
       this.getAvailableFramerates()
@@ -1457,6 +1550,7 @@ export default {
                 settings_openSimModel: this.openSimModel,
                 // settings_augmenter_model: this.augmenter_model,
                 // settings_filter_frequency: this.filter_frequency,
+                settings_synchronization_version: this.synchronization_version,
               },
             }
           );
@@ -1519,10 +1613,20 @@ export default {
   align-items: stretch;
 }
 
+// Single scroll container for Neutral so the page can always reach the
+// record-pose footer above the Back/Record row.
+.neutral-main-layout .content-wrapper {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 .neutral-content {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   overflow: visible;
-  padding-bottom: 0;
+  padding-bottom: 8px;
   padding-left: 0;
   padding-right: 0;
   box-sizing: border-box;
@@ -1659,7 +1763,7 @@ export default {
 .step-4-2 {
   flex-grow: 1;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   
   @media (max-width: 960px) {
     margin-left: 0 !important;
@@ -1730,7 +1834,7 @@ export default {
   height: fit-content;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
   box-sizing: border-box;
 
   ul {
@@ -1743,7 +1847,7 @@ export default {
   .v-card {
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
   
   .record-pose-content {
@@ -1768,6 +1872,157 @@ export default {
 
 .checkbox-box > div {
   margin-top: 0;
+}
+
+@media (max-width: 960px) {
+  .neutral-main-layout {
+    // Nav is fixed below; keep only safe-area padding on the shell.
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .neutral-wrapper {
+    // Clear the fixed Back/Record row when scrolled to the end.
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .left-column.full-width {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .neutral-main-layout .page-navigation {
+    position: fixed;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    left: 8px;
+    z-index: 20;
+    width: auto !important;
+    flex-shrink: 0;
+    margin: 0 !important;
+    background: var(--app-background);
+  }
+}
+
+@media (max-width: 599px) {
+  .left-column .cards-row {
+    gap: 8px;
+  }
+
+  .left-column .session-info-card {
+    margin-bottom: 0 !important;
+  }
+
+  .session-info-card .v-card__title,
+  .data-sharing-card .data-title {
+    min-height: 0;
+    padding: 8px 10px 4px !important;
+    font-size: 1.1rem !important;
+    line-height: 1.25;
+  }
+
+  .session-info-card .v-card__text {
+    padding: 0 12px 8px !important;
+  }
+
+  .session-info-card .row {
+    margin: -4px;
+  }
+
+  .session-info-card .col {
+    padding: 4px;
+  }
+
+  .session-info-card .v-input {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .session-info-card .v-text-field__details {
+    min-height: 14px;
+    margin-bottom: 0;
+  }
+
+  .session-info-card .v-messages,
+  .session-info-card .v-messages__message {
+    min-height: 12px;
+    font-size: 0.7rem;
+    line-height: 1.15;
+  }
+
+  .data-sharing-card > .d-flex {
+    min-height: 0;
+    align-items: center;
+  }
+
+  .data-sharing-card > .d-flex > .v-icon {
+    font-size: 24px !important;
+  }
+
+  .data-sharing-card .checkbox-wrapper {
+    padding: 0 12px 8px !important;
+  }
+
+  .data-sharing-card .checkbox-box {
+    width: 100%;
+  }
+
+  .data-sharing-card .v-input--checkbox {
+    margin: 0;
+    padding: 0;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-input__slot {
+    align-items: flex-start;
+    margin-bottom: 2px;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-input--selection-controls__input {
+    margin-right: 6px;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-label {
+    font-size: 0.75rem !important;
+    line-height: 1.25;
+  }
+
+  .data-sharing-card .v-select {
+    margin-top: 2px;
+    padding-top: 0;
+  }
+
+  .data-sharing-card .v-select .v-label,
+  .data-sharing-card .v-select__selection,
+  .data-sharing-card .v-messages__message {
+    font-size: 0.75rem !important;
+    line-height: 1.2;
+  }
+
+  .advanced-settings-row .v-btn {
+    height: 40px !important;
+    min-height: 40px !important;
+    margin: 8px 0 0 !important;
+    padding: 0 16px !important;
+  }
+}
+
+@media (max-width: 599px) and (max-height: 700px) {
+  .session-info-card .v-card__title,
+  .data-sharing-card .data-title {
+    padding-top: 6px !important;
+    font-size: 1rem !important;
+  }
+
+  .session-info-card .v-card__text,
+  .data-sharing-card .checkbox-wrapper {
+    padding-bottom: 6px !important;
+  }
+
+  .data-sharing-card .v-input--checkbox .v-label,
+  .data-sharing-card .v-select .v-label,
+  .data-sharing-card .v-select__selection,
+  .data-sharing-card .v-messages__message {
+    font-size: 0.7rem !important;
+  }
 }
 
 .centered-settings {
@@ -1827,13 +2082,13 @@ export default {
     padding-bottom: 0;
     padding-top: 0;
     min-height: auto;
-    background-color: #252525 !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    background-color: var(--app-surface-opaque) !important;
+    box-shadow: var(--app-shadow);
     border-radius: 8px;
     
     &::before,
     &::after {
-      background-color: #252525 !important;
+      background-color: var(--app-surface-opaque) !important;
     }
     
     ::v-deep .v-card__title,
@@ -1841,40 +2096,40 @@ export default {
     ::v-deep .v-card__actions,
     ::v-deep .data-title,
     ::v-deep .checkbox-wrapper {
-      background-color: #252525 !important;
-      color: #ffffff !important;
+      background-color: var(--app-surface-opaque) !important;
+      color: var(--app-text-primary) !important;
     }
     
     ::v-deep .v-card__title span,
     ::v-deep .data-title span {
-      color: #ffffff !important;
+      color: var(--app-text-primary) !important;
       background-color: transparent !important;
     }
     
     ::v-deep .v-input {
-      background-color: #252525 !important;
+      background-color: var(--app-surface-opaque) !important;
     }
     
     ::v-deep .v-input__slot {
-      background-color: rgba(255,255,255,0.08) !important;
-      color: #ffffff !important;
+      background-color: var(--app-selected) !important;
+      color: var(--app-text-primary) !important;
     }
     
     ::v-deep .v-select__selection,
     ::v-deep .v-select__selections {
-      color: #ffffff !important;
+      color: var(--app-text-primary) !important;
     }
     
     ::v-deep .v-label {
-      color: rgba(255,255,255,0.7) !important;
+      color: var(--app-text-muted) !important;
     }
     
     ::v-deep .v-input__append-inner .v-icon {
-      color: rgba(255,255,255,0.7) !important;
+      color: var(--app-text-muted) !important;
     }
     
     ::v-deep .v-icon {
-      color: rgba(255,255,255,0.7) !important;
+      color: var(--app-text-muted) !important;
     }
     
     ::v-deep .v-tooltip span {
@@ -1897,7 +2152,7 @@ export default {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background-color: #252525 !important;
+    background-color: var(--app-surface-opaque) !important;
   }
   
   .v-card__title.data-title {
@@ -1926,7 +2181,7 @@ export default {
     min-height: auto;
     overflow: visible;
     position: relative;
-    background-color: #252525 !important;
+    background-color: var(--app-surface-opaque) !important;
     
     @media (max-width: 599px) {
       padding: 6px 12px 24px 12px !important;
@@ -2017,8 +2272,8 @@ export default {
     margin-top: 0;
     margin-bottom: 0;
     position: relative;
-    background-color: #252525 !important;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background-color: var(--app-surface-opaque) !important;
+    border-bottom: 1px solid var(--app-border);
     
     @media (max-width: 599px) {
       padding: 10px 12px 10px 12px;
@@ -2030,7 +2285,7 @@ export default {
     margin: 0 !important;
     font-size: 1.25rem !important;
     font-weight: 600;
-    color: #ffffff !important;
+    color: var(--app-text-primary) !important;
     background: transparent !important;
   }
   
@@ -2044,21 +2299,21 @@ export default {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.08) !important;
-      color: #ffffff !important;
+      background: var(--app-selected) !important;
+      color: var(--app-text-primary) !important;
       -webkit-appearance: none;
       appearance: none;
     }
 
     .v-btn.advanced-settings-close-btn .advanced-settings-close-icon,
     .v-btn.advanced-settings-close-btn .advanced-settings-close-icon line {
-      stroke: #ffffff !important;
+      stroke: var(--app-text-primary) !important;
     }
     
     .v-btn .v-btn__content,
     .v-btn::before,
     .v-btn .v-ripple__container {
-      color: #ffffff !important;
+      color: var(--app-text-primary) !important;
     }
   }
 
@@ -2068,8 +2323,8 @@ export default {
     z-index: 20;
     padding: 16px;
     gap: 12px;
-    background-color: #252525 !important;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    background-color: var(--app-surface-opaque) !important;
+    border-top: 1px solid var(--app-border);
 
     .v-btn {
       min-width: 96px;
@@ -2080,8 +2335,8 @@ export default {
     }
 
     .v-btn:not(.primary-dark) {
-      color: #ffffff !important;
-      background: rgba(255,255,255,0.08) !important;
+      color: var(--app-text-primary) !important;
+      background: var(--app-selected) !important;
     }
 
     .advanced-settings-save-wrapper {
@@ -2089,19 +2344,19 @@ export default {
     }
 
     .advanced-settings-save-btn.v-btn--disabled {
-      background: rgba(255,255,255,0.06) !important;
-      color: rgba(255,255,255,0.42) !important;
-      border: 1px dashed rgba(255,255,255,0.24);
+      background: var(--app-hover) !important;
+      color: var(--app-text-subtle) !important;
+      border: 1px dashed var(--app-border-strong);
       box-shadow: none;
     }
 
     .advanced-settings-save-btn.v-btn--disabled .v-btn__content {
-      color: rgba(255,255,255,0.42) !important;
+      color: var(--app-text-subtle) !important;
     }
 
     .advanced-settings-save-btn:not(.v-btn--disabled) {
-      color: #ffffff !important;
-      background: rgba(255,255,255,0.08) !important;
+      color: var(--app-action-text) !important;
+      background: var(--app-action-bg) !important;
     }
   }
 
@@ -2180,7 +2435,7 @@ export default {
 }
 
 .lidar-lock-reason {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--app-text-muted);
   font-size: 0.78rem;
   max-width: 360px;
   text-align: center;

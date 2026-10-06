@@ -10,6 +10,7 @@
     </v-btn>
 
     <v-btn
+      v-if="showSkipButtons"
       icon
       :disabled="frame === 0 || disabled || playing"
       @click="frame = 0">
@@ -38,6 +39,7 @@
     </v-btn>      
 
     <v-btn
+      v-if="showSkipButtons"
       icon
       :disabled="frame === maxFrame || disabled || playing"
       @click="frame = maxFrame">
@@ -60,6 +62,10 @@ export default {
     showLoopToggle: {
       type: Boolean,
       default: false
+    },
+    showSkipButtons: {
+      type: Boolean,
+      default: true
     },
     disabled: {
       type: Boolean,

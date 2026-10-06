@@ -1,12 +1,13 @@
 <template>
-  <div>
-    <v-tooltip bottom>
+  <div :class="{ 'toggle-menu-root': menu }">
+    <v-tooltip bottom :disabled="menu">
       <template v-slot:activator="{ on, attrs }">
         <div
           class="lidar-toggle"
           :class="{
             'lidar-toggle--disabled': !hasSession || loadingPreference,
-            'lidar-toggle--on': useLidar
+            'lidar-toggle--on': useLidar,
+            'lidar-toggle--menu': menu
           }"
           role="switch"
           tabindex="0"
@@ -37,6 +38,7 @@
     <v-dialog
       v-model="confirmDialog"
       content-class="app-dialog lidar-dialog"
+      attach=".v-application"
       max-width="520"
       :retain-focus="false"
       @input="onConfirmDialogInput"
@@ -90,6 +92,12 @@ const LIDAR_DISABLE_COOLDOWN_MS = 2000
 
 export default {
   name: 'LidarToggle',
+  props: {
+    menu: {
+      type: Boolean,
+      default: false
+    }
+  },
   data () {
     return {
       useLidar: false,
@@ -262,11 +270,20 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.toggle-menu-root {
+  width: 100%;
+}
+
+.toggle-menu-root ::v-deep > span {
+  display: block;
+  width: 100%;
+}
+
 .lidar-toggle {
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--app-bar-border, rgba(255, 255, 255, 0.16));
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--app-bar-text, rgba(255, 255, 255, 0.86));
   display: inline-flex;
   gap: 6px;
   height: 32px;
@@ -275,8 +292,28 @@ export default {
   white-space: nowrap;
 }
 
+.lidar-toggle--menu {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: none;
+  justify-content: flex-start;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.lidar-toggle--menu .lidar-toggle__label {
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.lidar-toggle--menu .lidar-toggle__switch {
+  margin-left: auto;
+}
+
 .lidar-toggle--on {
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--app-bar-text, rgba(255, 255, 255, 0.86));
 }
 
 .lidar-toggle--on::v-deep .v-input--switch__track {
@@ -329,14 +366,14 @@ export default {
 }
 
 @media (max-width: 599px) {
-  .lidar-toggle {
+  .lidar-toggle:not(.lidar-toggle--menu) {
     gap: 4px;
     height: 30px;
     min-width: 118px;
     padding: 0 4px;
   }
 
-  .lidar-toggle__label {
+  .lidar-toggle:not(.lidar-toggle--menu) .lidar-toggle__label {
     font-size: 0.72rem;
   }
 }
@@ -346,7 +383,7 @@ export default {
 }
 
 .lidar-dialog__recommendation {
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--app-text-muted);
   font-weight: 600;
 }
 </style>

@@ -2,7 +2,7 @@
   <v-layout class="login-main" ma-0 pa-3 row justify-center align-start fill-height>
     <v-flex
       xs12 sm6 md4 lg4 xl3 pa-3
-      class="login-wrapper d-flex flex-column align-stretch scroll-y">
+      class="login-wrapper d-flex flex-column align-stretch">
 
       <a
         href="https://www.opencap.ai"
@@ -32,7 +32,6 @@
             <v-text-field
               label="Username" 
               v-model="username"
-              dark
               outlined
               dense
               :error="errors.length > 0"
@@ -47,7 +46,6 @@
             <v-text-field
               label="Password" 
               v-model="password"
-              dark
               outlined
               dense
               :error="errors.length > 0"
@@ -61,7 +59,6 @@
             label="Remember this device for 90 days"
             v-if="show_remember_checkbox"
             v-model="remember_device"
-            dark
             hide-details
             class="login-remember"
           ></v-checkbox>
@@ -188,25 +185,21 @@ export default {
 .login-main {
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
 
 .login-wrapper {
-  max-height: calc(100vh - var(--app-bar-top-offset, 64px) - 24px);
-  max-height: calc(100dvh - var(--app-bar-top-offset, 64px) - 24px);
-  overflow-y: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  // Avoid a nested scrollport on short auth pages. Mobile Safari scrolls these
+  // inner overflow areas when the keyboard opens and often leaves them stuck
+  // under the fixed app bar after dismiss. Let v-main be the only scroller.
+  max-height: none;
+  overflow: visible;
 }
 
 .login-banner {
@@ -231,35 +224,35 @@ export default {
   .login-banner-highlight {
     font-size: 1.05rem;
     font-weight: 700;
-    color: rgba(255, 255, 255, 1);
+    color: var(--app-text-primary);
     letter-spacing: 0.01em;
   }
 
   .login-banner-details {
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--app-text-muted);
     letter-spacing: 0.01em;
   }
 
   .login-banner-cta {
     font-size: 0.875rem;
-    color: rgba(160, 220, 160, 0.95);
+    color: var(--app-success-link);
     margin-top: 2px;
   }
 }
 
 .login-card {
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   padding: 32px 28px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 }
 
 .login-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
   margin: 0 0 24px 0;
 }
@@ -292,7 +285,7 @@ export default {
   gap: 12px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-border);
   text-align: center;
   font-size: 0.9375rem;
 }
@@ -301,10 +294,10 @@ export default {
   margin-top: 24px;
   text-align: center;
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--app-text-subtle);
 
   a {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--app-text-muted);
   }
 
   .login-help-sep {
@@ -321,7 +314,6 @@ export default {
   }
 
   .login-wrapper {
-    max-height: calc(100dvh - var(--app-bar-height, 64px) - 24px);
     padding-left: 4px !important;
     padding-right: 4px !important;
   }

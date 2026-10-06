@@ -5,7 +5,7 @@
             @click="loadQRCode"
             text
         >
-            <span class="qr-button-text d-none d-sm-inline mr-2">Reconnect phone</span>
+            <span class="qr-button-text d-none d-md-inline mr-2">Reconnect phone</span>
             <v-icon>mdi-qrcode</v-icon>
         </v-btn>
         <v-dialog

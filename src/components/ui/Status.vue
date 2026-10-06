@@ -78,7 +78,7 @@ export default {
     }
 
     cursor: pointer;
-    color: white;    
+    color: var(--app-text-primary);
   }
 
   &.st-processing, &.st-stopped, &.st-reprocess {
@@ -86,11 +86,11 @@ export default {
       background-color: orange;
     }
 
-    color: #e0e0e0;
+    color: var(--app-text-muted);
   }
 
   &.st-recording, &.st-error {
-    color: #e0e0e0;    
+    color: var(--app-text-primary);
     background-color: transparent;
 
     div {

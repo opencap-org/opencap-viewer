@@ -18,7 +18,6 @@
                         <v-text-field
                           label="Username"
                           v-model="username"
-                          dark
                           outlined
                           dense
                           :error="errors.length > 0"
@@ -39,7 +38,6 @@
                       <v-text-field
                         label="First name"
                         v-model="first_name"
-                        dark
                         outlined
                         dense
                         :error="errors.length > 0"
@@ -58,7 +56,6 @@
                       <v-text-field
                         label="Last name"
                         v-model="last_name"
-                        dark
                         outlined
                         dense
                         :error="errors.length > 0"
@@ -80,7 +77,6 @@
                       <v-text-field
                         label="Email (will be used for two-factor authentication)"
                         v-model="email"
-                        dark
                         outlined
                         dense
                         :error="errors.length > 0"
@@ -113,7 +109,6 @@
                       <v-text-field
                         label="Institution"
                         v-model="institution"
-                        dark
                         outlined
                         dense
                         :error="errors.length > 0"
@@ -131,7 +126,6 @@
                       <v-text-field
                         label="Profession"
                         v-model="profession"
-                        dark
                         outlined
                         dense
                         :error="errors.length > 0"
@@ -148,7 +142,6 @@
                   <v-text-field
                     label="Reason for use"
                     v-model="reason"
-                    dark
                     outlined
                     dense
                     :error="errors.length > 0"
@@ -163,7 +156,6 @@
                   <v-text-field
                     label="Website"
                     v-model="website"
-                    dark
                     outlined
                     dense
                     :error="errors.length > 0"
@@ -184,7 +176,6 @@
                       <v-text-field
                         v-model="password"
                         label="Password (20+ characters)"
-                        dark
                         outlined
                         dense
                         :error="errors.length > 0"
@@ -216,7 +207,6 @@
                       <v-text-field
                         v-model="confirmPassword"
                         label="Confirm password"
-                        dark
                         outlined
                         dense
                         :error="errors.length > 0"
@@ -247,7 +237,6 @@
                   <v-checkbox
                     v-model="newsletter"
                     label="Sign up to receive our newsletter"
-                    dark
                     hide-details
                     class="register-checkbox"
                   ></v-checkbox>
@@ -255,7 +244,6 @@
                 <div class="col-12">
                   <ValidationProvider :rules="{ required: {allowFalse: false}}" v-slot="{ errors }" name="Terms and Conditions agreement selection">
                     <v-checkbox v-model="terms"
-                                dark
                                 class="register-checkbox"
                                 :error="errors.length > 0"
                                 :error-messages="errors[0]">
@@ -279,7 +267,6 @@
                 <div class="col-12">
                   <ValidationProvider :rules="{ required: {allowFalse: false}}" v-slot="{ errors }" name="Privacy Policy agreement selection">
                     <v-checkbox v-model="privacy"
-                                dark
                                 class="register-checkbox"
                                 :error="errors.length > 0"
                                 :error-messages="errors[0]">
@@ -303,7 +290,6 @@
                 <div class="col-12">
                   <ValidationProvider :rules="{ required: {allowFalse: false}}" v-slot="{ errors }" name="Non-profit use agreement selection">
                     <v-checkbox v-model="nonprofit"
-                                dark
                                 class="register-checkbox"
                                 :error="errors.length > 0"
                                 :error-messages="errors[0]">
@@ -420,11 +406,11 @@ export default {
 
   a {
     text-decoration: none !important;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--app-text-muted);
 
     &:hover {
       text-decoration: underline !important;
-      color: rgba(255, 255, 255, 1);
+      color: var(--app-text-primary);
     }
   }
 }
@@ -444,17 +430,17 @@ export default {
 }
 
 .register-card {
-  background: rgba(30, 30, 30, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   padding: 20px 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow);
 }
 
 .register-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text-primary);
   text-align: center;
   margin: 0 0 16px 0;
 }
@@ -509,7 +495,7 @@ export default {
   }
 
   .v-input--checkbox a {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--app-text-primary);
     text-decoration: underline;
   }
 
@@ -535,7 +521,7 @@ export default {
   gap: 6px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-border);
   font-size: 0.9375rem;
 
   .back-arrow {

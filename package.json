@@ -65,6 +65,16 @@
     "parserOptions": {
       "parser": "babel-eslint"
     },
+    "overrides": [
+      {
+        "files": [
+          "tests/**/*.js"
+        ],
+        "env": {
+          "jest": true
+        }
+      }
+    ],
     "rules": {
       "no-unused-vars": "off"
     }
