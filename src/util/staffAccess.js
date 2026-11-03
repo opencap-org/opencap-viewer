@@ -39,10 +39,6 @@ export function isTester ({ groups = userGroups } = {}) {
   return normalizeGroups(groups).includes('tester')
 }
 
-export function canShowLocalDataSaveToggle ({ groups } = {}) {
-  return isTester({ groups })
-}
-
 export function canShowLidarToggle ({ groups } = {}) {
   return isTester({ groups })
 }

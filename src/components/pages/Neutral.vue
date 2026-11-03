@@ -159,7 +159,7 @@
               </v-card>
             </div>
       
-            <div class="advanced-settings-row d-flex justify-center" v-if="hasAdvancedSettings">
+            <div class="advanced-settings-row d-flex justify-center">
                 <v-btn
                   color="primary-dark"
                   class="mt-4 mb-2"
@@ -366,29 +366,27 @@
                         </v-card-text>
                         </template>
 
-                        <template v-if="canUseSaveLocal">
-                          <v-card-title class="justify-center data-title">
-                            <span class="mr-2">Save on Phone</span>
-                            <v-tooltip bottom="" max-width="500px">
-                              <template v-slot:activator="{ on }">
-                                <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
-                              </template>
-                              When enabled, recording data will be saved only on the recording phone instead of uploading during recording. Upload the videos from the iOS app later before OpenCap can process the data and show results.
-                            </v-tooltip>
-                          </v-card-title>
-                          <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
-                            <v-switch
-                              :input-value="saveDataLocally"
-                              label="Save recording data on the phone"
-                              color="blue lighten-1"
-                              inset
-                              hide-details
-                              readonly
-                              :disabled="loadingSaveLocal || savingSaveLocal"
-                              @click.native.stop.prevent="toggleSaveLocal"
-                            />
-                          </v-card-text>
-                        </template>
+                        <v-card-title class="justify-center data-title">
+                          <span class="mr-2">Save on Phone</span>
+                          <v-tooltip bottom="" max-width="500px">
+                            <template v-slot:activator="{ on }">
+                              <v-icon v-on="on"> mdi-help-circle-outline </v-icon>
+                            </template>
+                            When enabled, recording data will be saved only on the recording phone instead of uploading during recording. Upload the videos from the iOS app later before OpenCap can process the data and show results.
+                          </v-tooltip>
+                        </v-card-title>
+                        <v-card-text class="d-flex flex-column align-center checkbox-wrapper">
+                          <v-switch
+                            :input-value="saveDataLocally"
+                            label="Save recording data on the phone"
+                            color="blue lighten-1"
+                            inset
+                            hide-details
+                            readonly
+                            :disabled="loadingSaveLocal || savingSaveLocal"
+                            @click.native.stop.prevent="toggleSaveLocal"
+                          />
+                        </v-card-text>
 
                         <template v-if="canUseLidar">
                           <v-card-title class="justify-center data-title">
@@ -530,7 +528,7 @@ import ExampleImage from "@/components/ui/ExampleImage";
 import DialogComponent from '@/components/ui/SubjectDialog.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import UploadStatusBanner from '@/components/ui/UploadStatusBanner.vue'
-import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
+import { canShowLidarToggle, loadUserGroups } from '@/util/staffAccess.js'
 import { resetPageScroll } from '@/util/scrollUtils.js'
 
 const LIDAR_ENABLE_COOLDOWN_MS = 2000
@@ -686,12 +684,6 @@ export default {
     },
     canUseLidar() {
       return canShowLidarToggle({ groups: this.userGroups });
-    },
-    canUseSaveLocal() {
-      return canShowLocalDataSaveToggle({ groups: this.userGroups });
-    },
-    hasAdvancedSettings() {
-      return this.showStandardAdvancedSettings || this.canUseSaveLocal || this.canUseLidar;
     },
     hasSaveableAdvancedSettings() {
       return this.showStandardAdvancedSettings;
