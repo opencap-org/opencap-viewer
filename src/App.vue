@@ -79,7 +79,7 @@ import {
   installMobileKeyboardScrollFix,
   resetPageScrollAfterKeyboard
 } from '@/util/scrollUtils.js'
-import { canShowLidarToggle, canShowLocalDataSaveToggle, loadUserGroups } from '@/util/staffAccess.js'
+import { canShowLidarToggle, loadUserGroups } from '@/util/staffAccess.js'
 import { applyTheme, DARK_THEME, LIGHT_THEME } from '@/util/theme.js'
 import QRCodeDialog from './components/ui/QRCodeDialog.vue'
 import NavbarSettings from './components/ui/NavbarSettings.vue'
@@ -180,8 +180,7 @@ export default {
       return this.verified && !authRouteNames.includes(this.$route.name)
     },
     showSessionNavbarControls () {
-      return this.$route.name === 'Session' &&
-        canShowLocalDataSaveToggle({ groups: this.userGroups })
+      return this.$route.name === 'Session'
     },
     showLidarNavbarControls () {
       return this.$route.name === 'Session' &&
