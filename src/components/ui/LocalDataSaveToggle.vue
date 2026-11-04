@@ -52,7 +52,10 @@
           <p class="mb-2">
             The data will be saved only on the recording phone(s), not on this computer and not in the cloud during recording.
           </p>
-          <p class="mb-2 ">
+          <p class="mb-2">
+            Make sure each recording phone has the OpenCap iOS app version 2.1.2 or later. Save on phone was added in that version.
+          </p>
+          <p class="mb-2">
             You will need to upload the videos from the iOS app on the phone(s) before OpenCap can process the data and show results.
           </p>
           <p class="mb-0 local-save-dialog__recommendation">
